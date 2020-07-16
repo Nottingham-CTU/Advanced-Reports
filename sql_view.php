@@ -122,7 +122,7 @@ while ( $infoRecord = mysqli_fetch_assoc( $query ) )
 	foreach ( $columns as $fieldName )
 	{
 ?>
-  <td><?php echo htmlspecialchars( $infoRecord[ $fieldName ] ); ?></td>
+  <td><?php echo $module->parseHTML( $infoRecord[ $fieldName ] ); ?></td>
 <?php
 	}
 ?>
