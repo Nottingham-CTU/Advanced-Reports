@@ -37,7 +37,6 @@ $columns = [];
 
 
 // Handle report download.
-// TODO: Downloads access control.
 if ( isset( $_GET['download'] ) && $module->isReportDownloadable( $reportID ) )
 {
 	$module->writeCSVDownloadHeaders( $reportID );

@@ -5,6 +5,8 @@ namespace Nottingham\AdvancedReports;
 class AdvancedReports extends \ExternalModules\AbstractExternalModule
 {
 
+	// Check if the specified report is accessible by the current user,
+	// as determined by the specified access roles.
 	function isReportAccessible( $reportID )
 	{
 		// Load the report config.
@@ -27,6 +29,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		return false;
 	}
 
+	// Check if the specified report can be downloaded by the current user,
+	// as determined by the download setting and download roles.
 	function isReportDownloadable( $reportID )
 	{
 		// Load the report config.
@@ -60,6 +64,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		return false;
 	}
 
+	// Check if the specified report type can be edited by the current user.
 	function isReportEditable( $reportType = null )
 	{
 		// Administrators can edit all reports.
@@ -86,6 +91,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		return false;
 	}
 
+	// Add a new report, with the specified ID (unique name), report type, and label.
 	function addReport( $reportID, $reportType, $reportLabel )
 	{
 		// Set the report configuration.
@@ -105,6 +111,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		$this->setProjectSetting( 'report-list', json_encode( $listIDs ) );
 	}
 
+	// Delete the specified report.
 	function deleteReport( $reportID )
 	{
 		// Remove the report configuration and data.
@@ -124,6 +131,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		$this->setProjectSetting( 'report-list', json_encode( $listIDs ) );
 	}
 
+	// Get the configuration for the specified report.
+	// Optionally specify the configuration option name, otherwise all options are returned.
 	function getReportConfig( $reportID, $configName = null )
 	{
 		$config = $this->getProjectSetting( "report-config-$reportID" );
@@ -145,6 +154,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		return $config;
 	}
 
+	// Get the report definition data for the specified report.
 	function getReportData( $reportID )
 	{
 		$data = $this->getProjectSetting( "report-data-$reportID" );
@@ -155,6 +165,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		return $data;
 	}
 
+	// Gets the list of reports, with the configuration data for each report.
 	function getReportList()
 	{
 		$listIDs = $this->getProjectSetting( 'report-list' );
@@ -177,6 +188,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		return $listReports;
 	}
 
+	// Get the role name of the current user.
 	function getUserRole()
 	{
 		$userRights = $this->framework->getUser()->getRights();
@@ -191,6 +203,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		return $userRights[ 'role_name' ];
 	}
 
+	// Returns the supplied string with any HTML entity encoded, with the exception of hyperlinks.
+	// If the $forDownload parameter is true, hyperlink tags will be stripped instead.
 	function parseHTML( $str, $forDownload = false )
 	{
 		if ( $forDownload )
@@ -202,6 +216,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		                     htmlspecialchars( $str, ENT_NOQUOTES ) );
 	}
 
+	// Sets the specified configuration option for a report to the specified value.
 	function setReportConfig( $reportID, $configName, $configValue )
 	{
 		$reportConfig = $this->getReportConfig( $reportID );
@@ -209,11 +224,13 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		$this->setProjectSetting( "report-config-$reportID", json_encode( $reportConfig ) );
 	}
 
+	// Sets the definition data for the specified report.
 	function setReportData( $reportID, $reportData )
 	{
 		$this->setProjectSetting( "report-data-$reportID", json_encode( $reportData ) );
 	}
 
+	// Outputs HTTP headers for a report download (.csv file).
 	function writeCSVDownloadHeaders( $reportID )
 	{
 		$queryDev = $this->query( "SELECT value FROM redcap.redcap_config" .
@@ -226,6 +243,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		        "_{$reportID}_" . gmdate( 'Ymd-His' ) . ( $isDev ? '_dev' : '' ) . '.csv"' );
 	}
 
+	// CSS style for advanced report pages.
 	function writeStyle()
 	{
 		$style = '
