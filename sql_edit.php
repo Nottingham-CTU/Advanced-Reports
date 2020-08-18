@@ -24,8 +24,7 @@ $reportData = $module->getReportData( $reportID );
 if ( ! empty( $_POST ) )
 {
 	// Validate data
-	if ( preg_match( '/(^|[^a-z])(insert|update|delete|drop|truncate|create|alter|grant|lock|' .
-	                 'kill|commit|procedure|purge|revoke)([^a-z]|$)/i', $_POST['sql_query'] ) )
+	if ( substr( strtolower( $_POST['sql_query'] ), 0, 7 ) != 'select ' )
 	{
 		exit;
 	}
@@ -159,8 +158,7 @@ echo $reportData['sql_query'] ?? ''; ?></textarea>
 <script type="text/javascript">
  $('[name="sql_query"]')[0].onkeyup = function()
  {
-   if ( /(^|[^a-z])(insert|update|delete|drop|truncate|create|alter|grant|lock|kill|commit|<?php
-      ?>procedure|purge|revoke)([^a-z]|$)/.test(this.value.toLowerCase()) )
+   if ( this.value.toLowerCase().substring( 0, 7 ) != 'select ' )
    {
      this.setCustomValidity( 'Invalid SQL query' )
    }

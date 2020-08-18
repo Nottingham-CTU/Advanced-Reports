@@ -54,6 +54,7 @@ foreach ( $listReports as $reportID => $infoReport )
 <p><b><?php echo htmlspecialchars( $infoReport['category'] ); ?></b></p>
 <ul>
 <?php
+		$lastCategory = $infoReport['category'];
 	}
 ?>
  <li><a href="<?php
