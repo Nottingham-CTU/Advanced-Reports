@@ -4,6 +4,31 @@ namespace Nottingham\AdvancedReports;
 
 class AdvancedReports extends \ExternalModules\AbstractExternalModule
 {
+	// Show the advanced reports link based on whether the user is able to view or edit any
+	// reports. If the user has no access, hide the link.
+	function redcap_module_link_check_display( $project_id, $link )
+	{
+		if ( $this->isReportEditable() )
+		{
+			return $link;
+		}
+		$listReports = $this->getReportList();
+		foreach ( $listReports as $reportID => $data )
+		{
+			if ( $this->isReportAccessible( $reportID ) )
+			{
+				return $link;
+			}
+		}
+		return null;
+	}
+
+	// As the REDCap built-in module configuration only contains options for administrators, hide
+	// this configuration from all non-administrators.
+	function redcap_module_configure_button_display( $project_id )
+	{
+		return $this->framework->getUser()->isSuperUser() ? true : null;
+	}
 
 	// Check if the specified report is accessible by the current user,
 	// as determined by the specified access roles.
