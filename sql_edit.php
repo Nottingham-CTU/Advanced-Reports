@@ -24,7 +24,8 @@ $reportData = $module->getReportData( $reportID );
 if ( ! empty( $_POST ) )
 {
 	// Validate data
-	if ( substr( strtolower( $_POST['sql_query'] ), 0, 7 ) != 'select ' )
+	if ( str_replace( [ "\r", "\n" ], ' ',
+	                  substr( strtolower( $_POST['sql_query'] ), 0, 7 ) ) != 'select ' )
 	{
 		exit;
 	}
@@ -158,7 +159,7 @@ echo $reportData['sql_query'] ?? ''; ?></textarea>
 <script type="text/javascript">
  $('[name="sql_query"]')[0].onkeyup = function()
  {
-   if ( this.value.toLowerCase().substring( 0, 7 ) != 'select ' )
+   if ( this.value.toLowerCase().substring( 0, 7 ).replace( /[\r\n]/, ' ' ) != 'select ' )
    {
      this.setCustomValidity( 'Invalid SQL query' )
    }
