@@ -1,0 +1,34 @@
+{
+	"name" : "Advanced Reports",
+	"namespace" : "Nottingham\\AdvancedReports",
+	"description" : "Create advanced reports beyond the standard REDCap functionality.",
+	"authors": [
+		{
+			"name": "Richard Dooley",
+			"email": "richard.dooley@nottingham.ac.uk",
+			"institution": "University of Nottingham"
+		}
+	],
+	"permissions" : [],
+	"framework-version" : 3,
+	"compatibility" : { "redcap-version-min" : "9.6.5" },
+	"links" : {
+		"project" : [
+			{ "name" : "Advanced Reports", "icon" : "far fa-file-alt", "url" : "reports.php" }
+		]
+	},
+	"project-settings" : [
+		{
+			"key" : "edit-if-design",
+			"name" : "Allow users with <i>project design and setup</i> rights to edit reports",
+			"type" : "checkbox",
+			"super-users-only" : true
+		},
+		{
+			"key" : "edit-if-reports",
+			"name" : "Allow users with <i>add/edit/organize reports</i> rights to edit reports",
+			"type" : "checkbox",
+			"super-users-only" : true
+		}
+	]
+}
