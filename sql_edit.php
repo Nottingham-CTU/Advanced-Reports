@@ -31,20 +31,7 @@ if ( ! empty( $_POST ) )
 	}
 
 	// Save data
-	foreach ( [ 'label', 'category', 'visible', 'download', 'roles_access', 'roles_download' ]
-	          as $configSetting )
-	{
-		$configValue = $_POST["report_$configSetting"];
-		if ( in_array( $configSetting, [ 'visible', 'download' ] ) )
-		{
-			$configValue = $configValue == 'Y' ? true : false;
-		}
-		elseif ( trim( $configValue ) === '' )
-		{
-			$configValue = null;
-		}
-		$module->setReportConfig( $reportID, $configSetting, $configValue );
-	}
+	$module->submitReportConfig( $reportID );
 	$reportData = [ 'sql_query' => $_POST['sql_query'] ];
 	$module->setReportData( $reportID, $reportData );
 	header( 'Location: ' . $module->getUrl( 'reports_edit.php' ) );
@@ -67,78 +54,7 @@ $module->writeStyle();
 </p>
 <form method="post">
  <table class="mod-advrep-formtable">
-  <tr><th colspan="2">Report Label and Category</th></tr>
-  <tr>
-   <td>Report Label</td>
-   <td>
-    <input type="text" name="report_label" required
-           value="<?php echo htmlspecialchars( $reportConfig['label'] ); ?>">
-   </td>
-  </tr>
-  <tr>
-   <td>Report Category</td>
-   <td>
-    <input type="text" name="report_category"
-           value="<?php echo htmlspecialchars( $reportConfig['category'] ); ?>">
-   </td>
-  </tr>
-  <tr><th colspan="2">Access Permissions</th></tr>
-  <tr>
-   <td>Report is visible</td>
-   <td>
-    <label>
-     <input type="radio" name="report_visible" value="Y" required<?php
-echo $reportConfig['visible'] ? ' checked' : ''; ?>> Yes
-    </label>
-    <br>
-    <label>
-     <input type="radio" name="report_visible" value="N" required<?php
-echo $reportConfig['visible'] ? '' : ' checked'; ?>> No
-    </label>
-   </td>
-  </tr>
-  <tr>
-   <td>Grant access to roles</td>
-   <td>
-    <textarea name="report_roles_access"><?php echo $reportConfig['roles_access']; ?></textarea>
-    <br>
-    <span style="font-size:90%">
-     Enter each role name on a separate line.
-     <br>
-     If left blank, the report will be accessible to users with edit access.
-     <br>
-     Enter * to grant access to all users.
-    </span>
-   </td>
-  </tr>
-  <tr>
-   <td>Allow downloads</td>
-   <td>
-    <label>
-     <input type="radio" name="report_download" value="Y" required<?php
-echo $reportConfig['download'] ? ' checked' : ''; ?>> Yes
-    </label>
-    <br>
-    <label>
-     <input type="radio" name="report_download" value="N" required<?php
-echo $reportConfig['download'] ? '' : ' checked'; ?>> No
-    </label>
-   </td>
-  </tr>
-  <tr>
-   <td>Grant downloads to roles</td>
-   <td>
-    <textarea name="report_roles_download"><?php echo $reportConfig['roles_download']; ?></textarea>
-    <br>
-    <span style="font-size:90%">
-     Enter each role name on a separate line. Reports can only be downloaded by users with access.
-     <br>
-     If left blank, the report can be downloaded by users with edit access.
-     <br>
-     Enter * to allow downloads by all users with access.
-    </span>
-   </td>
-  </tr>
+<?php $module->outputReportConfigOptions( $reportConfig ); ?>
   <tr><th colspan="2">Report Definition</th></tr>
   <tr>
    <td>SQL Query</td>

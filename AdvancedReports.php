@@ -4,6 +4,7 @@ namespace Nottingham\AdvancedReports;
 
 class AdvancedReports extends \ExternalModules\AbstractExternalModule
 {
+
 	// Show the advanced reports link based on whether the user is able to view or edit any
 	// reports. If the user has no access, hide the link.
 	function redcap_module_link_check_display( $project_id, $link )
@@ -23,12 +24,16 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		return null;
 	}
 
+
+
 	// As the REDCap built-in module configuration only contains options for administrators, hide
 	// this configuration from all non-administrators.
 	function redcap_module_configure_button_display( $project_id )
 	{
 		return $this->framework->getUser()->isSuperUser() ? true : null;
 	}
+
+
 
 	// Check if the specified report is accessible by the current user,
 	// as determined by the specified access roles.
@@ -54,6 +59,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		return false;
 	}
 
+
+
 	// Check if the specified report can be downloaded by the current user,
 	// as determined by the download setting and download roles.
 	function isReportDownloadable( $reportID )
@@ -61,7 +68,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		// Load the report config.
 		$reportConfig = $this->getReportConfig( $reportID );
 		// Don't allow downloads if they are deactivated.
-		if ( ! $reportConfig['download'] )
+		if ( ! isset( $reportConfig['download'] ) || ! $reportConfig['download'] )
 		{
 			return false;
 		}
@@ -88,6 +95,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		// Don't allow downloads for remaining users.
 		return false;
 	}
+
+
 
 	// Check if the specified report type can be edited by the current user.
 	function isReportEditable( $reportType = null )
@@ -116,6 +125,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		return false;
 	}
 
+
+
 	// Add a new report, with the specified ID (unique name), report type, and label.
 	function addReport( $reportID, $reportType, $reportLabel )
 	{
@@ -136,6 +147,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		$this->setProjectSetting( 'report-list', json_encode( $listIDs ) );
 	}
 
+
+
 	// Delete the specified report.
 	function deleteReport( $reportID )
 	{
@@ -155,6 +168,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		}
 		$this->setProjectSetting( 'report-list', json_encode( $listIDs ) );
 	}
+
+
 
 	// Get the configuration for the specified report.
 	// Optionally specify the configuration option name, otherwise all options are returned.
@@ -179,6 +194,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		return $config;
 	}
 
+
+
 	// Get the report definition data for the specified report.
 	function getReportData( $reportID )
 	{
@@ -189,6 +206,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		}
 		return $data;
 	}
+
+
 
 	// Gets the list of reports, with the configuration data for each report.
 	function getReportList()
@@ -213,6 +232,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		return $listReports;
 	}
 
+
+
 	// Get the role name of the current user.
 	function getUserRole()
 	{
@@ -228,6 +249,127 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		return $userRights[ 'role_name' ];
 	}
 
+
+
+	// Output the form controls to set the report configuration on the edit report page.
+	// These are the settings which are the same for all reports.
+	function outputReportConfigOptions( $reportConfig, $includeDownload = true )
+	{
+?>
+  <tr><th colspan="2">Report Label and Category</th></tr>
+  <tr>
+   <td>Report Label</td>
+   <td>
+    <input type="text" name="report_label" required
+           value="<?php echo htmlspecialchars( $reportConfig['label'] ); ?>">
+   </td>
+  </tr>
+  <tr>
+   <td>Report Category</td>
+   <td>
+    <input type="text" name="report_category"
+           value="<?php echo htmlspecialchars( $reportConfig['category'] ); ?>">
+   </td>
+  </tr>
+  <tr><th colspan="2">Access Permissions</th></tr>
+  <tr>
+   <td>Report is visible</td>
+   <td>
+    <label>
+     <input type="radio" name="report_visible" value="Y" required<?php
+		echo $reportConfig['visible'] ? ' checked' : ''; ?>> Yes
+    </label>
+    <br>
+    <label>
+     <input type="radio" name="report_visible" value="N" required<?php
+		echo $reportConfig['visible'] ? '' : ' checked'; ?>> No
+    </label>
+   </td>
+  </tr>
+  <tr>
+   <td>Grant access to roles</td>
+   <td>
+    <textarea name="report_roles_access"><?php echo $reportConfig['roles_access']; ?></textarea>
+    <br>
+    <span style="font-size:90%">
+     Enter each role name on a separate line.
+     <br>
+     If left blank, the report will be accessible to users with edit access.
+     <br>
+     Enter * to grant access to all users.
+    </span>
+   </td>
+  </tr>
+<?php
+		if ( $includeDownload )
+		{
+?>
+  <tr>
+   <td>Allow downloads</td>
+   <td>
+    <label>
+     <input type="radio" name="report_download" value="Y" required<?php
+		echo $reportConfig['download'] ? ' checked' : ''; ?>> Yes
+    </label>
+    <br>
+    <label>
+     <input type="radio" name="report_download" value="N" required<?php
+		echo $reportConfig['download'] ? '' : ' checked'; ?>> No
+    </label>
+   </td>
+  </tr>
+  <tr>
+   <td>Grant downloads to roles</td>
+   <td>
+    <textarea name="report_roles_download"><?php echo $reportConfig['roles_download']; ?></textarea>
+    <br>
+    <span style="font-size:90%">
+     Enter each role name on a separate line. Reports can only be downloaded by users with access.
+     <br>
+     If left blank, the report can be downloaded by users with edit access.
+     <br>
+     Enter * to allow downloads by all users with access.
+    </span>
+   </td>
+  </tr>
+<?php
+		}
+	}
+
+
+
+	// Output the report navigation links.
+	function outputViewReportHeader( $reportLabel )
+	{
+		$canDownload = $this->isReportDownloadable( $_GET['report_id'] );
+		$this->writeStyle();
+
+?>
+<div class="projhdr">
+ <?php echo htmlspecialchars( $reportLabel ), "\n"; ?>
+</div>
+<p style="font-size:11px" class="hide_in_print">
+ <a href="<?php echo $this->getUrl( 'reports.php' )
+?>" class="fas fa-arrow-circle-left fs11"> Back to Advanced Reports</a>
+<?php
+
+		// If report can be downloaded, show the download link.
+		if ( $canDownload )
+		{
+
+?>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ <a href="<?php
+			echo $this->getUrl( 'sql_view.php?report_id=' . $_GET['report_id'] . '&download=1' );
+?>" class="fas fa-file-download fs11"> Download report</a>
+<?php
+
+		}
+
+	}
+
+
+
 	// Returns the supplied string with any HTML entity encoded, with the exception of hyperlinks.
 	// If the $forDownload parameter is true, hyperlink tags will be stripped instead.
 	function parseHTML( $str, $forDownload = false )
@@ -241,6 +383,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		                     htmlspecialchars( $str, ENT_NOQUOTES ) );
 	}
 
+
+
 	// Sets the specified configuration option for a report to the specified value.
 	function setReportConfig( $reportID, $configName, $configValue )
 	{
@@ -249,11 +393,45 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		$this->setProjectSetting( "report-config-$reportID", json_encode( $reportConfig ) );
 	}
 
+
+
 	// Sets the definition data for the specified report.
 	function setReportData( $reportID, $reportData )
 	{
 		$this->setProjectSetting( "report-data-$reportID", json_encode( $reportData ) );
 	}
+
+
+
+	// Perform submission of all the report config values (upon edit form submission).
+	// These are the values which are the same for each report type (e.g. visibility, category).
+	function submitReportConfig( $reportID, $includeDownload = true )
+	{
+		if ( $includeDownload )
+		{
+			$listConfig =
+				[ 'label', 'category', 'visible', 'download', 'roles_access', 'roles_download' ];
+		}
+		else
+		{
+			$listConfig = [ 'label', 'category', 'visible', 'roles_access' ];
+		}
+		foreach ( $listConfig as $configSetting )
+		{
+			$configValue = $_POST["report_$configSetting"];
+			if ( in_array( $configSetting, [ 'visible', 'download' ] ) )
+			{
+				$configValue = $configValue == 'Y' ? true : false;
+			}
+			elseif ( trim( $configValue ) === '' )
+			{
+				$configValue = null;
+			}
+			$this->setReportConfig( $reportID, $configSetting, $configValue );
+		}
+	}
+
+
 
 	// Outputs HTTP headers for a report download (.csv file).
 	function writeCSVDownloadHeaders( $reportID )
@@ -267,6 +445,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		        trim( preg_replace( '/[^A-Za-z0-9-]+/', '_', \REDCap::getProjectTitle() ), '_-' ) .
 		        "_{$reportID}_" . gmdate( 'Ymd-His' ) . ( $isDev ? '_dev' : '' ) . '.csv"' );
 	}
+
+
 
 	// CSS style for advanced report pages.
 	function writeStyle()
@@ -368,5 +548,6 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			 'el.innerText = \'', addslashes( preg_replace( "/[\t\r\n ]+/", ' ', $style ) ), '\';',
 			 'document.getElementsByTagName(\'head\')[0].appendChild(el)})()</script>';
 	}
+
 
 }

@@ -64,32 +64,9 @@ if ( isset( $_GET['download'] ) && $module->isReportDownloadable( $reportID ) )
 }
 
 
-
-// Display the project header
+// Display the project header and report navigation links.
 require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
-$module->writeStyle();
-
-?>
-<div class="projhdr">
- <?php echo htmlspecialchars( $reportConfig['label'] ), "\n"; ?>
-</div>
-<p style="font-size:11px" class="hide_in_print">
- <a href="<?php echo $module->getUrl( 'reports.php' )
-?>" class="fas fa-arrow-circle-left fs11"> Back to Advanced Reports</a>
-<?php
-
-// If report can be downloaded, show the download link.
-if ( $module->isReportDownloadable( $reportID ) )
-{
-
-?>
- &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
- <a href="<?php
-	echo $module->getUrl( 'sql_view.php?report_id=' . $_GET['report_id'] . '&download=1' );
-?>" class="fas fa-file-download fs11"> Download report</a>
-<?php
-
-}
+$module->outputViewReportHeader( $reportConfig['label'] );
 
 ?>
 </p>
