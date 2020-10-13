@@ -30,7 +30,7 @@ if ( ! $module->isReportAccessible( $reportID ) )
 
 // Get the report data.
 $sql = $reportData['sql_query'];
-$query = mysqli_query( $conn, $sql );
+$query = mysqli_query( $conn, str_replace( '$$PROJECT$$', $module->getProjectId(), $sql ) );
 $columns = [];
 
 
