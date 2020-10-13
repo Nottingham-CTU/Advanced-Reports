@@ -291,7 +291,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
    <td>
     <textarea name="report_roles_access"><?php echo $reportConfig['roles_access']; ?></textarea>
     <br>
-    <span style="font-size:90%">
+    <span class="field-desc">
      Enter each role name on a separate line.
      <br>
      If left blank, the report will be accessible to users with edit access.
@@ -323,7 +323,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
    <td>
     <textarea name="report_roles_download"><?php echo $reportConfig['roles_download']; ?></textarea>
     <br>
-    <span style="font-size:90%">
+    <span class="field-desc">
      Enter each role name on a separate line. Reports can only be downloaded by users with access.
      <br>
      If left blank, the report can be downloaded by users with edit access.
@@ -489,6 +489,10 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			.mod-advrep-formtable label
 			{
 				margin-bottom: 0px;
+			}
+			.mod-advrep-formtable span.field-desc
+			{
+				font-size: 90%;
 			}
 			.mod-advrep-datatable
 			{
