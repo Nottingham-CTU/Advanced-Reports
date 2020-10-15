@@ -20,7 +20,7 @@ function sortReports( $reportA, $reportB )
 require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
 
 $listReports = $module->getReportList();
-uasort( $listreports, 'sortReports' );
+uasort( $listReports, 'sortReports' );
 
 ?>
 <div class="projhdr">
@@ -74,7 +74,10 @@ if ( $module->framework->getUser()->isSuperUser() )
 <p><b>Administrative Options</b></p>
 <ul>
  <li>
-  <a href="<?php echo $module->getUrl( 'export_reports.php' ) ?>">Export report designs</a>
+  <a href="<?php echo $module->getUrl( 'export_reports.php' ) ?>">Export report definitions</a>
+ </li>
+ <li>
+  <a href="<?php echo $module->getUrl( 'import_reports.php' ) ?>">Import report definitions</a>
  </li>
 </ul>
 <?php
