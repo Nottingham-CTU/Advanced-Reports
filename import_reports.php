@@ -15,6 +15,7 @@ $mode = 'upload';
 if ( ! empty( $_FILES ) ) // file is uploaded
 {
 	$mode = 'verify';
+	// Check that a file has been uploaded and it is valid.
 	if ( ! is_uploaded_file( $_FILES['import_file']['tmp_name'] ) )
 	{
 		$mode = 'error';
@@ -44,6 +45,8 @@ if ( ! empty( $_FILES ) ) // file is uploaded
 			}
 		}
 	}
+	// Parse the uploaded file for differences between the existing reports and those contained
+	// within the file. The user will be asked to confirm the changes.
 	if ( $mode == 'verify' ) // no error
 	{
 		$listCurrent = json_decode( $module->getProjectSetting( 'report-list' ), true ) ?? [];
@@ -73,6 +76,8 @@ if ( ! empty( $_FILES ) ) // file is uploaded
 elseif ( ! empty( $_POST ) ) // normal POST request (confirming import)
 {
 	$mode = 'complete';
+	// The contents of the file are passed across from the verify stage. If this is valid, the
+	// selected changes are applied.
 	$fileData = $_POST['import_data'];
 	$data = json_decode( $fileData, true );
 	if ( $data == null || ! is_array( $data ) || ! isset( $data['report-list'] ) ||
@@ -87,6 +92,7 @@ elseif ( ! empty( $_POST ) ) // normal POST request (confirming import)
 		{
 			if ( substr( $key, 0, 11 ) == 'report-add-' )
 			{
+				// Add new report into project from file.
 				$reportID = substr( $key, 11 );
 				$reportType = $data["report-config-$reportID"]['type'];
 				$reportLabel = $data["report-config-$reportID"]['label'];
@@ -97,17 +103,20 @@ elseif ( ! empty( $_POST ) ) // normal POST request (confirming import)
 			}
 			elseif ( substr( $key, 0, 14 ) == 'report-config-' )
 			{
+				// Update report configuration (label, category, access permissions etc.)
 				$reportID = substr( $key, 14 );
 				$module->setProjectSetting( "report-config-$reportID",
 				                            json_encode( $data["report-config-$reportID"] ) );
 			}
 			elseif ( substr( $key, 0, 12 ) == 'report-data-' )
 			{
+				// Update report definition.
 				$reportID = substr( $key, 12 );
 				$module->setReportData( $reportID, $data["report-data-$reportID"] );
 			}
 			elseif ( substr( $key, 0, 14 ) == 'report-delete-' )
 			{
+				// Remove report from project.
 				$reportID = substr( $key, 14 );
 				$module->deleteReport( $reportID );
 			}
@@ -132,6 +141,7 @@ $module->writeStyle();
 <?php
 
 
+// Display the file upload form.
 if ( $mode == 'upload' )
 {
 
@@ -157,6 +167,7 @@ if ( $mode == 'upload' )
 
 
 }
+// Display the options to confirm the changes to the report definitions introduced by the file.
 elseif ( $mode == 'verify' )
 {
 
@@ -390,6 +401,7 @@ elseif ( $mode == 'verify' )
 
 
 }
+// Display error message.
 elseif ( $mode == 'error' )
 {
 
@@ -400,6 +412,7 @@ elseif ( $mode == 'error' )
 
 
 }
+// Display success message.
 elseif ( $mode == 'complete' )
 {
 
