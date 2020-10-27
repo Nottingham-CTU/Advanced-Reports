@@ -171,6 +171,47 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Returns a list of events for the project.
+	function getEventList()
+	{
+		$listTypes = explode( ',', $fieldTypes );
+		$listEventNames = \REDCap::getEventNames( false, true );
+		$listUniqueNames = \REDCap::getEventNames( true );
+		$listEvents = [];
+		foreach ( $listEventNames as $eventID => $eventName )
+		{
+			$uniqueName = $listUniqueNames[ $eventID ];
+			$listEvents[ $uniqueName ] = $eventName;
+		}
+		return $listEvents;
+	}
+
+
+
+	// Returns a list of fields for the project.
+	function getFieldList( $fieldTypes = '*' )
+	{
+		$listTypes = explode( ',', $fieldTypes );
+		$listFields = [];
+		foreach ( \REDCap::getDataDictionary( 'array' ) as $infoField )
+		{
+			if ( $fieldTypes == '*' || in_array( $infoField['field_type'], $listTypes ) ||
+			     ( in_array( 'date', $listTypes ) && $infoField['field_type'] == 'text' &&
+			       substr( $infoField['text_validation_type_or_show_slider_number'],
+			               0, 4 ) == 'date' ) ||
+			     ( in_array( 'datetime', $listTypes ) && $infoField['field_type'] == 'text' &&
+			       substr( $infoField['text_validation_type_or_show_slider_number'],
+			               0, 8 ) == 'datetime' ) )
+			{
+				$listFields[ $infoField['field_name'] ] =
+					$infoField['field_name'] . ' - ' . $infoField['field_label'];
+			}
+		}
+		return $listFields;
+	}
+
+
+
 	// Get the configuration for the specified report.
 	// Optionally specify the configuration option name, otherwise all options are returned.
 	function getReportConfig( $reportID, $configName = null )
@@ -247,6 +288,38 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			return null;
 		}
 		return $userRights[ 'role_name' ];
+	}
+
+
+
+	// Output a drop-down list of events for the project.
+	function outputEventDropdown( $dropDownName, $value )
+	{
+		echo '<select name="', htmlspecialchars( $dropDownName ), '">';
+		echo '<option value=""', ( $value == '' ? ' selected' : '' ), '></option>';
+		foreach ( $this->getEventList() as $optValue => $optLabel )
+		{
+			echo '<option value="', htmlspecialchars( $optValue ), '"',
+			     ( $value == $optValue ? ' selected' : '' ), '>',
+			     htmlspecialchars( $optLabel ), '</option>';
+		}
+		echo '</select>';
+	}
+
+
+
+	// Output a drop-down list of fields for the project.
+	function outputFieldDropdown( $dropDownName, $value, $fieldType = '*' )
+	{
+		echo '<select name="', htmlspecialchars( $dropDownName ), '">';
+		echo '<option value=""', ( $value == '' ? ' selected' : '' ), '></option>';
+		foreach ( $this->getFieldList( $fieldType ) as $optValue => $optLabel )
+		{
+			echo '<option value="', htmlspecialchars( $optValue ), '"',
+			     ( $value == $optValue ? ' selected' : '' ), '>',
+			     htmlspecialchars( $optLabel ), '</option>';
+		}
+		echo '</select>';
 	}
 
 
@@ -544,6 +617,49 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			.mod-advrep-datatable tr:nth-child(2n+1) td
 			{
 				background: #f8f8f8;
+			}
+			.mod-advrep-gantt
+			{
+				display:grid;
+				grid-auto-columns: minmax(5px, min-content);
+				gap: 1px;
+				padding: 1px;
+				justify-items:stretch;
+				align-items:stretch;
+				background: #aaa;
+				border: solid 1px #000;
+				width: min-content;
+			}
+			.mod-advrep-gantt *
+			{
+				border: solid 1px #000;
+				background: #fff;
+				padding: 3px;
+				overflow: hidden;
+			}
+			.mod-advrep-gantt-hdr
+			{
+				grid-row-start: 1;
+				vertical-align: middle;
+				white-space: nowrap;
+				position: sticky;
+				top: 0px;
+				border-bottom-width: 2px;
+			}
+			.mod-advrep-gantt-date
+			{
+				grid-row-start:1;
+				position: sticky;
+				top: 0px;
+				border-bottom-width: 2px;
+				text-align: center;
+			}
+			.mod-advrep-gantt-date span
+			{
+				writing-mode:vertical-lr;
+				text-orientation:upright;
+				border: none;
+				width: 100%;
 			}
 			';
 		echo '<script type="text/javascript">',
