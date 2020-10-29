@@ -623,7 +623,6 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 				display:grid;
 				grid-auto-columns: minmax(5px, min-content);
 				gap: 1px;
-				padding: 1px;
 				justify-items:stretch;
 				align-items:stretch;
 				background: #aaa;
@@ -633,17 +632,19 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			.mod-advrep-gantt *
 			{
 				border: solid 1px #000;
+				margin: -1px;
 				background: #fff;
 				padding: 3px;
 				overflow: hidden;
+				cursor: default;
 			}
 			.mod-advrep-gantt-hdr
 			{
 				grid-row-start: 1;
-				vertical-align: middle;
-				white-space: nowrap;
 				position: sticky;
 				top: 0px;
+				display: flex;
+				align-items: center;
 				border-bottom-width: 2px;
 			}
 			.mod-advrep-gantt-date
@@ -660,6 +661,121 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 				text-orientation:upright;
 				border: none;
 				width: 100%;
+			}
+			.mod-advrep-gantt-key
+			{
+				display: flex;
+				gap: 20px;
+				flex-wrap: wrap;
+			}
+			.mod-advrep-gantt-key > div
+			{
+				white-space: nowrap;
+			}
+			.mod-advrep-gantt-key > div > div
+			{
+				display: inline-block;
+				margin-bottom: -3px;
+				margin-right: 2px;
+				width: 18px;
+				height: 18px;
+				border: solid 1px #000000;
+			}
+			.mod-advrep-chart-style0
+			{
+				background: #e6a1a1;
+			}
+			.mod-advrep-chart-style1
+			{
+				background: #e6e6a1;
+			}
+			.mod-advrep-chart-style2
+			{
+				background: #a1e6a1;
+			}
+			.mod-advrep-chart-style3
+			{
+				background: #a1e6e6;
+			}
+			.mod-advrep-chart-style4
+			{
+				background: #a1a1e6;
+			}
+			.mod-advrep-chart-style5
+			{
+				background: #e6a1e6;
+			}
+			.mod-advrep-chart-style6
+			{
+				background: linear-gradient(0.35turn, #e6c3a1 40%, #ffffff);
+			}
+			.mod-advrep-chart-style7
+			{
+				background: linear-gradient(0.35turn, #c3e6a1 40%, #ffffff);
+			}
+			.mod-advrep-chart-style8
+			{
+				background: linear-gradient(0.35turn, #a1e6c3 40%, #ffffff);
+			}
+			.mod-advrep-chart-style9
+			{
+				background: linear-gradient(0.35turn, #a1c3e6 40%, #ffffff);
+			}
+			.mod-advrep-chart-style10
+			{
+				background: linear-gradient(0.35turn, #c3a1e6 40%, #ffffff);
+			}
+			.mod-advrep-chart-style11
+			{
+				background: linear-gradient(0.35turn, #e6a1c3 40%, #ffffff);
+			}
+			.mod-advrep-chart-style12
+			{
+				background: #f2dada;
+			}
+			.mod-advrep-chart-style13
+			{
+				background: #f2f2da;
+			}
+			.mod-advrep-chart-style14
+			{
+				background: #daf2da;
+			}
+			.mod-advrep-chart-style15
+			{
+				background: #daf2f2;
+			}
+			.mod-advrep-chart-style16
+			{
+				background: #dadaf2;
+			}
+			.mod-advrep-chart-style17
+			{
+				background: #f2daf2;
+			}
+			.mod-advrep-chart-style18
+			{
+				background: linear-gradient(0.35turn, #f2e6da 40%, #ffffff);
+			}
+			.mod-advrep-chart-style19
+			{
+				background: linear-gradient(0.35turn, #e6f2da 40%, #ffffff);
+			}
+			.mod-advrep-chart-style20
+			{
+				background: linear-gradient(0.35turn, #daf2e6 40%, #ffffff);
+			}
+			.mod-advrep-chart-style21
+			{
+				background: linear-gradient(0.35turn, #dae6f2 40%, #ffffff);
+			}
+			.mod-advrep-chart-style22
+			{
+				background: linear-gradient(0.35turn, #e6daf2 40%, #ffffff);
+			}
+			.mod-advrep-chart-style23
+			{
+				background: linear-gradient(0.35turn, #f2dae6 40%, #ffffff);
 			}
 			';
 		echo '<script type="text/javascript">',

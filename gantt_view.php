@@ -5,12 +5,14 @@
 
 
 
+// Define constants for day/week length, and time spans used in chart.
 define( 'GANTT_DAY', 86400 );
 define( 'GANTT_WEEK', ( GANTT_DAY * 7 ) );
 define( 'GANTT_SPLIT_DAY', 6 );
 define( 'GANTT_SPLIT_WEEK', 7 );
 define( 'GANTT_STEP_DAY', ( GANTT_DAY / GANTT_SPLIT_DAY ) );
 define( 'GANTT_STEP_WEEK', ( GANTT_WEEK / GANTT_SPLIT_WEEK ) );
+
 
 
 // Verify the report exists, is a Gantt report, and is visible.
@@ -41,10 +43,22 @@ $reportStart = strtotime( '-' . ( gmdate( 'N' ) - 1 ) . ' days 00:00:00 UTC' );
 $reportMiddle = strtotime( '+2 weeks 00:00:00 UTC', $reportStart );
 $reportEnd = strtotime( 'first day of +4 months 00:00:00 UTC', $reportStart );
 
+if ( $_GET['gantt_mode'] == 'compact' )
+{
+	$reportMiddle = $reportStart;
+	$reportEnd = strtotime( 'first day of +6 months 00:00:00 UTC', $reportStart );
+}
+elseif ( $_GET['gantt_mode'] == 'expand' )
+{
+	$reportEnd = strtotime( '+4 weeks 00:00:00 UTC', $reportStart );
+	$reportMiddle = $reportEnd;
+}
+
 
 // Get the report data.
+$dataDictionary = REDCap::getDataDictionary( 'array' );
 $listChartEntries = [];
-foreach ( REDCap::getData( 'array' ) as $infoRecord )
+foreach ( REDCap::getData( 'array' ) as $recordID => $infoRecord )
 {
 	$listReportLabels = [];
 	$listReportCategories = [];
@@ -63,7 +77,16 @@ foreach ( REDCap::getData( 'array' ) as $infoRecord )
 			continue;
 		}
 		$field = $infoLabel['field'];
-		$listReportLabels[ $infoLabel['name'] ] = $infoRecord[ $event ][ $field ];
+		$value = $infoRecord[ $event ][ $field ];
+		if ( in_array( $dataDictionary[ $field ]['field_type'],
+		               [ 'radio', 'dropdown', 'checkbox' ] ) )
+		{
+			$value = $module->getChoiceLabel( [ 'field_name' => $field,
+				                                'record_id' => $recordID,
+				                                'event_id' => $event,
+				                                'value' => $value ] );
+		}
+		$listReportLabels[ $infoLabel['name'] ] = $value;
 	}
 	if ( empty( $listReportLabels ) )
 	{
@@ -112,11 +135,29 @@ foreach ( REDCap::getData( 'array' ) as $infoRecord )
 }
 
 
+// Get the full list of categories.
+$listCategories = [];
+foreach ( $reportData['chart_categories'] as $infoCategory )
+{
+	$listCategories[] = $infoCategory['name'];
+}
+
+
 // Display the project header and report navigation links.
 require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
 $module->outputViewReportHeader( $reportConfig['label'] );
 
 ?>
+<p>
+ <b>View:</b>
+ <a href="<?php echo $module->getUrl( 'gantt_view.php?report_id=' . $_GET['report_id'] ); ?>">split</a>
+ |
+ <a href="<?php echo $module->getUrl( 'gantt_view.php?report_id=' . $_GET['report_id'] .
+                                      '&gantt_mode=expand' ); ?>">expanded</a>
+ |
+ <a href="<?php echo $module->getUrl( 'gantt_view.php?report_id=' . $_GET['report_id'] .
+                                      '&gantt_mode=compact' ); ?>">compact</a>
+</p>
 <div class="mod-advrep-gantt" style="grid-template-columns:repeat(<?php
 echo count( $reportData['labels'] ) ?>,min-content)">
 <?php
@@ -174,6 +215,8 @@ foreach ( $listChartEntries as $infoChartEntry )
 	}
 	foreach ( $infoChartEntry['categories'] as $infoChartCategory )
 	{
+		// Determine the category index (for applying styles).
+		$categoryIndex = array_search( $infoChartCategory['name'], $listCategories );
 		// Determine the start/end timestamps from the category definition and record data.
 		$itemStartTime = $infoChartCategory['start'];
 		$itemEndTime = $infoChartCategory['end'];
@@ -202,12 +245,24 @@ foreach ( $listChartEntries as $infoChartEntry )
 			$itemEnd += ceil( ( $itemEndTime - $reportStart ) / GANTT_STEP_DAY );
 		}
 ?>
- <div style="grid-column:<?php
+ <div class="mod-advrep-chart-style<?php echo $categoryIndex; ?>" style="grid-column:<?php
 echo "$itemStart/$itemEnd"; ?>" title="<?php
 echo htmlspecialchars( $infoChartCategory['name'] ); ?>"><?php
 echo htmlspecialchars( $infoChartCategory['name'] ); ?></div>
 <?php
 	}
+}
+?>
+</div>
+<p>&nbsp;</p>
+<div class="mod-advrep-gantt-key">
+<?php
+foreach ( $listCategories as $categoryIndex => $categoryName )
+{
+?>
+ <div><div class="mod-advrep-chart-style<?php
+	echo $categoryIndex; ?>"></div><?php echo htmlspecialchars( $categoryName ); ?></div>
+<?php
 }
 ?>
 </div>
