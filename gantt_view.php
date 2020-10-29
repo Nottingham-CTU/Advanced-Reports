@@ -39,6 +39,8 @@ if ( ! $module->isReportAccessible( $reportID ) )
 
 
 // Determine the report date range.
+// Defaults to 'split' mode, which splits 'compact' and 'expand' modes.
+// Expand mode shows a scale of 1 day, compact mode shows a scale of 1 week.
 $reportStart = strtotime( '-' . ( gmdate( 'N' ) - 1 ) . ' days 00:00:00 UTC' );
 $reportMiddle = strtotime( '+2 weeks 00:00:00 UTC', $reportStart );
 $reportEnd = strtotime( 'first day of +4 months 00:00:00 UTC', $reportStart );
@@ -55,87 +57,143 @@ elseif ( $_GET['gantt_mode'] == 'expand' )
 }
 
 
-// Get the report data.
-$dataDictionary = REDCap::getDataDictionary( 'array' );
-$listChartEntries = [];
-foreach ( REDCap::getData( 'array' ) as $recordID => $infoRecord )
+
+// Get the project data.
+// The REDCap::getData() function is used here with the JSON return format (which is decoded into
+// a PHP array), instead of the PHP array return format. This is because the JSON return format
+// provides better support for SQL field choice labels. It is also arguably more straighforward to
+// implement support for repeating events/instruments this way.
+$listProjectData = [];
+foreach ( [ 'values' => false, 'labels' => true ] as $dataMode => $dataIsLabels )
 {
-	$listReportLabels = [];
-	$listReportCategories = [];
-	foreach ( $reportData['labels'] as $infoLabel )
-	{
-		if ( REDCap::isLongitudinal() )
-		{
-			$event = REDCap::getEventIdFromUniqueEvent( $infoLabel['event'] );
-		}
-		else
-		{
-			$event = array_key_first( $infoRecord );
-		}
-		if ( ! array_key_exists( $event, $infoRecord ) )
-		{
-			continue;
-		}
-		$field = $infoLabel['field'];
-		$value = $infoRecord[ $event ][ $field ];
-		if ( in_array( $dataDictionary[ $field ]['field_type'],
-		               [ 'radio', 'dropdown', 'checkbox' ] ) )
-		{
-			$value = $module->getChoiceLabel( [ 'field_name' => $field,
-				                                'record_id' => $recordID,
-				                                'event_id' => $event,
-				                                'value' => $value ] );
-		}
-		$listReportLabels[ $infoLabel['name'] ] = $value;
-	}
-	if ( empty( $listReportLabels ) )
-	{
-		continue;
-	}
-	foreach ( $reportData['chart_categories'] as $infoCategory )
-	{
-		if ( REDCap::isLongitudinal() )
-		{
-			$sEvent = REDCap::getEventIdFromUniqueEvent( $infoCategory['start_event'] );
-			$eEvent = REDCap::getEventIdFromUniqueEvent( $infoCategory['end_event'] );
-		}
-		else
-		{
-			$sEvent = $eEvent = array_key_first( $infoRecord );
-		}
-		if ( ! array_key_exists( $sEvent, $infoRecord ) ||
-		     ! array_key_exists( $eEvent, $infoRecord ) )
-		{
-			continue;
-		}
-		$sField = $infoCategory['start_field'];
-		$eField = $infoCategory['end_field'];
-		$sDate = $infoRecord[ $sEvent ][ $sField ];
-		$eDate = $infoRecord[ $eEvent ][ $eField ];
-		if ( ! preg_match( '/^-?[0-9]+$/', $sDate ) )
-		{
-			$sDate = strtotime( $sDate . ' UTC' );
-		}
-		if ( ! preg_match( '/^-?[0-9]+$/', $eDate ) )
-		{
-			$eDate = strtotime( $eDate . ' UTC' );
-		}
-		if ( $sDate > $eDate || $eDate < $reportStart || $sDate > $reportEnd )
-		{
-			continue;
-		}
-		$listReportCategories[] = [ 'name' => $infoCategory['name'],
-		                            'start' => $sDate, 'end' => $eDate ];
-	}
-	if ( empty( $listReportCategories ) )
-	{
-		continue;
-	}
-	$listChartEntries[] = [ 'labels' => $listReportLabels, 'categories' => $listReportCategories ];
+	$listProjectData[ $dataMode ] =
+		json_decode( REDCap::getData( [ 'return_format' => 'json',
+		                                'combine_checkbox_values' => true,
+		                                'exportAsLabels' => $dataIsLabels ] ), true );
 }
 
 
+
+// Parse the project data into a format ready for presenting as a Gantt chart.
+$listChartEntries = [];
+foreach ( $listProjectData['values'] as $rowNum => $infoDataValues )
+{
+	$infoDataLabels = $listProjectData['labels'][$rowNum];
+	$recordID = $infoDataValues[ REDCap::getRecordIdField() ];
+	if ( ! isset( $listChartEntries[ $recordID ] ) )
+	{
+		$listChartEntries[ $recordID ] = [ 'labels' => [], 'categories' => [],
+		                                   'categories_s' => [], 'categories_e' => [] ];
+	}
+	// Get the values for the chart labels (displayed on the left of the chart).
+	foreach ( $reportData['labels'] as $infoLabel )
+	{
+		if ( REDCap::isLongitudinal() &&
+		     $infoDataValues['redcap_event_name'] != $infoLabel['event'] )
+		{
+			continue;
+		}
+
+		if ( $infoDataLabels[ $infoLabel['field'] ] != '' &&
+		     ! isset( $listChartEntries[ $recordID ]['labels'][ $infoLabel['name'] ] ) )
+		{
+			$value = str_replace( ',', ', ', $infoDataLabels[ $infoLabel['field'] ] );
+			$listChartEntries[ $recordID ]['labels'][ $infoLabel['name'] ] = $value;
+
+		}
+	}
+	// Get the names and date ranges of the chart items. The dates are captured separately (in case
+	// they are on different events) and merged later.
+	foreach ( $reportData['chart_categories'] as $infoCategory )
+	{
+		if ( REDCap::isLongitudinal() &&
+		     $infoDataValues['redcap_event_name'] != $infoCategory['start_event'] &&
+		     $infoDataValues['redcap_event_name'] != $infoCategory['end_event'] )
+		{
+			continue;
+		}
+		// If a chart item can be constructed multiple times from different instances of repeating
+		// events/instruments, it will appear multiple times on the chart (if within date ranges).
+		$repeatInstance = ( isset( $infoDataValues['redcap_repeat_instance'] ) &&
+		                    $infoDataValues['redcap_repeat_instance'] != '' )
+		                  ? $infoDataValues['redcap_repeat_instance'] : 1;
+		if ( ! REDCap::isLongitudinal() ||
+		     $infoDataValues['redcap_event_name'] == $infoCategory['start_event'] )
+		{
+			$date = $infoDataValues[ $infoCategory['start_field'] ];
+			if ( $date != '' )
+			{
+				if ( ! preg_match( '/^-?[0-9]+$/', $date ) )
+				{
+					$date = strtotime( $date . ' UTC' );
+				}
+				if ( $date < $reportEnd )
+				{
+					$listChartEntries[ $recordID ]['categories_s'][
+					                             $infoCategory['name'] ][ $repeatInstance ] = $date;
+				}
+			}
+		}
+		if ( ! REDCap::isLongitudinal() ||
+		     $infoDataValues['redcap_event_name'] == $infoCategory['end_event'] )
+		{
+			$date = $infoDataValues[ $infoCategory['end_field'] ];
+			if ( $date != '' )
+			{
+				if ( ! preg_match( '/^-?[0-9]+$/', $date ) )
+				{
+					$date = strtotime( $date . ' UTC' );
+				}
+				if ( $date > $reportStart )
+				{
+					$listChartEntries[ $recordID ]['categories_e'][
+					                             $infoCategory['name'] ][ $repeatInstance ] = $date;
+				}
+			}
+		}
+	} // end foreach $reportData['chart_categories']
+} // end foreach $listProjectData
+
+
+
+// Check each chart entry to make sure it has at least one label and at least one item. Any that
+// don't will be discarded. Chart item dates are also joined up here.
+foreach ( $listChartEntries as $recordID => $infoChartEntry )
+{
+	if ( empty( $infoChartEntry['labels'] ) )
+	{
+		unset( $listChartEntries[ $recordID ] );
+		continue;
+	}
+	foreach ( $infoChartEntry['categories_s'] as $categoryName => $infoCategoryStart )
+	{
+		foreach ( $infoCategoryStart as $repeatInstance => $startDate )
+		{
+			if ( isset( $infoChartEntry['categories_e'][ $categoryName ][ $repeatInstance ] ) )
+			{
+				$endDate = $infoChartEntry['categories_e'][ $categoryName ][ $repeatInstance ];
+				if ( $startDate < $endDate )
+				{
+					$listChartEntries[ $recordID ]['categories'][] = [ 'name' => $categoryName,
+						                                               'start' => $startDate,
+						                                               'end' => $endDate ];
+				}
+			}
+		}
+	}
+	if ( empty( $listChartEntries[ $recordID ]['categories'] ) )
+	{
+		unset( $listChartEntries[ $recordID ] );
+		continue;
+	}
+	unset( $listChartEntries[ $recordID ]['categories_s'] );
+	unset( $listChartEntries[ $recordID ]['categories_e'] );
+}
+
+
+
 // Get the full list of categories.
+// This is used for styling the chart items and displaying the legend.
 $listCategories = [];
 foreach ( $reportData['chart_categories'] as $infoCategory )
 {
@@ -143,9 +201,11 @@ foreach ( $reportData['chart_categories'] as $infoCategory )
 }
 
 
+
 // Display the project header and report navigation links.
 require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
 $module->outputViewReportHeader( $reportConfig['label'] );
+
 
 ?>
 <p>
@@ -161,11 +221,15 @@ $module->outputViewReportHeader( $reportConfig['label'] );
 <div class="mod-advrep-gantt" style="grid-template-columns:repeat(<?php
 echo count( $reportData['labels'] ) ?>,min-content)">
 <?php
+
+
 foreach ( $reportData['labels'] as $infoLabel )
 {
+
 ?>
  <div class="mod-advrep-gantt-hdr"><?php echo htmlspecialchars( $infoLabel['name'] ); ?></div>
 <?php
+
 }
 $prevMonthHdr = '';
 $prevDateIncrement = '';
