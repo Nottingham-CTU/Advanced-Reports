@@ -8,10 +8,13 @@
 // Define constants for day/week length, and time spans used in chart.
 define( 'GANTT_DAY', 86400 );
 define( 'GANTT_WEEK', ( GANTT_DAY * 7 ) );
+define( 'GANTT_MONTH', ( GANTT_DAY * 28 ) );
 define( 'GANTT_SPLIT_DAY', 6 );
 define( 'GANTT_SPLIT_WEEK', 7 );
+define( 'GANTT_SPLIT_MONTH', 8 );
 define( 'GANTT_STEP_DAY', ( GANTT_DAY / GANTT_SPLIT_DAY ) );
 define( 'GANTT_STEP_WEEK', ( GANTT_WEEK / GANTT_SPLIT_WEEK ) );
+define( 'GANTT_STEP_MONTH', ( GANTT_MONTH / GANTT_SPLIT_MONTH ) );
 
 
 
@@ -39,11 +42,13 @@ if ( ! $module->isReportAccessible( $reportID ) )
 
 
 // Determine the report date range.
-// Defaults to 'split' mode, which splits 'compact' and 'expand' modes.
+// Defaults to 'standard' mode, which splits 'compact' and 'expand' modes.
 // Expand mode shows a scale of 1 day, compact mode shows a scale of 1 week.
 $reportStart = strtotime( '-' . ( gmdate( 'N' ) - 1 ) . ' days 00:00:00 UTC' );
 $reportMiddle = strtotime( '+2 weeks 00:00:00 UTC', $reportStart );
 $reportEnd = strtotime( 'first day of +4 months 00:00:00 UTC', $reportStart );
+// Squash mode provides for more compact (week/month) and ultra compact (month) scales.
+$squashMode = ( in_array( $_GET['gantt_mode'], [ 'more', 'ultra' ] ) );
 
 if ( $_GET['gantt_mode'] == 'compact' )
 {
@@ -54,6 +59,16 @@ elseif ( $_GET['gantt_mode'] == 'expand' )
 {
 	$reportEnd = strtotime( '+4 weeks 00:00:00 UTC', $reportStart );
 	$reportMiddle = $reportEnd;
+}
+elseif ( $_GET['gantt_mode'] == 'more' )
+{
+	$reportMiddle = strtotime( 'first day of +3 months 00:00:00 UTC', $reportStart );
+	$reportEnd = strtotime( 'first day of +13 months 00:00:00 UTC', $reportStart );
+}
+elseif ( $_GET['gantt_mode'] == 'ultra' )
+{
+	$reportMiddle = $reportStart;
+	$reportEnd = strtotime( 'first day of +21 months 00:00:00 UTC', $reportStart );
 }
 
 
@@ -210,13 +225,15 @@ $module->outputViewReportHeader( $reportConfig['label'] );
 ?>
 <p>
  <b>View:</b>
- <a href="<?php echo $module->getUrl( 'gantt_view.php?report_id=' . $_GET['report_id'] ); ?>">split</a>
+ <?php echo $module->makeQueryLink( 'expanded', 'gantt_mode', 'expand' ), "\n"; ?>
  |
- <a href="<?php echo $module->getUrl( 'gantt_view.php?report_id=' . $_GET['report_id'] .
-                                      '&gantt_mode=expand' ); ?>">expanded</a>
+ <?php echo $module->makeQueryLink( 'standard', 'gantt_mode' ), "\n"; ?>
  |
- <a href="<?php echo $module->getUrl( 'gantt_view.php?report_id=' . $_GET['report_id'] .
-                                      '&gantt_mode=compact' ); ?>">compact</a>
+ <?php echo $module->makeQueryLink( 'compact', 'gantt_mode', 'compact' ), "\n"; ?>
+ |
+ <?php echo $module->makeQueryLink( 'more-compact', 'gantt_mode', 'more' ), "\n"; ?>
+ |
+ <?php echo $module->makeQueryLink( 'ultra-compact', 'gantt_mode', 'ultra' ), "\n"; ?>
 </p>
 <div class="mod-advrep-gantt" style="grid-template-columns:repeat(<?php
 echo count( $reportData['labels'] ) ?>,min-content)">
@@ -233,16 +250,34 @@ foreach ( $reportData['labels'] as $infoLabel )
 }
 $prevMonthHdr = '';
 $prevDateIncrement = '';
-$dateIncrement = GANTT_DAY;
-$dateSpan = GANTT_SPLIT_DAY;
-$dateStyle = '';
+if ( $squashMode )
+{
+	$dateIncrement = GANTT_WEEK;
+	$dateSpan = GANTT_SPLIT_WEEK;
+	$dateStyle = ';border-bottom-width:5px';
+}
+else
+{
+	$dateIncrement = GANTT_DAY;
+	$dateSpan = GANTT_SPLIT_DAY;
+	$dateStyle = '';
+}
 for ( $date = $reportStart; $date < $reportEnd; $date += $dateIncrement )
 {
 	if ( $date >= $reportMiddle )
 	{
-		$dateIncrement = GANTT_WEEK;
-		$dateSpan = GANTT_SPLIT_WEEK;
-		$dateStyle = ';border-bottom-width:5px';
+		if ( $squashMode )
+		{
+			$dateIncrement = GANTT_MONTH;
+			$dateSpan = GANTT_SPLIT_MONTH;
+			$dateStyle = ';border-bottom-width:8px';
+		}
+		else
+		{
+			$dateIncrement = GANTT_WEEK;
+			$dateSpan = GANTT_SPLIT_WEEK;
+			$dateStyle = ';border-bottom-width:5px';
+		}
 	}
 	$thisMonthHdr = gmdate( 'M', $date );
 	if ( $thisMonthHdr == $prevMonthHdr && $dateIncrement == $prevDateIncrement )
@@ -289,24 +324,26 @@ foreach ( $listChartEntries as $infoChartEntry )
 		$itemEndTime = $itemEndTime > $reportEnd ? $reportEnd : $itemEndTime;
 		// Place the item correctly within the chart.
 		$itemStart = 1 + count( $reportData['labels'] );
+		$itemStep1 = $squashMode ? GANTT_STEP_WEEK : GANTT_STEP_DAY;
+		$itemStep2 = $squashMode ? GANTT_STEP_MONTH : GANTT_STEP_WEEK;
 		if ( $itemStartTime > $reportMiddle )
 		{
-			$itemStart += floor( ( $reportMiddle - $reportStart ) / GANTT_STEP_DAY );
-			$itemStart += floor( ( $itemStartTime - $reportMiddle ) / GANTT_STEP_WEEK );
+			$itemStart += floor( ( $reportMiddle - $reportStart ) / $itemStep1 );
+			$itemStart += floor( ( $itemStartTime - $reportMiddle ) / $itemStep2 );
 		}
 		else
 		{
-			$itemStart += floor( ( $itemStartTime - $reportStart ) / GANTT_STEP_DAY );
+			$itemStart += floor( ( $itemStartTime - $reportStart ) / $itemStep1 );
 		}
 		$itemEnd = 1 + count( $reportData['labels'] );
 		if ( $itemEndTime > $reportMiddle )
 		{
-			$itemEnd += floor( ( $reportMiddle - $reportStart ) / GANTT_STEP_DAY );
-			$itemEnd += floor( ( $itemEndTime - $reportMiddle ) / GANTT_STEP_WEEK );
+			$itemEnd += floor( ( $reportMiddle - $reportStart ) / $itemStep1 );
+			$itemEnd += floor( ( $itemEndTime - $reportMiddle ) / $itemStep2 );
 		}
 		else
 		{
-			$itemEnd += ceil( ( $itemEndTime - $reportStart ) / GANTT_STEP_DAY );
+			$itemEnd += ceil( ( $itemEndTime - $reportStart ) / $itemStep1 );
 		}
 ?>
  <div class="mod-advrep-chart-style<?php echo $categoryIndex; ?>" style="grid-column:<?php

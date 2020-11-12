@@ -292,6 +292,55 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Create a link for the current page with a modified query string variable.
+	function makeQueryLink( $label, $variable, $value = '' )
+	{
+		if ( $_GET[ $variable ] == $value )
+		{
+			return '<em>' . htmlspecialchars( $label ) . '</em>';
+		}
+		return '<a href="' . htmlspecialchars( $this->makeQueryURL( $variable, $value ) ) .
+		       '">' . htmlspecialchars( $label ) . '</a>';
+	}
+
+
+
+	// Create a URL for the current page with a modified query string variable.
+	function makeQueryURL( $variable, $value = '' )
+	{
+		$url = $_SERVER[ 'REQUEST_URI' ];
+		$queryStart = strpos( $url, '?' );
+		$urlVariable = rawurlencode( $variable );
+		if ( $queryStart === false )
+		{
+			$urlBase = $url;
+			$urlQuery = '';
+		}
+		else
+		{
+			$urlBase = substr( $url, 0, $queryStart );
+			$urlQuery = substr( $url, $queryStart + 1 );
+			$urlQuery = explode( '&', $urlQuery );
+			foreach ( $urlQuery as $index => $item )
+			{
+				if ( substr( $item, 0, strlen( $urlVariable ) + 1 ) == "$urlVariable=" )
+				{
+					unset( $urlQuery[ $index ] );
+				}
+			}
+			$urlQuery = implode( '&', $urlQuery );
+		}
+		$url = $urlBase . ( $urlQuery == '' ? '' : ( '?' . $urlQuery ) );
+		if ( $value != '' )
+		{
+			$url .= ( $urlQuery == '' ? '?' : '&' );
+			$url .= $urlVariable . '=' . rawurlencode( $value );
+		}
+		return $url;
+	}
+
+
+
 	// Output a drop-down list of events for the project.
 	function outputEventDropdown( $dropDownName, $value )
 	{
@@ -654,6 +703,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 				top: 0px;
 				border-bottom-width: 2px;
 				text-align: center;
+				padding-right: 10px;
 			}
 			.mod-advrep-gantt-date span
 			{
