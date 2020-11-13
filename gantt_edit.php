@@ -29,7 +29,7 @@ if ( ! empty( $_POST ) )
 	$hasCategoryEvents = ( count( $_POST['chart_start_event'] ) +
 	                       count( $_POST['chart_end_event'] ) != 0 );
 	if ( $hasLabelEvents != $hasCategoryEvents ||
-	     count( $_POST['label_name'] ) != count( $_POST['label_event'] ) ||
+	     count( $_POST['label_name'] ) != count( $_POST['label_field'] ) ||
 	     ( $hasLabelEvents && count( $_POST['label_name'] ) != count( $_POST['label_event'] ) ) ||
 	     count( $_POST['chart_category'] ) != count( $_POST['chart_start_field'] ) ||
 	     count( $_POST['chart_category'] ) != count( $_POST['chart_end_field'] ) ||
@@ -259,8 +259,7 @@ outputGanttChartFields();
          {
            var vGroup = Math.floor( vIndex / ( vLongitudinal ? 3 : 2 ) )
            var vFieldType = this.name.substring( 6, 11 ).replace( '[', '' )
-           var vHasEvent = ! vLongitudinal || vHasLbl.event
-           var vNoGroups = ( ! vHasLbl.name && ! vHasEvent && ! vHasLbl.field )
+           var vNoGroups = ( ! vHasLbl.name && ! vHasLbl.event && ! vHasLbl.field )
            var vFieldValid = ( vLblStatus[ vFieldType ][ vGroup ] ||
                                ( ! vLblStatus.name[ vGroup ] && ! vLblStatus.field[ vGroup ] &&
                                  ( ! vLongitudinal || ! vLblStatus.event[ vGroup ] ) ) )
@@ -322,10 +321,8 @@ outputGanttChartFields();
          {
            vFieldType = 'name'
          }
-         var vHasSEvent = ! vLongitudinal || vHasCat.sevent
-         var vHasEEvent = ! vLongitudinal || vHasCat.eevent
-         var vNoGroups = ( ! vHasCat.name && ! vHasSEvent && ! vHasCat.sfield &&
-                           ! vHasEEvent && ! vHasCat.efield )
+         var vNoGroups = ( ! vHasCat.name && ! vHasCat.sevent && ! vHasCat.sfield &&
+                           ! vHasCat.eevent && ! vHasCat.efield )
          var vFieldValid = ( vCatStatus[ vFieldType ][ vGroup ] ||
                              ( ! vCatStatus.name[ vGroup ] &&
                                ! vCatStatus.sfield[ vGroup ] && ! vCatStatus.efield[ vGroup ] &&
