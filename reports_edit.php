@@ -89,6 +89,12 @@ $module->writeStyle();
     <select name="report_type" required>
      <option value="">[Select...]</option>
 <?php
+if ( $module->isReportEditable( 'gantt' ) )
+{
+?>
+     <option value="gantt">Gantt</option>
+<?php
+}
 if ( $module->isReportEditable( 'sql' ) )
 {
 ?>
