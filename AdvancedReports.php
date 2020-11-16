@@ -539,6 +539,18 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Sorting function for the list of reports.
+	function sortReports( $reportA, $reportB )
+	{
+		$categoryA = $reportA['category'] ?? '';
+		$categoryB = $reportB['category'] ?? '';
+		$labelA = $reportA['label'] ?? '';
+		$labelB = $reportB['label'] ?? '';
+		return ( strcmp( $categoryA, $categoryB ) * 1000 ) + strcmp( $labelA, $labelB );
+	}
+
+
+
 	// Perform submission of all the report config values (upon edit form submission).
 	// These are the values which are the same for each report type (e.g. visibility, category).
 	function submitReportConfig( $reportID, $includeDownload = true )

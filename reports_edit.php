@@ -59,6 +59,12 @@ if ( ! empty( $_POST ) && isset( $_POST['action'] ) )
 
 
 
+// Get and sort the list of reports.
+$listReports = $module->getReportList();
+uasort( $listReports, [ $module, 'sortReports' ] );
+
+
+
 // Display the project header
 require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
 $module->writeStyle();
@@ -115,7 +121,6 @@ if ( $module->isReportEditable( 'sql' ) )
  </table>
 </form>
 <?php
-$listReports = $module->getReportList();
 if ( count( $listReports ) > 0 )
 {
 ?>

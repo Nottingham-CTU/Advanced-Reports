@@ -5,22 +5,16 @@
 
 
 
-function sortReports( $reportA, $reportB )
-{
-	$categoryA = $reportA['category'] ?? '';
-	$categoryB = $reportB['category'] ?? '';
-	$labelA = $reportA['label'] ?? '';
-	$labelB = $reportB['label'] ?? '';
-	return ( strcmp( $categoryA, $categoryB ) * 10 ) + strcmp( $labelA, $labelB );
-}
+// Get and sort the list of reports.
+$listReports = $module->getReportList();
+uasort( $listReports, [ $module, 'sortReports' ] );
 
 
 
 // Display the project header
 require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
 
-$listReports = $module->getReportList();
-uasort( $listReports, 'sortReports' );
+
 
 ?>
 <div class="projhdr">
