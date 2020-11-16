@@ -461,7 +461,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 	// Output the report navigation links.
-	function outputViewReportHeader( $reportLabel )
+	function outputViewReportHeader( $reportLabel, $reportType )
 	{
 		$canDownload = $this->isReportDownloadable( $_GET['report_id'] );
 		$this->writeStyle();
@@ -482,8 +482,22 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 ?>
  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
  <a href="<?php
-			echo $this->getUrl( 'sql_view.php?report_id=' . $_GET['report_id'] . '&download=1' );
+			echo $this->getUrl( $reportType . '_view.php?report_id=' . $_GET['report_id'] .
+			                    '&download=1' );
 ?>" class="fas fa-file-download fs11"> Download report</a>
+<?php
+
+		}
+
+		// If the user can edit the report, show an edit link.
+		if ( $this->isReportEditable( $reportType ) )
+		{
+
+?>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ <a href="<?php
+			echo $this->getUrl( $reportType . '_edit.php?report_id=' . $_GET['report_id'] );
+?>" class="fas fa-pencil-alt fs11"> Edit report</a>
 <?php
 
 		}
@@ -616,48 +630,54 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			{
 				font-size: 90%;
 			}
-			.mod-advrep-datatable
+			.mod-advrep-listtable
 			{
 				border: solid 1px #000;
+				border-collapse: collapse;
+			}
+			.mod-advrep-listtable th
+			{
+				padding: 8px 5px;
+				font-weight: bold;
+				border: solid 1px #000;
+			}
+			.mod-advrep-listtable td
+			{
+				padding: 3px;
+				border: solid 1px #000;
+			}
+			.mod-advrep-datatable
+			{
+				border-top: solid 1px #ccc;
+				border-left: solid 1px #ccc;
 				border-collapse: separate;
 				border-spacing: 0px;
 			}
 			.mod-advrep-datatable th
 			{
-				background: #fff;
+				background: #ffffe0;
 				padding: 13px 5px;
 				font-weight: bold;
-				border: solid 1px #000;
-				text-align: center;
+				border-right: solid 1px #ccc;
+				border-bottom: solid 1px #ccc;
 			}
 			.mod-advrep-datatable td
 			{
 				background: #fff;
 				padding: 3px;
-				border: solid 1px #000;
-				text-align: center;
+				border-right: solid 1px #ccc;
+				border-bottom: solid 1px #ccc;
 			}
 			.mod-advrep-datatable th:first-child,
 			.mod-advrep-datatable td:first-child
 			{
 				position: sticky;
 				left: 0px;
-				border-right-width: 3px;
-			}
-			.mod-advrep-datatable th:nth-child(2),
-			.mod-advrep-datatable td:nth-child(2)
-			{
-				border-left-width: 0px;
 			}
 			.mod-advrep-datatable tr:first-child th
 			{
 				position: sticky;
 				top: 0px;
-				border-bottom-width: 3px;
-			}
-			.mod-advrep-datatable tr:nth-child(2) td
-			{
-				border-top-width: 0px;
 			}
 			.mod-advrep-datatable tr:first-child :first-child
 			{
@@ -665,7 +685,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			}
 			.mod-advrep-datatable tr:nth-child(2n+1) td
 			{
-				background: #f8f8f8;
+				background: #eee;
 			}
 			.mod-advrep-gantt
 			{

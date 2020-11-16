@@ -66,7 +66,7 @@ if ( isset( $_GET['download'] ) && $module->isReportDownloadable( $reportID ) )
 
 // Display the project header and report navigation links.
 require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
-$module->outputViewReportHeader( $reportConfig['label'] );
+$module->outputViewReportHeader( $reportConfig['label'], 'sql' );
 
 ?>
 </p>

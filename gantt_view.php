@@ -219,7 +219,7 @@ foreach ( $reportData['chart_categories'] as $infoCategory )
 
 // Display the project header and report navigation links.
 require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
-$module->outputViewReportHeader( $reportConfig['label'] );
+$module->outputViewReportHeader( $reportConfig['label'], 'gantt' );
 
 
 ?>
