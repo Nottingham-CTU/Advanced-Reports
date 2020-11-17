@@ -348,8 +348,19 @@ foreach ( $listChartEntries as $infoChartEntry )
 ?>
  <div class="mod-advrep-chart-style<?php echo $categoryIndex; ?>" style="grid-column:<?php
 echo "$itemStart/$itemEnd"; ?>" title="<?php
-echo htmlspecialchars( $infoChartCategory['name'] ); ?>"><?php
-echo htmlspecialchars( $infoChartCategory['name'] ); ?></div>
+		echo htmlspecialchars( $infoChartCategory['name'] ), "\n";
+		if ( gmdate( 'H:i ', $infoChartCategory['start'] ) .
+		     gmdate( 'H:i', $infoChartCategory['end'] ) == '00:00 00:00' )
+		{
+			$tooltipDateFormat = 'd M Y';
+		}
+		else
+		{
+			$tooltipDateFormat = 'd M Y  H:i';
+		}
+		echo 'Start: ', gmdate( $tooltipDateFormat, $infoChartCategory['start'] ), "\n";
+		echo 'End:  ', gmdate( $tooltipDateFormat, $infoChartCategory['end'] );
+?>"><?php echo htmlspecialchars( $infoChartCategory['name'] ); ?></div>
 <?php
 	}
 }
