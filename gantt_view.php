@@ -71,6 +71,28 @@ elseif ( $_GET['gantt_mode'] == 'ultra' )
 	$reportEnd = strtotime( 'first day of +21 months 00:00:00 UTC', $reportStart );
 }
 
+// If a valid report start and/or end date is specified, use instead of the default for the mode.
+if ( isset( $_GET['gantt_start'] ) &&
+     preg_match( '/^[0-9]{4}-(02-(0[1-9]|[12][0-9])|(0[469]|11)-(0[1-9]|[12][0-9]|30)|' .
+                 '(0[13578]|1[02])-(0[1-9]|[12][0-9]|3[01]))$/', $_GET['gantt_start'] ) )
+{
+	$reportStart = strtotime( $_GET['gantt_start'] . ' 00:00:00 UTC' );
+	if ( $reportStart > $reportMiddle || in_array( $_GET['gantt_mode'], [ 'compact', 'ultra' ] ) )
+	{
+		$reportMiddle = $reportStart;
+	}
+}
+if ( isset( $_GET['gantt_end'] ) &&
+     preg_match( '/^[0-9]{4}-(02-(0[1-9]|[12][0-9])|(0[469]|11)-(0[1-9]|[12][0-9]|30)|' .
+                 '(0[13578]|1[02])-(0[1-9]|[12][0-9]|3[01]))$/', $_GET['gantt_end'] ) )
+{
+	$reportEnd = strtotime( $_GET['gantt_end'] . ' 00:00:00 UTC' );
+	if ( $reportEnd < $reportMiddle || $_GET['gantt_mode'] == 'expand' )
+	{
+		$reportMiddle = $reportEnd;
+	}
+}
+
 
 
 // Get the project data.
@@ -91,6 +113,7 @@ foreach ( [ 'values' => false, 'labels' => true ] as $dataMode => $dataIsLabels 
 
 // Parse the project data into a format ready for presenting as a Gantt chart.
 $listChartEntries = [];
+$latestItemEndDate = $reportStart;
 foreach ( $listProjectData['values'] as $rowNum => $infoDataValues )
 {
 	$infoDataLabels = $listProjectData['labels'][$rowNum];
@@ -163,6 +186,10 @@ foreach ( $listProjectData['values'] as $rowNum => $infoDataValues )
 				{
 					$listChartEntries[ $recordID ]['categories_e'][
 					                             $infoCategory['name'] ][ $repeatInstance ] = $date;
+					if ( $latestItemEndDate < $date )
+					{
+						$latestItemEndDate = $date;
+					}
 				}
 			}
 		}
@@ -235,6 +262,24 @@ $module->outputViewReportHeader( $reportConfig['label'], 'gantt' );
  |
  <?php echo $module->makeQueryLink( 'ultra-compact', 'gantt_mode', 'ultra' ), "\n"; ?>
 </p>
+<?php
+
+if ( $latestItemEndDate >= $reportEnd )
+{
+
+?>
+<p>
+ <b>Data range:</b>
+ <?php echo $module->makeQueryLink( 'standard', 'gantt_end' ), "\n"; ?>
+ |
+ <?php echo $module->makeQueryLink( 'show all forthcoming', 'gantt_end',
+                                    gmdate( 'Y-m-d', $latestItemEndDate ) ), "\n"; ?>
+</p>
+<?php
+
+}
+
+?>
 <div class="mod-advrep-gantt" style="grid-template-columns:repeat(<?php
 echo count( $reportData['labels'] ) ?>,min-content)">
 <?php
