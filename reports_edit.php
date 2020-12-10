@@ -59,6 +59,12 @@ if ( ! empty( $_POST ) && isset( $_POST['action'] ) )
 
 
 
+// Get and sort the list of reports.
+$listReports = $module->getReportList();
+uasort( $listReports, [ $module, 'sortReports' ] );
+
+
+
 // Display the project header
 require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
 $module->writeStyle();
@@ -89,6 +95,12 @@ $module->writeStyle();
     <select name="report_type" required>
      <option value="">[Select...]</option>
 <?php
+if ( $module->isReportEditable( 'gantt' ) )
+{
+?>
+     <option value="gantt">Gantt</option>
+<?php
+}
 if ( $module->isReportEditable( 'sql' ) )
 {
 ?>
@@ -109,14 +121,13 @@ if ( $module->isReportEditable( 'sql' ) )
  </table>
 </form>
 <?php
-$listReports = $module->getReportList();
 if ( count( $listReports ) > 0 )
 {
 ?>
 <p>&nbsp;</p>
-<table class="mod-advrep-datatable" style="width:97%">
+<table class="mod-advrep-listtable" style="width:97%">
  <tr>
-  <th colspan="4" style="font-size:130%;text-align:left;border-right-width:1px">Edit Report</th>
+  <th colspan="4" style="font-size:130%">Edit Report</th>
  </tr>
 <?php
 	foreach ( $listReports as $reportID => $infoReport )
@@ -135,7 +146,7 @@ if ( count( $listReports ) > 0 )
     <b>Visibility:</b> <?php echo $infoReport['visible'] ? 'visible' : 'hidden', "\n"; ?>
    </span>
   </td>
-  <td style="width:80px">
+  <td style="width:80px;text-align:center">
 <?php
 		if ( $module->isReportEditable( $infoReport['type'] ) )
 		{
@@ -146,7 +157,7 @@ if ( count( $listReports ) > 0 )
 		}
 ?>
   </td>
-  <td style="width:90px">
+  <td style="width:90px;text-align:center">
 <?php
 		if ( $module->isReportEditable( $infoReport['type'] ) )
 		{
@@ -157,7 +168,7 @@ if ( count( $listReports ) > 0 )
 		}
 ?>
   </td>
-  <td style="width:90px">
+  <td style="width:90px;text-align:center">
 <?php
 		if ( $module->isReportEditable( $infoReport['type'] ) )
 		{

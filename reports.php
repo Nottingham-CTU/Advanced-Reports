@@ -5,22 +5,16 @@
 
 
 
-function sortReports( $reportA, $reportB )
-{
-	$categoryA = $reportA['category'] ?? '';
-	$categoryB = $reportB['category'] ?? '';
-	$labelA = $reportA['label'] ?? '';
-	$labelB = $reportB['label'] ?? '';
-	return ( strcmp( $categoryA, $categoryB ) * 10 ) + strcmp( $labelA, $labelB );
-}
+// Get and sort the list of reports.
+$listReports = $module->getReportList();
+uasort( $listReports, [ $module, 'sortReports' ] );
 
 
 
 // Display the project header
 require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
 
-$listReports = $module->getReportList();
-uasort( $listreports, 'sortReports' );
+
 
 ?>
 <div class="projhdr">
@@ -74,7 +68,10 @@ if ( $module->framework->getUser()->isSuperUser() )
 <p><b>Administrative Options</b></p>
 <ul>
  <li>
-  <a href="<?php echo $module->getUrl( 'export_reports.php' ) ?>">Export report designs</a>
+  <a href="<?php echo $module->getUrl( 'export_reports.php' ) ?>">Export report definitions</a>
+ </li>
+ <li>
+  <a href="<?php echo $module->getUrl( 'import_reports.php' ) ?>">Import report definitions</a>
  </li>
 </ul>
 <?php

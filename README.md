@@ -41,6 +41,7 @@ report list.
 
 The following report types are currently available:
 
+* **Gantt**
 * **SQL** (direct database query) \*
 
 \* only administrators can edit
@@ -56,6 +57,22 @@ The following report types are currently available:
 * **Allow downloads** determines whether a download link is provided for this report
 * **Grant downloads to roles** apart from users with edit rights, only the users with roles listed
   here will see the download link.
+
+### Gantt report options
+
+* **Label Fields** are shown on the left of the chart and identify each row
+  * **Label Name** is the heading for the label column
+  * **Label Field** is the event/field which contains the label data
+* **Chart Categories** are the bars on the Gantt chart
+  * **Name** is the name of the category, shown within the bars and in the legend at the bottom of
+    the chart
+  * **Start Date Field** is the event/field which contains the date which determines where the bar
+    starts on the chart
+  * **End Date Field** is the event/field which contains the date which determines where the bar
+    ends on the chart
+
+Calculated fields can be used for the start and end dates, the Gantt report will interpret the value
+as a Unix timestamp representing a UTC date/time.
 
 ### SQL report options
 

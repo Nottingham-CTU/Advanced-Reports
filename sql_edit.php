@@ -29,22 +29,28 @@ if ( ! empty( $_POST ) )
 	{
 		exit;
 	}
+	$validQuery = ( mysqli_query( $conn, str_replace( '$$PROJECT$$', $module->getProjectId(),
+	                                                  $_POST['sql_query'] ) ) !== false );
+	if ( isset( $_SERVER['HTTP_X_RC_ADVREP_SQLCHK'] ) )
+	{
+		header( 'Content-Type: application/json' );
+		if ( $validQuery )
+		{
+			echo 'true';
+		}
+		else
+		{
+			echo json_encode( mysqli_error( $conn ) );
+		}
+		exit;
+	}
+	if ( ! $validQuery )
+	{
+		exit;
+	}
 
 	// Save data
-	foreach ( [ 'label', 'category', 'visible', 'download', 'roles_access', 'roles_download' ]
-	          as $configSetting )
-	{
-		$configValue = $_POST["report_$configSetting"];
-		if ( in_array( $configSetting, [ 'visible', 'download' ] ) )
-		{
-			$configValue = $configValue == 'Y' ? true : false;
-		}
-		elseif ( trim( $configValue ) === '' )
-		{
-			$configValue = null;
-		}
-		$module->setReportConfig( $reportID, $configSetting, $configValue );
-	}
+	$module->submitReportConfig( $reportID );
 	$reportData = [ 'sql_query' => $_POST['sql_query'] ];
 	$module->setReportData( $reportID, $reportData );
 	header( 'Location: ' . $module->getUrl( 'reports_edit.php' ) );
@@ -65,86 +71,20 @@ $module->writeStyle();
  <a href="<?php echo $module->getUrl( 'reports_edit.php' )
 ?>" class="fas fa-arrow-circle-left fs11"> Back to edit reports</a>
 </p>
-<form method="post">
+<form method="post" id="sqlform">
  <table class="mod-advrep-formtable">
-  <tr><th colspan="2">Report Label and Category</th></tr>
-  <tr>
-   <td>Report Label</td>
-   <td>
-    <input type="text" name="report_label" required
-           value="<?php echo htmlspecialchars( $reportConfig['label'] ); ?>">
-   </td>
-  </tr>
-  <tr>
-   <td>Report Category</td>
-   <td>
-    <input type="text" name="report_category"
-           value="<?php echo htmlspecialchars( $reportConfig['category'] ); ?>">
-   </td>
-  </tr>
-  <tr><th colspan="2">Access Permissions</th></tr>
-  <tr>
-   <td>Report is visible</td>
-   <td>
-    <label>
-     <input type="radio" name="report_visible" value="Y" required<?php
-echo $reportConfig['visible'] ? ' checked' : ''; ?>> Yes
-    </label>
-    <br>
-    <label>
-     <input type="radio" name="report_visible" value="N" required<?php
-echo $reportConfig['visible'] ? '' : ' checked'; ?>> No
-    </label>
-   </td>
-  </tr>
-  <tr>
-   <td>Grant access to roles</td>
-   <td>
-    <textarea name="report_roles_access"><?php echo $reportConfig['roles_access']; ?></textarea>
-    <br>
-    <span style="font-size:90%">
-     Enter each role name on a separate line.
-     <br>
-     If left blank, the report will be accessible to users with edit access.
-     <br>
-     Enter * to grant access to all users.
-    </span>
-   </td>
-  </tr>
-  <tr>
-   <td>Allow downloads</td>
-   <td>
-    <label>
-     <input type="radio" name="report_download" value="Y" required<?php
-echo $reportConfig['download'] ? ' checked' : ''; ?>> Yes
-    </label>
-    <br>
-    <label>
-     <input type="radio" name="report_download" value="N" required<?php
-echo $reportConfig['download'] ? '' : ' checked'; ?>> No
-    </label>
-   </td>
-  </tr>
-  <tr>
-   <td>Grant downloads to roles</td>
-   <td>
-    <textarea name="report_roles_download"><?php echo $reportConfig['roles_download']; ?></textarea>
-    <br>
-    <span style="font-size:90%">
-     Enter each role name on a separate line. Reports can only be downloaded by users with access.
-     <br>
-     If left blank, the report can be downloaded by users with edit access.
-     <br>
-     Enter * to allow downloads by all users with access.
-    </span>
-   </td>
-  </tr>
+<?php $module->outputReportConfigOptions( $reportConfig ); ?>
   <tr><th colspan="2">Report Definition</th></tr>
   <tr>
    <td>SQL Query</td>
    <td>
-    <textarea name="sql_query" style="height:500px;max-width:95%"><?php
+    <textarea name="sql_query" spellcheck="false"
+              style="height:500px;max-width:95%;font-family:monospace;white-space:pre"><?php
 echo $reportData['sql_query'] ?? ''; ?></textarea>
+    <br>
+    <span class="field-desc">
+     To use the current project ID, enter: <tt>$$PROJECT$$</tt>
+    </span>
    </td>
   </tr>
   <tr><td colspan="2">&nbsp;</td></tr>
@@ -157,17 +97,48 @@ echo $reportData['sql_query'] ?? ''; ?></textarea>
  </table>
 </form>
 <script type="text/javascript">
- $('[name="sql_query"]')[0].onkeyup = function()
+ (function ()
  {
-   if ( this.value.toLowerCase().substring( 0, 7 ).replace( /[\r\n]/, ' ' ) != 'select ' )
+   $('[name="sql_query"]')[0].onkeyup = function()
    {
-     this.setCustomValidity( 'Invalid SQL query' )
+     if ( this.value.toLowerCase().substring( 0, 7 ).replace( /[\r\n]/, ' ' ) != 'select ' )
+     {
+       this.setCustomValidity( 'Invalid SQL query: Must start with SELECT' )
+     }
+     else
+     {
+       this.setCustomValidity( '' )
+     }
    }
-   else
+   var vValidated = false
+   $('#sqlform')[0].onsubmit = function()
    {
-     this.setCustomValidity( '' )
+     if ( vValidated )
+     {
+       return true
+     }
+     $.ajax( { url : '<?php echo $module->getUrl( 'sql_edit.php?report_id=' . $reportID ); ?>',
+               method : 'POST',
+               data : { sql_query : $('[name=sql_query')[0].value },
+                        headers : { 'X-RC-AdvRep-SQLChk' : '1' },
+                        dataType : 'json',
+                        success : function ( result )
+                        {
+                          if ( result === true )
+                          {
+                            vValidated = true
+                            $('#sqlform')[0].submit()
+                          }
+                          else
+                          {
+                            var vMsg = 'Invalid SQL query: ' + result
+                            $('[name="sql_query"]')[0].setCustomValidity( vMsg )
+                          }
+                        }
+             } )
+     return false
    }
- }
+ })()
 </script>
 <?php
 
