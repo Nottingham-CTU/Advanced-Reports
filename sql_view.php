@@ -28,9 +28,19 @@ if ( ! $module->isReportAccessible( $reportID ) )
 
 
 
-// Get the report data.
+// Load the SQL query and substitute values for the placeholders.
+$userRole = $module->framework->getUser()->getRights()['role_id'];
+$userRole = $userRole == null ? 'NULL' : intval( $userRole );
+$userDAG = $module->framework->getUser()->getRights()['group_id'];
+$userDAG = $userDAG == null ? 'NULL' : intval( $userDAG );
 $sql = $reportData['sql_query'];
-$query = mysqli_query( $conn, str_replace( '$$PROJECT$$', $module->getProjectId(), $sql ) );
+$sql = str_replace( '$$DAG$$', $userDAG, $sql );
+$sql = str_replace( '$$PROJECT$$', intval( $module->getProjectId() ), $sql );
+$sql = str_replace( '$$ROLE$$', $userRole, $sql );
+$sql = str_replace( '$$USER$$', "'" . mysqli_real_escape_string( $conn, USERID ) . "'", $sql );
+
+// Get the report data.
+$query = mysqli_query( $conn, $sql );
 $columns = [];
 
 
