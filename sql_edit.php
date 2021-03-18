@@ -29,8 +29,9 @@ if ( ! empty( $_POST ) )
 	{
 		exit;
 	}
-	$validQuery = ( mysqli_query( $conn, str_replace( '$$PROJECT$$', $module->getProjectId(),
-	                                                  $_POST['sql_query'] ) ) !== false );
+	$testQuery = str_replace( [ '$$DAG$$', '$$PROJECT$$', '$$ROLE$$' ], '0', $_POST['sql_query'] );
+	$testQuery = str_replace( '$$USER$$', "''", $testQuery );
+	$validQuery = ( mysqli_query( $conn, $testQuery ) !== false );
 	if ( isset( $_SERVER['HTTP_X_RC_ADVREP_SQLCHK'] ) )
 	{
 		header( 'Content-Type: application/json' );
@@ -83,7 +84,13 @@ $module->writeStyle();
 echo $reportData['sql_query'] ?? ''; ?></textarea>
     <br>
     <span class="field-desc">
-     To use the current project ID, enter: <tt>$$PROJECT$$</tt>
+     You can use the following placeholder values in SQL queries:<br>
+     <tt>$$DAG$$</tt> &#8212; the REDCap unique DAG ID of the user viewing the report
+     (<i>NULL</i> if the user is not in a DAG)<br>
+     <tt>$$PROJECT$$</tt> &#8212; the current project ID<br>
+     <tt>$$ROLE$$</tt> &#8212; the REDCap unique role ID of the user viewing the report
+     (<i>NULL</i> if the user is not in a role)<br>
+     <tt>$$USER$$</tt> &#8212; the username of the user viewing the report
     </span>
    </td>
   </tr>
