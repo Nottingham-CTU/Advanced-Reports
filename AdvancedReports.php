@@ -275,6 +275,15 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Get the list of report types.
+	function getReportTypes()
+	{
+		return [ 'gantt' => 'Gantt',
+		         'sql' => 'SQL' ];
+	}
+
+
+
 	// Get the role name of the current user.
 	function getUserRole()
 	{

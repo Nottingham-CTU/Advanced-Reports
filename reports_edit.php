@@ -95,17 +95,14 @@ $module->writeStyle();
     <select name="report_type" required>
      <option value="">[Select...]</option>
 <?php
-if ( $module->isReportEditable( 'gantt' ) )
+foreach ( $module->getReportTypes() as $typeCode => $typeName )
 {
+	if ( $module->isReportEditable( $typeCode ) )
+	{
 ?>
-     <option value="gantt">Gantt</option>
+     <option value="<?php echo $typeCode; ?>"><?php echo htmlspecialchars( $typeName ); ?></option>
 <?php
-}
-if ( $module->isReportEditable( 'sql' ) )
-{
-?>
-     <option value="sql">SQL</option>
-<?php
+	}
 }
 ?>
     </select>
@@ -141,7 +138,7 @@ if ( count( $listReports ) > 0 )
    <br>
    <span style="font-size:90%">
     <b>Name:</b> <?php echo $reportID; ?> &nbsp;|&nbsp;
-    <b>Type:</b> <?php echo $infoReport['type']; ?> &nbsp;|&nbsp;
+    <b>Type:</b> <?php echo $module->getReportTypes()[ $infoReport['type'] ]; ?> &nbsp;|&nbsp;
     <b>Category:</b> <?php echo $infoReport['category'] ?? '<i>(none)</i>'; ?> &nbsp;|&nbsp;
     <b>Visibility:</b> <?php echo $infoReport['visible'] ? 'visible' : 'hidden', "\n"; ?>
    </span>
