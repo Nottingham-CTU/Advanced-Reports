@@ -77,6 +77,6 @@ as a Unix timestamp representing a UTC date/time.
 ### SQL report options
 
 * **SQL Query** enter SELECT query here
-  * Use the placeholders to dynamically insert values into the query when the report is viewed:
-    `$$DAG$$` (user's DAG ID), `$$PROJECT$$` (project ID), `$$ROLE$$` (user's role ID), and
-    `$$USER$$` (username).
+* **Result Type** choose how the SQL result is to be interpreted (normal or EAV)
+
+Please refer to the [SQL report instructions](README-SQL.md) for more information.
