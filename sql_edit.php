@@ -29,9 +29,8 @@ if ( ! empty( $_POST ) )
 	{
 		exit;
 	}
-	$testQuery = str_replace( [ '$$DAG$$', '$$PROJECT$$', '$$ROLE$$' ], '0', $_POST['sql_query'] );
-	$testQuery = str_replace( '$$USER$$', "''", $testQuery );
-	$validQuery = ( mysqli_query( $conn, $testQuery ) !== false );
+	$validQuery = ( mysqli_query( $conn, $module->sqlPlaceholderReplace( $_POST['sql_query'],
+	                                                                     true ) ) !== false );
 	if ( isset( $_SERVER['HTTP_X_RC_ADVREP_SQLCHK'] ) )
 	{
 		header( 'Content-Type: application/json' );
@@ -52,7 +51,7 @@ if ( ! empty( $_POST ) )
 
 	// Save data
 	$module->submitReportConfig( $reportID );
-	$reportData = [ 'sql_query' => $_POST['sql_query'] ];
+	$reportData = [ 'sql_query' => $_POST['sql_query'], 'sql_type' => $_POST['sql_type'] ];
 	$module->setReportData( $reportID, $reportData );
 	header( 'Location: ' . $module->getUrl( 'reports_edit.php' ) );
 	exit;
@@ -88,10 +87,36 @@ echo $reportData['sql_query'] ?? ''; ?></textarea>
      <tt>$$DAG$$</tt> &#8212; the REDCap unique DAG ID of the user viewing the report
      (<i>NULL</i> if the user is not in a DAG)<br>
      <tt>$$PROJECT$$</tt> &#8212; the current project ID<br>
+     <tt>$$QINT:<i>name</i>$$</tt> &#8212; the value of the named query string parameter, as an
+     integer (<i>NULL</i> if the value is missing or not an integer)<br>
+     <tt>$$QSTR:<i>name</i>$$</tt> &#8212; the value of the named query string parameter, as a
+     string (<i>NULL</i> if the value is missing)<br>
      <tt>$$ROLE$$</tt> &#8212; the REDCap unique role ID of the user viewing the report
      (<i>NULL</i> if the user is not in a role)<br>
-     <tt>$$USER$$</tt> &#8212; the username of the user viewing the report
+     <tt>$$USER$$</tt> &#8212; the username of the user viewing the report<br>&nbsp;
     </span>
+   </td>
+  </tr>
+  <tr>
+   <td>Result Type</td>
+   <td>
+    <label>
+     <input type="radio" name="sql_type" value="normal" required<?php
+		echo ( $reportData['sql_type'] ?? 'normal' ) == 'normal'
+					? ' checked' : ''; ?>> Normal dataset
+    </label>
+    <br>
+    <label>
+     <input type="radio" name="sql_type" value="eav" required<?php
+		echo ( $reportData['sql_type'] ?? 'normal' ) == 'eav'
+					? ' checked' : ''; ?>> EAV dataset, omit row ID
+    </label>
+    <br>
+    <label>
+     <input type="radio" name="sql_type" value="eav-id" required<?php
+		echo ( $reportData['sql_type'] ?? 'normal' ) == 'eav-id'
+					? ' checked' : ''; ?>> EAV dataset, include row ID
+    </label>
    </td>
   </tr>
   <tr><td colspan="2">&nbsp;</td></tr>

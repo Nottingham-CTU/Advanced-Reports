@@ -28,20 +28,43 @@ if ( ! $module->isReportAccessible( $reportID ) )
 
 
 
-// Load the SQL query and substitute values for the placeholders.
-$userRole = $module->framework->getUser()->getRights()['role_id'];
-$userRole = $userRole == null ? 'NULL' : intval( $userRole );
-$userDAG = $module->framework->getUser()->getRights()['group_id'];
-$userDAG = $userDAG == null ? 'NULL' : intval( $userDAG );
-$sql = $reportData['sql_query'];
-$sql = str_replace( '$$DAG$$', $userDAG, $sql );
-$sql = str_replace( '$$PROJECT$$', intval( $module->getProjectId() ), $sql );
-$sql = str_replace( '$$ROLE$$', $userRole, $sql );
-$sql = str_replace( '$$USER$$', "'" . mysqli_real_escape_string( $conn, USERID ) . "'", $sql );
-
 // Get the report data.
-$query = mysqli_query( $conn, $sql );
+$query = mysqli_query( $conn, $module->sqlPlaceholderReplace( $reportData['sql_query'] ) );
+$resultType = $reportData['sql_type'] ?? 'normal';
 $columns = [];
+
+
+// If the result type is EAV, construct the result dataset before outputting.
+if ( $resultType == 'eav' || $resultType == 'eav-id' )
+{
+	if ( $resultType == 'eav-id' )
+	{
+		$columns[] = mysqli_fetch_field( $query )->name;
+	}
+	$resultData = [];
+	while ( $infoRecord = mysqli_fetch_row( $query ) )
+	{
+		// Only allow SQL output with 3 fields.
+		if ( count( $infoRecord ) != 3 )
+		{
+			break;
+		}
+		// Assemble the result dataset from the SQL output, interpreting the fields as follows.
+		// Field 0: row ID
+		// Field 1: column name
+		// Field 2: data
+		// Fields 3+: reserved for future use
+		$resultData[ $infoRecord[0] ][ $infoRecord[1] ] = $infoRecord[2];
+		if ( ! in_array( $infoRecord[1], $columns ) )
+		{
+			$columns[] = $infoRecord[1];
+		}
+		if ( $resultType == 'eav-id' )
+		{
+			$resultData[ $infoRecord[0] ][ $columns[0] ] = $infoRecord[0];
+		}
+	}
+}
 
 
 
@@ -50,6 +73,34 @@ $columns = [];
 if ( isset( $_GET['download'] ) && $module->isReportDownloadable( $reportID ) )
 {
 	$module->writeCSVDownloadHeaders( $reportID );
+	if ( $resultType == 'eav' || $resultType == 'eav-id' )
+	{
+		$first = true;
+		foreach ( $columns as $columnName )
+		{
+			echo $first ? '' : ',';
+			echo '"', str_replace( '"', '""', $columnName );
+			$first = false;
+		}
+		echo "\n";
+		foreach ( $resultData as $infoRecord )
+		{
+			$first = true;
+			foreach ( $columns as $columnName )
+			{
+				echo $first ? '' : ',';
+				echo '"';
+				if ( isset( $infoRecord[ $columnName ] ) )
+				{
+					echo str_replace( '"', '""',
+					                  $module->parseHTML( $infoRecord[ $columnName ], true ) );
+				}
+				echo '"';
+				$first = false;
+			}
+		}
+		exit;
+	}
 	while ( $infoRecord = mysqli_fetch_assoc( $query ) )
 	{
 		if ( empty( $columns ) )
@@ -84,36 +135,70 @@ $module->outputViewReportHeader( $reportConfig['label'], 'sql' );
 <?php
 
 // Output the report table.
-while ( $infoRecord = mysqli_fetch_assoc( $query ) )
+if ( $resultType == 'eav' || $resultType == 'eav-id' )
 {
-	if ( empty( $columns ) )
+?>
+ <tr>
+<?php
+	foreach ( $columns as $columnName )
+	{
+?>
+  <th><?php echo htmlspecialchars( $columnName ); ?></th>
+<?php
+	}
+?>
+ </tr>
+<?php
+	foreach ( $resultData as $infoRecord )
 	{
 ?>
  <tr>
 <?php
-		foreach ( $infoRecord as $fieldName => $value )
+		foreach ( $columns as $columnName )
 		{
-			$columns[] = $fieldName;
 ?>
-  <th><?php echo htmlspecialchars( $fieldName ); ?></th>
+  <td><?php echo isset( $infoRecord[ $columnName ] )
+                 ? $module->parseHTML( $infoRecord[ $columnName ] ) : ''; ?></td>
 <?php
 		}
 ?>
  </tr>
 <?php
 	}
+}
+else
+{
+	while ( $infoRecord = mysqli_fetch_assoc( $query ) )
+	{
+		if ( empty( $columns ) )
+		{
 ?>
  <tr>
 <?php
-	foreach ( $columns as $fieldName )
-	{
+			foreach ( $infoRecord as $fieldName => $value )
+			{
+				$columns[] = $fieldName;
 ?>
-  <td><?php echo $module->parseHTML( $infoRecord[ $fieldName ] ); ?></td>
+  <th><?php echo htmlspecialchars( $fieldName ); ?></th>
 <?php
-	}
+			}
 ?>
  </tr>
 <?php
+		}
+?>
+ <tr>
+<?php
+		foreach ( $columns as $fieldName )
+		{
+?>
+  <td><?php echo $module->parseHTML( $infoRecord[ $fieldName ] ); ?></td>
+<?php
+		}
+?>
+ </tr>
+<?php
+	}
 }
 ?>
 </table>

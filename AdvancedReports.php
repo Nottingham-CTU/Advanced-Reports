@@ -560,6 +560,56 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Replace placeholders in SQL with values.
+	function sqlPlaceholderReplace( $sql, $test = false )
+	{
+		if ( $test )
+		{
+			$sql = str_replace( [ '$$DAG$$', '$$PROJECT$$', '$$ROLE$$' ], '0', $sql );
+			$sql = str_replace( '$$USER$$', "'a'", $sql );
+			$sql = preg_replace( '/\$\$QINT\:[a-z0-9_]+\$\$/', '0', $sql );
+			$sql = preg_replace( '/\$\$QSTR\:[a-z0-9_]+\$\$/', "'a'", $sql );
+		}
+		else
+		{
+			$userRole = $this->framework->getUser()->getRights()['role_id'];
+			$userRole = $userRole == null ? 'NULL' : intval( $userRole );
+			$userDAG = $this->framework->getUser()->getRights()['group_id'];
+			$userDAG = $userDAG == null ? 'NULL' : intval( $userDAG );
+			$sql = str_replace( '$$DAG$$', $userDAG, $sql );
+			$sql = str_replace( '$$PROJECT$$', intval( $this->getProjectId() ), $sql );
+			$sql = str_replace( '$$ROLE$$', $userRole, $sql );
+			$sql = str_replace( '$$USER$$',
+			                    "'" . mysqli_real_escape_string( $conn, USERID ) . "'", $sql );
+			$sql = preg_replace_callback( '/\$\$QINT\:([a-z0-9_]+)\$\$/',
+			                              function( $m )
+			                              {
+			                                if ( ! isset( $_GET[ $m[1] ] ) ||
+			                                     ! preg_match( '/^(0|-?[1-9][0-9]*)$/',
+			                                                   $_GET[ $m[1] ] ) )
+			                                {
+			                                  return 'NULL';
+			                                }
+			                                return $_GET[ $m[1] ];
+			                              },
+			                              $sql );
+			$sql =
+			 preg_replace_callback( '/\$\$QSTR\:([a-z0-9_]+)\$\$/',
+			                        function( $m )
+			                        {
+			                          if ( ! isset( $_GET[ $m[1] ] ) )
+			                          {
+			                            return 'NULL';
+			                          }
+			                          return "'" . mysql_real_escape_string( $_GET[ $m[1] ] ) . "'";
+			                        },
+			                        $sql );
+		}
+		return $sql;
+	}
+
+
+
 	// Perform submission of all the report config values (upon edit form submission).
 	// These are the values which are the same for each report type (e.g. visibility, category).
 	function submitReportConfig( $reportID, $includeDownload = true )
