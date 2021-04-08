@@ -50,7 +50,7 @@ if ( ! empty( $_POST ) )
 	}
 
 	// Save data
-	$module->submitReportConfig( $reportID );
+	$module->submitReportConfig( $reportID, true, 'image' );
 	$reportData = [ 'sql_query' => $_POST['sql_query'], 'sql_type' => $_POST['sql_type'] ];
 	$module->setReportData( $reportID, $reportData );
 	header( 'Location: ' . $module->getUrl( 'reports_edit.php' ) );
@@ -73,7 +73,7 @@ $module->writeStyle();
 </p>
 <form method="post" id="sqlform">
  <table class="mod-advrep-formtable">
-<?php $module->outputReportConfigOptions( $reportConfig ); ?>
+<?php $module->outputReportConfigOptions( $reportConfig, true, 'image' ); ?>
   <tr><th colspan="2">Report Definition</th></tr>
   <tr>
    <td>SQL Query</td>

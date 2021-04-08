@@ -384,8 +384,21 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 	// Output the form controls to set the report configuration on the edit report page.
 	// These are the settings which are the same for all reports.
-	function outputReportConfigOptions( $reportConfig, $includeDownload = true )
+	function outputReportConfigOptions( $reportConfig,
+	                                    $includeDownload = true, $includeAdditional = [] )
 	{
+		if ( ! is_array( $includeAdditional ) )
+		{
+			if ( is_string( $includeAdditional ) )
+			{
+				$includeAdditional = [ $includeAdditional ];
+			}
+			else
+			{
+				$includeAdditional = [];
+			}
+		}
+
 ?>
   <tr><th colspan="2">Report Label and Category</th></tr>
   <tr>
@@ -432,6 +445,30 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
    </td>
   </tr>
 <?php
+		if ( in_array( 'image', $includeAdditional ) )
+		{
+?>
+  <tr>
+   <td>Report can be retrieved as an image</td>
+   <td>
+    <label>
+     <input type="radio" name="report_as_image" value="Y" required<?php
+		echo $reportConfig['as_image'] ? ' checked' : ''; ?>> Yes
+    </label>
+    <br>
+    <label>
+     <input type="radio" name="report_as_image" value="N" required<?php
+		echo $reportConfig['as_image'] ? '' : ' checked'; ?>> No
+    </label>
+    <br>
+    <span class="field-desc">
+     If enabled, the report can be retrieved as an image by all users with access.
+    </span>
+   </td>
+  </tr>
+<?php
+		}
+
 		if ( $includeDownload )
 		{
 ?>
@@ -612,8 +649,19 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 	// Perform submission of all the report config values (upon edit form submission).
 	// These are the values which are the same for each report type (e.g. visibility, category).
-	function submitReportConfig( $reportID, $includeDownload = true )
+	function submitReportConfig( $reportID, $includeDownload = true, $includeAdditional = [] )
 	{
+		if ( ! is_array( $includeAdditional ) )
+		{
+			if ( is_string( $includeAdditional ) )
+			{
+				$includeAdditional = [ $includeAdditional ];
+			}
+			else
+			{
+				$includeAdditional = [];
+			}
+		}
 		if ( $includeDownload )
 		{
 			$listConfig =
@@ -623,10 +671,14 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		{
 			$listConfig = [ 'label', 'category', 'visible', 'roles_access' ];
 		}
+		foreach ( $includeAdditional as $additionalItem )
+		{
+			$listConfig[] = "as_$additionalItem";
+		}
 		foreach ( $listConfig as $configSetting )
 		{
 			$configValue = $_POST["report_$configSetting"];
-			if ( in_array( $configSetting, [ 'visible', 'download' ] ) )
+			if ( in_array( $configSetting, [ 'visible', 'download', 'as_image' ] ) )
 			{
 				$configValue = $configValue == 'Y' ? true : false;
 			}

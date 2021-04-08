@@ -64,7 +64,9 @@ example:
 Parameter names can consist of lowercase letters, numbers, and underscores.
 
 Bear in mind that some query string parameters are used by REDCap and by this module. You will need
-to pick parameter names different from the following:
+to pick parameter names different from the following (unless you want to use those values):
+* as_image
+* download
 * page
 * pid
 * prefix
