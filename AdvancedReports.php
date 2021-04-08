@@ -428,6 +428,12 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
      <input type="radio" name="report_visible" value="N" required<?php
 		echo $reportConfig['visible'] ? '' : ' checked'; ?>> No
     </label>
+    <br>
+    <span class="field-desc">
+     If a report is visible, it will be listed on the Advanced Reports page.
+     <br>
+     Reports which are not visible can still be viewed by users with access, if they have the URL.
+    </span>
    </td>
   </tr>
   <tr>
@@ -445,30 +451,6 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
    </td>
   </tr>
 <?php
-		if ( in_array( 'image', $includeAdditional ) )
-		{
-?>
-  <tr>
-   <td>Report can be retrieved as an image</td>
-   <td>
-    <label>
-     <input type="radio" name="report_as_image" value="Y" required<?php
-		echo $reportConfig['as_image'] ? ' checked' : ''; ?>> Yes
-    </label>
-    <br>
-    <label>
-     <input type="radio" name="report_as_image" value="N" required<?php
-		echo $reportConfig['as_image'] ? '' : ' checked'; ?>> No
-    </label>
-    <br>
-    <span class="field-desc">
-     If enabled, the report can be retrieved as an image by all users with access.
-    </span>
-   </td>
-  </tr>
-<?php
-		}
-
 		if ( $includeDownload )
 		{
 ?>
@@ -497,6 +479,30 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
      If left blank, the report can be downloaded by users with edit access.
      <br>
      Enter * to allow downloads by all users with access.
+    </span>
+   </td>
+  </tr>
+<?php
+		}
+
+		if ( in_array( 'image', $includeAdditional ) )
+		{
+?>
+  <tr>
+   <td>Allow retrieval as image</td>
+   <td>
+    <label>
+     <input type="radio" name="report_as_image" value="Y" required<?php
+		echo $reportConfig['as_image'] ? ' checked' : ''; ?>> Yes
+    </label>
+    <br>
+    <label>
+     <input type="radio" name="report_as_image" value="N" required<?php
+		echo $reportConfig['as_image'] ? '' : ' checked'; ?>> No
+    </label>
+    <br>
+    <span class="field-desc">
+     If enabled, the report can be retrieved as an image by all users with access.
     </span>
    </td>
   </tr>

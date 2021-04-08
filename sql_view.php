@@ -125,6 +125,98 @@ if ( isset( $_GET['download'] ) && $module->isReportDownloadable( $reportID ) )
 }
 
 
+
+// Handle retrieve report as image.
+if ( isset( $_GET['as_image']) && $reportConfig['as_image'] )
+{
+	header( 'Content-Type: image/png' );
+	// Determine the fonts and character sizes for the report.
+	$imgHeaderFont = 5;
+	$imgDataFont = 4;
+	$imgHeaderCharW = imagefontwidth( $imgHeaderFont );
+	$imgHeaderCharH = imagefontheight( $imgHeaderFont );
+	$imgDataCharW = imagefontwidth( $imgDataFont );
+	$imgDataCharH = imagefontheight( $imgDataFont );
+	$imgHeaderH = $imgHeaderCharH + 2;
+	$imgDataH = $imgDataCharH + 2;
+	// If a non-EAV report, retrieve all the data so the table sizes can be calculated.
+	// For EAV reports, this has already been done.
+	if ( ! ( $resultType == 'eav' || $resultType == 'eav-id' ) )
+	{
+		$columns = [];
+		$resultData = [];
+		while ( $infoRecord = mysqli_fetch_assoc( $query ) )
+		{
+			if ( empty( $columns ) )
+			{
+				foreach ( $infoRecord as $fieldName => $value )
+				{
+					$columns[] = $fieldName;
+				}
+			}
+			$resultData[] = $infoRecord;
+		}
+	}
+	// Calculate column widths based on column name string lengths.
+	$imgColumnWidths = [];
+	foreach ( $columns as $columnName )
+	{
+		$imgColumnWidths[ $columnName ] = ( strlen( $columnName ) * $imgHeaderCharW ) + 5;
+	}
+	// Check the data in each column for each record, increase the column widths if necessary.
+	foreach ( $resultData as $infoRecord )
+	{
+		foreach ( $columns as $columnName )
+		{
+			$imgParsedData = isset( $infoRecord[$columnName] )
+			                    ? $module->parseHTML( $infoRecord[$columnName], true ) : '';
+			$thisWidth = ( strlen( $imgParsedData ) * $imgDataCharW ) + 5;
+			if ( $imgColumnWidths[$columnName] < $thisWidth )
+			{
+				$imgColumnWidths[$columnName] = $thisWidth;
+			}
+		}
+	}
+	// Calculate the image dimensions, create the image, and set the colours (black/white).
+	$imgWidth = array_sum( $imgColumnWidths ) + 1;
+	$imgHeight = $imgHeaderH + ( count( $resultData ) * ( $imgDataH ) ) + 1;
+	$img = imagecreate( $imgWidth, $imgHeight );
+	imagecolorallocate( $img, 255, 255, 255 );
+	$imgBlack = imagecolorallocate( $img, 0, 0, 0 );
+	// Draw the column headers.
+	$posW = 0;
+	$posH = 0;
+	foreach ( $columns as $columnName )
+	{
+		$thisWidth = $imgColumnWidths[$columnName];
+		imagerectangle( $img, $posW, $posH, $posW + $thisWidth, $posH + $imgHeaderH, $imgBlack );
+		imagestring( $img, $imgHeaderFont, $posW + 2, $posH + 1, $columnName, $imgBlack );
+		$posW += $thisWidth;
+	}
+	// Draw each row of data.
+	$posW = 0;
+	$posH += $imgHeaderH;
+	foreach ( $resultData as $infoRecord )
+	{
+		foreach ( $columns as $columnName )
+		{
+			$imgParsedData = isset( $infoRecord[$columnName] )
+			                    ? $module->parseHTML( $infoRecord[$columnName], true ) : '';
+			$thisWidth = $imgColumnWidths[$columnName];
+			imagerectangle( $img, $posW, $posH, $posW + $thisWidth, $posH + $imgDataH, $imgBlack );
+			imagestring( $img, $imgDataFont, $posW + 2, $posH + 1, $imgParsedData, $imgBlack );
+			$posW += $thisWidth;
+		}
+		$posW = 0;
+		$posH += $imgDataH;
+	}
+	// Output the image as a PNG and exit.
+	imagepng( $img );
+	exit;
+}
+
+
+
 // Display the project header and report navigation links.
 require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
 $module->outputViewReportHeader( $reportConfig['label'], 'sql' );
