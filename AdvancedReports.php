@@ -131,7 +131,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	function addReport( $reportID, $reportType, $reportLabel )
 	{
 		// Set the report configuration.
-		$config = [ 'type' => $reportType, 'label' => $reportLabel, 'visible' => false ];
+		$config = [ 'type' => $reportType, 'label' => $reportLabel, 'visible' => false,
+		            'lastupdated_user' => USERID, 'lastupdated_time' => time() ];
 		$this->setProjectSetting( "report-config-$reportID", json_encode( $config ) );
 		// Add the report to the list of reports.
 		$listIDs = $this->getProjectSetting( 'report-list' );
@@ -697,6 +698,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			}
 			$this->setReportConfig( $reportID, $configSetting, $configValue );
 		}
+		$this->setReportConfig( $reportID, 'lastupdated_user', USERID );
+		$this->setReportConfig( $reportID, 'lastupdated_time', time() );
 	}
 
 
