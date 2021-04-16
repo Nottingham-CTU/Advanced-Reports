@@ -60,6 +60,8 @@ The following report types are currently available:
 * **Allow retrieval as image** \* determines whether the report can be retrieved as an image file,
   rather than as a REDCap page, which is useful for embedding a report in a data collection
   instrument
+  * Append *&as_image=1* to the report URL to retrieve as an image.
+  * Access rights are still enforced, so reports may not be visible if embedded in surveys.
 
 \* only available on some report types
 
@@ -81,6 +83,7 @@ as a Unix timestamp representing a UTC date/time.
 
 ### SQL report options
 
+* **Description** brief descriptive text to appear above the report
 * **SQL Query** enter SELECT query here
 * **Result Type** choose how the SQL result is to be interpreted (normal or EAV)
 

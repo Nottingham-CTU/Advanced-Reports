@@ -51,7 +51,8 @@ if ( ! empty( $_POST ) )
 
 	// Save data
 	$module->submitReportConfig( $reportID, true, 'image' );
-	$reportData = [ 'sql_query' => $_POST['sql_query'], 'sql_type' => $_POST['sql_type'] ];
+	$reportData = [ 'sql_desc' => $_POST['sql_desc'], 'sql_query' => $_POST['sql_query'],
+	                'sql_type' => $_POST['sql_type'] ];
 	$module->setReportData( $reportID, $reportData );
 	header( 'Location: ' . $module->getUrl( 'reports_edit.php' ) );
 	exit;
@@ -76,13 +77,26 @@ $module->writeStyle();
 <?php $module->outputReportConfigOptions( $reportConfig, true, 'image' ); ?>
   <tr><th colspan="2">Report Definition</th></tr>
   <tr>
+   <td>Description</td>
+   <td>
+    <textarea name="sql_desc" style="height:50px;max-width:95%;white-space:pre"><?php
+echo $reportData['sql_desc'] ?? ''; ?></textarea>
+    <br>
+    <span class="field-desc">
+     Optional. If specified, displays this text above the report.
+    </span>
+   </td>
+  </tr>
+  <tr>
    <td>SQL Query</td>
    <td>
     <textarea name="sql_query" spellcheck="false"
               style="height:500px;max-width:95%;font-family:monospace;white-space:pre"><?php
 echo $reportData['sql_query'] ?? ''; ?></textarea>
     <br>
-    <span class="field-desc">
+    <a onclick="$(this).css('display','none');$(this).next().css('display','');return false"
+       href="#">Show placeholders...</a>
+    <span class="field-desc" style="display:none">
      You can use the following placeholder values in SQL queries:<br>
      <tt>$$DAG$$</tt> &#8212; the REDCap unique DAG ID of the user viewing the report
      (<i>NULL</i> if the user is not in a DAG)<br>

@@ -223,6 +223,18 @@ $module->outputViewReportHeader( $reportConfig['label'], 'sql' );
 
 ?>
 </p>
+<?php
+
+// If a description is provided, output it here.
+if ( isset( $reportData['sql_desc'] ) && $reportData['sql_desc'] != '' )
+{
+?>
+<p><?php echo nl2br( $module->parseHTML( $reportData['sql_desc'] ) ); ?></p>
+<?php
+}
+
+
+?>
 <table class="mod-advrep-datatable">
 <?php
 

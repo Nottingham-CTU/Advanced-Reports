@@ -606,6 +606,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	// Replace placeholders in SQL with values.
 	function sqlPlaceholderReplace( $sql, $test = false )
 	{
+		global $conn;
 		if ( $test )
 		{
 			$sql = str_replace( [ '$$DAG$$', '$$PROJECT$$', '$$ROLE$$' ], '0', $sql );
@@ -640,11 +641,13 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			 preg_replace_callback( '/\$\$QSTR\:([a-z0-9_]+)\$\$/',
 			                        function( $m )
 			                        {
+			                          global $conn;
 			                          if ( ! isset( $_GET[ $m[1] ] ) )
 			                          {
 			                            return 'NULL';
 			                          }
-			                          return "'" . mysql_real_escape_string( $_GET[ $m[1] ] ) . "'";
+			                          return "'" . mysqli_real_escape_string( $conn,
+			                                                                 $_GET[ $m[1] ] ) . "'";
 			                        },
 			                        $sql );
 		}
