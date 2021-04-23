@@ -57,8 +57,9 @@ if ( ! empty( $_FILES ) ) // file is uploaded
 		$listChanged = [];
 		foreach ( array_intersect( $listCurrent, $listImported ) as $reportID )
 		{
-			$identicalConfig =
-				( $module->getReportConfig( $reportID ) == $data["report-config-$reportID"] );
+			$currentConfig = $module->getReportConfig( $reportID );
+			unset( $currentConfig['lastupdated_user'], $currentConfig['lastupdated_time'] );
+			$identicalConfig = ( $currentConfig == $data["report-config-$reportID"] );
 			$identicalData =
 				( $module->getReportData( $reportID ) == $data["report-data-$reportID"] );
 			if ( $identicalConfig && $identicalData )
@@ -107,12 +108,16 @@ elseif ( ! empty( $_POST ) ) // normal POST request (confirming import)
 				$reportID = substr( $key, 14 );
 				$module->setProjectSetting( "report-config-$reportID",
 				                            json_encode( $data["report-config-$reportID"] ) );
+				$module->setReportConfig( $reportID, 'lastupdated_user', USERID );
+				$module->setReportConfig( $reportID, 'lastupdated_time', time() );
 			}
 			elseif ( substr( $key, 0, 12 ) == 'report-data-' )
 			{
 				// Update report definition.
 				$reportID = substr( $key, 12 );
 				$module->setReportData( $reportID, $data["report-data-$reportID"] );
+				$module->setReportConfig( $reportID, 'lastupdated_user', USERID );
+				$module->setReportConfig( $reportID, 'lastupdated_time', time() );
 			}
 			elseif ( substr( $key, 0, 14 ) == 'report-delete-' )
 			{
@@ -222,7 +227,8 @@ elseif ( $mode == 'verify' )
 			            'category' => 'Report category', 'visible' => 'Report is visible',
 			            'roles_access' => 'Report accessible by roles',
 			            'download' => 'Report can be downloaded',
-			            'roles_download' => 'Report downloadable by roles' ]
+			            'roles_download' => 'Report downloadable by roles',
+			            'as_image' => 'Report can be retrieved as an image' ]
 			          as $configName => $configLabel )
 			{
 				$configValue = $data["report-config-$reportID"][$configName];
@@ -296,7 +302,8 @@ elseif ( $mode == 'verify' )
 			            'category' => 'Report category', 'visible' => 'Report is visible',
 			            'roles_access' => 'Report accessible by roles',
 			            'download' => 'Report can be downloaded',
-			            'roles_download' => 'Report downloadable by roles' ]
+			            'roles_download' => 'Report downloadable by roles',
+			            'as_image' => 'Report can be retrieved as an image' ]
 			          as $configName => $configLabel )
 			{
 				$configValue['old'] = $module->getReportConfig( $reportID, $configName );

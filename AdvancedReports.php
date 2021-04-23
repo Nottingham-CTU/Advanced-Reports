@@ -131,7 +131,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	function addReport( $reportID, $reportType, $reportLabel )
 	{
 		// Set the report configuration.
-		$config = [ 'type' => $reportType, 'label' => $reportLabel, 'visible' => false ];
+		$config = [ 'type' => $reportType, 'label' => $reportLabel, 'visible' => false,
+		            'lastupdated_user' => USERID, 'lastupdated_time' => time() ];
 		$this->setProjectSetting( "report-config-$reportID", json_encode( $config ) );
 		// Add the report to the list of reports.
 		$listIDs = $this->getProjectSetting( 'report-list' );
@@ -275,6 +276,15 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Get the list of report types.
+	function getReportTypes()
+	{
+		return [ 'gantt' => 'Gantt',
+		         'sql' => 'SQL' ];
+	}
+
+
+
 	// Get the role name of the current user.
 	function getUserRole()
 	{
@@ -375,8 +385,21 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 	// Output the form controls to set the report configuration on the edit report page.
 	// These are the settings which are the same for all reports.
-	function outputReportConfigOptions( $reportConfig, $includeDownload = true )
+	function outputReportConfigOptions( $reportConfig,
+	                                    $includeDownload = true, $includeAdditional = [] )
 	{
+		if ( ! is_array( $includeAdditional ) )
+		{
+			if ( is_string( $includeAdditional ) )
+			{
+				$includeAdditional = [ $includeAdditional ];
+			}
+			else
+			{
+				$includeAdditional = [];
+			}
+		}
+
 ?>
   <tr><th colspan="2">Report Label and Category</th></tr>
   <tr>
@@ -406,6 +429,12 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
      <input type="radio" name="report_visible" value="N" required<?php
 		echo $reportConfig['visible'] ? '' : ' checked'; ?>> No
     </label>
+    <br>
+    <span class="field-desc">
+     If a report is visible, it will be listed on the Advanced Reports page.
+     <br>
+     Reports which are not visible can still be viewed by users with access, if they have the URL.
+    </span>
    </td>
   </tr>
   <tr>
@@ -451,6 +480,30 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
      If left blank, the report can be downloaded by users with edit access.
      <br>
      Enter * to allow downloads by all users with access.
+    </span>
+   </td>
+  </tr>
+<?php
+		}
+
+		if ( in_array( 'image', $includeAdditional ) )
+		{
+?>
+  <tr>
+   <td>Allow retrieval as image</td>
+   <td>
+    <label>
+     <input type="radio" name="report_as_image" value="Y" required<?php
+		echo $reportConfig['as_image'] ? ' checked' : ''; ?>> Yes
+    </label>
+    <br>
+    <label>
+     <input type="radio" name="report_as_image" value="N" required<?php
+		echo $reportConfig['as_image'] ? '' : ' checked'; ?>> No
+    </label>
+    <br>
+    <span class="field-desc">
+     If enabled, the report can be retrieved as an image by all users with access.
     </span>
    </td>
   </tr>
@@ -551,10 +604,74 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Replace placeholders in SQL with values.
+	function sqlPlaceholderReplace( $sql, $test = false )
+	{
+		global $conn;
+		if ( $test )
+		{
+			$sql = str_replace( [ '$$DAG$$', '$$PROJECT$$', '$$ROLE$$' ], '0', $sql );
+			$sql = str_replace( '$$USER$$', "'a'", $sql );
+			$sql = preg_replace( '/\$\$QINT\:[a-z0-9_]+\$\$/', '0', $sql );
+			$sql = preg_replace( '/\$\$QSTR\:[a-z0-9_]+\$\$/', "'a'", $sql );
+		}
+		else
+		{
+			$userRole = $this->framework->getUser()->getRights()['role_id'];
+			$userRole = $userRole == null ? 'NULL' : intval( $userRole );
+			$userDAG = $this->framework->getUser()->getRights()['group_id'];
+			$userDAG = $userDAG == null ? 'NULL' : intval( $userDAG );
+			$sql = str_replace( '$$DAG$$', $userDAG, $sql );
+			$sql = str_replace( '$$PROJECT$$', intval( $this->getProjectId() ), $sql );
+			$sql = str_replace( '$$ROLE$$', $userRole, $sql );
+			$sql = str_replace( '$$USER$$',
+			                    "'" . mysqli_real_escape_string( $conn, USERID ) . "'", $sql );
+			$sql = preg_replace_callback( '/\$\$QINT\:([a-z0-9_]+)\$\$/',
+			                              function( $m )
+			                              {
+			                                if ( ! isset( $_GET[ $m[1] ] ) ||
+			                                     ! preg_match( '/^(0|-?[1-9][0-9]*)$/',
+			                                                   $_GET[ $m[1] ] ) )
+			                                {
+			                                  return 'NULL';
+			                                }
+			                                return $_GET[ $m[1] ];
+			                              },
+			                              $sql );
+			$sql =
+			 preg_replace_callback( '/\$\$QSTR\:([a-z0-9_]+)\$\$/',
+			                        function( $m )
+			                        {
+			                          global $conn;
+			                          if ( ! isset( $_GET[ $m[1] ] ) )
+			                          {
+			                            return 'NULL';
+			                          }
+			                          return "'" . mysqli_real_escape_string( $conn,
+			                                                                 $_GET[ $m[1] ] ) . "'";
+			                        },
+			                        $sql );
+		}
+		return $sql;
+	}
+
+
+
 	// Perform submission of all the report config values (upon edit form submission).
 	// These are the values which are the same for each report type (e.g. visibility, category).
-	function submitReportConfig( $reportID, $includeDownload = true )
+	function submitReportConfig( $reportID, $includeDownload = true, $includeAdditional = [] )
 	{
+		if ( ! is_array( $includeAdditional ) )
+		{
+			if ( is_string( $includeAdditional ) )
+			{
+				$includeAdditional = [ $includeAdditional ];
+			}
+			else
+			{
+				$includeAdditional = [];
+			}
+		}
 		if ( $includeDownload )
 		{
 			$listConfig =
@@ -564,10 +681,14 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		{
 			$listConfig = [ 'label', 'category', 'visible', 'roles_access' ];
 		}
+		foreach ( $includeAdditional as $additionalItem )
+		{
+			$listConfig[] = "as_$additionalItem";
+		}
 		foreach ( $listConfig as $configSetting )
 		{
 			$configValue = $_POST["report_$configSetting"];
-			if ( in_array( $configSetting, [ 'visible', 'download' ] ) )
+			if ( in_array( $configSetting, [ 'visible', 'download', 'as_image' ] ) )
 			{
 				$configValue = $configValue == 'Y' ? true : false;
 			}
@@ -577,6 +698,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			}
 			$this->setReportConfig( $reportID, $configSetting, $configValue );
 		}
+		$this->setReportConfig( $reportID, 'lastupdated_user', USERID );
+		$this->setReportConfig( $reportID, 'lastupdated_time', time() );
 	}
 
 

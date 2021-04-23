@@ -19,8 +19,9 @@ $data = [ 'report-list' => $listReports ];
 
 foreach ( $listReports as $reportName )
 {
-	$data["report-config-$reportName"] =
-		json_decode( $module->getProjectSetting("report-config-$reportName"), true );
+	$reportConfig = json_decode( $module->getProjectSetting("report-config-$reportName"), true );
+	unset( $reportConfig['lastupdated_user'], $reportConfig['lastupdated_time'] );
+	$data["report-config-$reportName"] = $reportConfig;
 	$data["report-data-$reportName"] =
 		json_decode( $module->getProjectSetting("report-data-$reportName"), true );
 }

@@ -73,6 +73,10 @@ $module->writeStyle();
 <div class="projhdr">
  Advanced Reports &#8212; Edit
 </div>
+<p style="font-size:11px">
+ <a href="<?php echo $module->getUrl( 'reports.php' )
+?>" class="fas fa-arrow-circle-left fs11"> Back to advanced reports</a>
+</p>
 <form method="post">
  <table class="mod-advrep-formtable">
   <tr><th colspan="2">Add Report</th></tr>
@@ -95,17 +99,14 @@ $module->writeStyle();
     <select name="report_type" required>
      <option value="">[Select...]</option>
 <?php
-if ( $module->isReportEditable( 'gantt' ) )
+foreach ( $module->getReportTypes() as $typeCode => $typeName )
 {
+	if ( $module->isReportEditable( $typeCode ) )
+	{
 ?>
-     <option value="gantt">Gantt</option>
+     <option value="<?php echo $typeCode; ?>"><?php echo htmlspecialchars( $typeName ); ?></option>
 <?php
-}
-if ( $module->isReportEditable( 'sql' ) )
-{
-?>
-     <option value="sql">SQL</option>
-<?php
+	}
 }
 ?>
     </select>
@@ -141,9 +142,19 @@ if ( count( $listReports ) > 0 )
    <br>
    <span style="font-size:90%">
     <b>Name:</b> <?php echo $reportID; ?> &nbsp;|&nbsp;
-    <b>Type:</b> <?php echo $infoReport['type']; ?> &nbsp;|&nbsp;
+    <b>Type:</b> <?php echo $module->getReportTypes()[ $infoReport['type'] ]; ?> &nbsp;|&nbsp;
     <b>Category:</b> <?php echo $infoReport['category'] ?? '<i>(none)</i>'; ?> &nbsp;|&nbsp;
     <b>Visibility:</b> <?php echo $infoReport['visible'] ? 'visible' : 'hidden', "\n"; ?>
+<?php
+		if ( isset( $infoReport['lastupdated_user'] ) )
+		{
+?>
+    <br>
+    <b>Last updated by</b> <?php echo htmlspecialchars( $infoReport['lastupdated_user'] ), "\n"; ?>
+    &nbsp;<b>at</b> <?php echo date( 'Y-m-d H:i (T)', $infoReport['lastupdated_time'] ), "\n"; ?>
+<?php
+		}
+?>
    </span>
   </td>
   <td style="width:80px;text-align:center">

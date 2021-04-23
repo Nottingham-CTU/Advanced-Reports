@@ -54,9 +54,16 @@ The following report types are currently available:
 * **Report is visible** determines whether the report is shown in the list
 * **Grant access to roles** apart from users with edit rights, only the users with roles listed here
   can see the report
-* **Allow downloads** determines whether a download link is provided for this report
-* **Grant downloads to roles** apart from users with edit rights, only the users with roles listed
-  here will see the download link.
+* **Allow downloads** \* determines whether a download link is provided for this report
+* **Grant downloads to roles** \* apart from users with edit rights, only the users with roles
+  listed here will see the download link.
+* **Allow retrieval as image** \* determines whether the report can be retrieved as an image file,
+  rather than as a REDCap page, which is useful for embedding a report in a data collection
+  instrument
+  * Append *&as_image=1* to the report URL to retrieve as an image.
+  * Access rights are still enforced, so reports may not be visible if embedded in surveys.
+
+\* only available on some report types
 
 ### Gantt report options
 
@@ -76,7 +83,8 @@ as a Unix timestamp representing a UTC date/time.
 
 ### SQL report options
 
+* **Description** brief descriptive text to appear above the report
 * **SQL Query** enter SELECT query here
-  * Use the placeholders to dynamically insert values into the query when the report is viewed:
-    `$$DAG$$` (user's DAG ID), `$$PROJECT$$` (project ID), `$$ROLE$$` (user's role ID), and
-    `$$USER$$` (username).
+* **Result Type** choose how the SQL result is to be interpreted (normal or EAV)
+
+Please refer to the [SQL report instructions](README-SQL.md) for more information.
