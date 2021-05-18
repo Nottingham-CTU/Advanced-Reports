@@ -39,6 +39,7 @@ appropriate values before the query is run.
 * `$$ROLE$$` &ndash; the REDCap unique role ID of the user viewing the report
   * if the user is not in a role, *NULL* is used
 * `$$USER$$` &ndash; the username of the user viewing the report
+* `$$WEBROOT$$` &ndash; the REDCap version directory web path for use in URLs
 
 #### Query String Placeholders
 

@@ -559,6 +559,18 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Returns the supplied string with any HTML entity encoded, with the exception of hyperlinks,
+	// and placeholders replaced with the corresponding values.
+	// This is used primarily for report descriptions.
+	function parseDescription( $str )
+	{
+		$str = str_replace( '$$PROJECT$$', intval( $this->getProjectId() ), $str );
+		$str = str_replace( '$$WEBROOT$$', APP_PATH_WEBROOT, $str );
+		return nl2br( $this->parseHTML( $str ) );
+	}
+
+
+
 	// Returns the supplied string with any HTML entity encoded, with the exception of hyperlinks.
 	// If the $forDownload parameter is true, hyperlink tags will be stripped instead.
 	function parseHTML( $str, $forDownload = false )
@@ -611,9 +623,9 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		if ( $test )
 		{
 			$sql = str_replace( [ '$$DAG$$', '$$PROJECT$$', '$$ROLE$$' ], '0', $sql );
-			$sql = str_replace( '$$USER$$', "'a'", $sql );
+			$sql = str_replace( ['$$USER$$', '$$WEBROOT$$'], "'text'", $sql );
 			$sql = preg_replace( '/\$\$QINT\:[a-z0-9_]+\$\$/', '0', $sql );
-			$sql = preg_replace( '/\$\$QSTR\:[a-z0-9_]+\$\$/', "'a'", $sql );
+			$sql = preg_replace( '/\$\$QSTR\:[a-z0-9_]+\$\$/', "'text'", $sql );
 		}
 		else
 		{
@@ -626,6 +638,9 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			$sql = str_replace( '$$ROLE$$', $userRole, $sql );
 			$sql = str_replace( '$$USER$$',
 			                    "'" . mysqli_real_escape_string( $conn, USERID ) . "'", $sql );
+			$sql = str_replace( '$$WEBROOT$$',
+			                    "'" . mysqli_real_escape_string( $conn, APP_PATH_WEBROOT ) . "'",
+			                    $sql );
 			$sql = preg_replace_callback( '/\$\$QINT\:([a-z0-9_]+)\$\$/',
 			                              function( $m )
 			                              {
@@ -723,6 +738,14 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	function writeStyle()
 	{
 		$style = '
+			.mod-advrep-description a:link
+			{
+				text-decoration: underline dotted;
+			}
+			.mod-advrep-description a:hover
+			{
+				text-decoration: underline solid;
+			}
 			.mod-advrep-formtable
 			{
 				width: 97%;
@@ -821,6 +844,10 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			.mod-advrep-datatable tr:nth-child(2n+1) td
 			{
 				background: #eee;
+			}
+			.mod-advrep-datatable a:link
+			{
+				text-decoration: underline solid;
 			}
 			.mod-advrep-gantt
 			{

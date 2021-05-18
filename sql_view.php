@@ -229,7 +229,8 @@ $module->outputViewReportHeader( $reportConfig['label'], 'sql' );
 if ( isset( $reportData['sql_desc'] ) && $reportData['sql_desc'] != '' )
 {
 ?>
-<p><?php echo nl2br( $module->parseHTML( $reportData['sql_desc'] ) ); ?></p>
+<p class="mod-advrep-description"><?php
+	echo $module->parseDescription( $reportData['sql_desc'] ); ?></p>
 <?php
 }
 

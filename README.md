@@ -84,6 +84,8 @@ as a Unix timestamp representing a UTC date/time.
 ### SQL report options
 
 * **Description** brief descriptive text to appear above the report
+  * HTML links (&lt;a&gt; tags) as well as the placeholders `$$PROJECT$$` (project ID) and
+    `$$WEBROOT$$` (REDCap version directory web path) can be used in the description.
 * **SQL Query** enter SELECT query here
 * **Result Type** choose how the SQL result is to be interpreted (normal or EAV)
 
