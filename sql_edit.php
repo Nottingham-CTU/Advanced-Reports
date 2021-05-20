@@ -107,7 +107,9 @@ echo $reportData['sql_query'] ?? ''; ?></textarea>
      string (<i>NULL</i> if the value is missing)<br>
      <tt>$$ROLE$$</tt> &#8212; the REDCap unique role ID of the user viewing the report
      (<i>NULL</i> if the user is not in a role)<br>
-     <tt>$$USER$$</tt> &#8212; the username of the user viewing the report<br>&nbsp;
+     <tt>$$USER$$</tt> &#8212; the username of the user viewing the report<br>
+     <tt>$$WEBROOT$$</tt> &#8212; the REDCap version directory web path (<tt><?php
+echo htmlspecialchars( APP_PATH_WEBROOT ); ?></tt>), for use in URLs<br>&nbsp;
     </span>
    </td>
   </tr>
