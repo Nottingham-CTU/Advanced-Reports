@@ -321,86 +321,9 @@ else
 }
 ?>
 </table>
-<script type="text/javascript">
-  $('.mod-advrep-datatable th').each(function(index, elem)
-  {
-    $(elem).append('<span style="float:right;cursor:pointer;margin-right:15px;" ' +
-                   'class="fas fa-filter" title="Filter rows by this field..."></span>')
-
-    $(elem).find('.fas').click(function(ev)
-    {
-      ev.stopPropagation()
-      var vFilter = elem.getAttribute('data-filter')
-      if ( vFilter == null )
-      {
-        vFilter = ''
-      }
-      var vText = prompt('Enter filter text', vFilter)
-      if ( vText !== null )
-      {
-        elem.setAttribute('data-filter', vText)
-        filterTable()
-        if ( vText !== '' )
-        {
-          this.style.color = '#7a80dd'
-        }
-        else
-        {
-          this.style.color = ''
-        }
-      }
-    })
-
-  })
-
-
-  function filterTable()
-  {
-    var vHeader = $('.mod-advrep-datatable thead th')
-    $('.mod-advrep-datatable tbody tr').each(function(indexTr,elemTr)
-    {
-      var vShowRow = true
-      $(elemTr).find('td').each(function(indexTd,elemTd)
-      {
-        var vFilter = vHeader[indexTd].getAttribute('data-filter')
-        var vText = $(elemTd).text()
-        if ( vFilter !== null && vFilter != '' &&
-             ! vText.toLowerCase().includes( vFilter.toLowerCase() ) )
-        {
-          vShowRow = false
-        }
-      })
-
-      if ( vShowRow )
-      {
-        elemTr.style.display = ''
-      }
-      else
-      {
-        elemTr.style.display = 'none'
-      }
-
-    })
-
-  }
-
-
-  $('.sorting').click(function()
-  {
-    SortTable( 'mod-advrep-table', $(this).index(), 'string' )
-    var vIsAsc = $(this).hasClass('sorting_asc')
-    $(this).parent().find('th').removeClass('sorting_asc sorting_desc')
-    if ( vIsAsc )
-    {
-      $(this).addClass('sorting_desc')
-    }
-    else
-    {
-      $(this).addClass('sorting_asc')
-    }
-  })
-</script>
 <?php
+$module->outputViewReportJS();
+
 
 // Display the project footer
 require_once APP_PATH_DOCROOT . 'ProjectGeneral/footer.php';
