@@ -814,7 +814,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			.mod-advrep-datatable th
 			{
 				background: #ffffe0;
-				padding: 13px 5px;
+				padding: 13px 5px !important;
 				font-weight: bold;
 				border-right: solid 1px #ccc;
 				border-bottom: solid 1px #ccc;
@@ -822,7 +822,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			.mod-advrep-datatable td
 			{
 				background: #fff;
-				padding: 3px;
+				padding: 3px !important;
 				border-right: solid 1px #ccc;
 				border-bottom: solid 1px #ccc;
 			}
@@ -837,11 +837,11 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 				position: sticky;
 				top: 0px;
 			}
-			.mod-advrep-datatable tr:first-child :first-child
+			.mod-advrep-datatable tr:first-child th:first-child
 			{
 				z-index: 2;
 			}
-			.mod-advrep-datatable tr:nth-child(2n+1) td
+			.mod-advrep-datatable tr:nth-child(2n) td
 			{
 				background: #eee;
 			}

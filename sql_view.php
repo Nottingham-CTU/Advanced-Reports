@@ -236,41 +236,48 @@ if ( isset( $reportData['sql_desc'] ) && $reportData['sql_desc'] != '' )
 
 
 ?>
-<table class="mod-advrep-datatable">
+<table id="mod-advrep-table" class="mod-advrep-datatable dataTable">
 <?php
 
-// Output the report table.
+// Output the report table (EAV types).
 if ( $resultType == 'eav' || $resultType == 'eav-id' )
 {
 ?>
- <tr>
+ <thead>
+  <tr>
 <?php
 	foreach ( $columns as $columnName )
 	{
 ?>
-  <th><?php echo htmlspecialchars( $columnName ); ?></th>
+   <th class="sorting"><?php echo htmlspecialchars( $columnName ); ?></th>
 <?php
 	}
 ?>
- </tr>
+  </tr>
+ </thead>
+ <tbody>
 <?php
 	foreach ( $resultData as $infoRecord )
 	{
 ?>
- <tr>
+  <tr>
 <?php
 		foreach ( $columns as $columnName )
 		{
 ?>
-  <td><?php echo isset( $infoRecord[ $columnName ] )
-                 ? $module->parseHTML( $infoRecord[ $columnName ] ) : ''; ?></td>
+   <td><?php echo isset( $infoRecord[ $columnName ] )
+                  ? $module->parseHTML( $infoRecord[ $columnName ] ) : ''; ?></td>
 <?php
 		}
 ?>
- </tr>
+  </tr>
 <?php
 	}
+?>
+ </tbody>
+<?php
 }
+// Output the report table (normal dataset type).
 else
 {
 	while ( $infoRecord = mysqli_fetch_assoc( $query ) )
@@ -278,20 +285,24 @@ else
 		if ( empty( $columns ) )
 		{
 ?>
- <tr>
+ <thead>
+  <tr>
 <?php
 			foreach ( $infoRecord as $fieldName => $value )
 			{
 				$columns[] = $fieldName;
 ?>
-  <th><?php echo htmlspecialchars( $fieldName ); ?></th>
+  <th class="sorting"><?php echo htmlspecialchars( $fieldName ); ?></th>
 <?php
 			}
 ?>
- </tr>
+  </tr>
+ </thead>
+ <tbody>
 <?php
 		}
 ?>
+
  <tr>
 <?php
 		foreach ( $columns as $fieldName )
@@ -304,9 +315,91 @@ else
  </tr>
 <?php
 	}
+?>
+ </tbody>
+<?php
 }
 ?>
 </table>
+<script type="text/javascript">
+  $('.mod-advrep-datatable th').each(function(index, elem)
+  {
+    $(elem).append('<span style="float:right;cursor:pointer;margin-right:15px;" ' +
+                   'class="fas fa-filter" title="Filter rows by this field..."></span>')
+
+    $(elem).find('.fas').click(function(ev)
+    {
+      ev.stopPropagation()
+      var vFilter = elem.getAttribute('data-filter')
+      if ( vFilter == null )
+      {
+        vFilter = ''
+      }
+      var vText = prompt('Enter filter text', vFilter)
+      if ( vText !== null )
+      {
+        elem.setAttribute('data-filter', vText)
+        filterTable()
+        if ( vText !== '' )
+        {
+          this.style.color = '#7a80dd'
+        }
+        else
+        {
+          this.style.color = ''
+        }
+      }
+    })
+
+  })
+
+
+  function filterTable()
+  {
+    var vHeader = $('.mod-advrep-datatable thead th')
+    $('.mod-advrep-datatable tbody tr').each(function(indexTr,elemTr)
+    {
+      var vShowRow = true
+      $(elemTr).find('td').each(function(indexTd,elemTd)
+      {
+        var vFilter = vHeader[indexTd].getAttribute('data-filter')
+        var vText = $(elemTd).text()
+        if ( vFilter !== null && vFilter != '' &&
+             ! vText.toLowerCase().includes( vFilter.toLowerCase() ) )
+        {
+          vShowRow = false
+        }
+      })
+
+      if ( vShowRow )
+      {
+        elemTr.style.display = ''
+      }
+      else
+      {
+        elemTr.style.display = 'none'
+      }
+
+    })
+
+  }
+
+
+  $('.sorting').click(function()
+  {
+    SortTable( 'mod-advrep-table', $(this).index(), 'string' )
+    var vIsAsc = $(this).hasClass('sorting_asc')
+    $(this).parent().find('th').removeClass('sorting_asc sorting_desc')
+    if ( vIsAsc )
+    {
+      $(this).addClass('sorting_desc')
+    }
+    else
+    {
+      $(this).addClass('sorting_asc')
+    }
+  })
+</script>
 <?php
 
 // Display the project footer
