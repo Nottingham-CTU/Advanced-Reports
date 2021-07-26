@@ -236,41 +236,48 @@ if ( isset( $reportData['sql_desc'] ) && $reportData['sql_desc'] != '' )
 
 
 ?>
-<table class="mod-advrep-datatable">
+<table id="mod-advrep-table" class="mod-advrep-datatable dataTable">
 <?php
 
-// Output the report table.
+// Output the report table (EAV types).
 if ( $resultType == 'eav' || $resultType == 'eav-id' )
 {
 ?>
- <tr>
+ <thead>
+  <tr>
 <?php
 	foreach ( $columns as $columnName )
 	{
 ?>
-  <th><?php echo htmlspecialchars( $columnName ); ?></th>
+   <th class="sorting"><?php echo htmlspecialchars( $columnName ); ?></th>
 <?php
 	}
 ?>
- </tr>
+  </tr>
+ </thead>
+ <tbody>
 <?php
 	foreach ( $resultData as $infoRecord )
 	{
 ?>
- <tr>
+  <tr>
 <?php
 		foreach ( $columns as $columnName )
 		{
 ?>
-  <td><?php echo isset( $infoRecord[ $columnName ] )
-                 ? $module->parseHTML( $infoRecord[ $columnName ] ) : ''; ?></td>
+   <td><?php echo isset( $infoRecord[ $columnName ] )
+                  ? $module->parseHTML( $infoRecord[ $columnName ] ) : ''; ?></td>
 <?php
 		}
 ?>
- </tr>
+  </tr>
 <?php
 	}
+?>
+ </tbody>
+<?php
 }
+// Output the report table (normal dataset type).
 else
 {
 	while ( $infoRecord = mysqli_fetch_assoc( $query ) )
@@ -278,20 +285,24 @@ else
 		if ( empty( $columns ) )
 		{
 ?>
- <tr>
+ <thead>
+  <tr>
 <?php
 			foreach ( $infoRecord as $fieldName => $value )
 			{
 				$columns[] = $fieldName;
 ?>
-  <th><?php echo htmlspecialchars( $fieldName ); ?></th>
+  <th class="sorting"><?php echo htmlspecialchars( $fieldName ); ?></th>
 <?php
 			}
 ?>
- </tr>
+  </tr>
+ </thead>
+ <tbody>
 <?php
 		}
 ?>
+
  <tr>
 <?php
 		foreach ( $columns as $fieldName )
@@ -304,10 +315,15 @@ else
  </tr>
 <?php
 	}
+?>
+ </tbody>
+<?php
 }
 ?>
 </table>
 <?php
+$module->outputViewReportJS();
+
 
 // Display the project footer
 require_once APP_PATH_DOCROOT . 'ProjectGeneral/footer.php';

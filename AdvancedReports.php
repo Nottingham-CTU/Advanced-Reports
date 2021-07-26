@@ -559,6 +559,177 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Output the JavaScript for view report pages, to provide sorting/filtering.
+	function outputViewReportJS()
+	{
+
+?>
+<script type="text/javascript">
+  $(function()
+  {
+
+    var filterTable = function()
+    {
+      var vHeader = $('.mod-advrep-datatable thead th')
+      $('.mod-advrep-datatable tbody tr').each(function(indexTr,elemTr)
+      {
+        var vShowRow = true
+        $(elemTr).find('td').each(function(indexTd,elemTd)
+        {
+          var vFilter = vHeader[indexTd].getAttribute('data-filter')
+          var vText = $(elemTd).text()
+          if ( vFilter !== null && vFilter != '' &&
+               ! vText.toLowerCase().includes( vFilter.toLowerCase() ) )
+          {
+            vShowRow = false
+          }
+        })
+
+        if ( vShowRow )
+        {
+          elemTr.style.display = ''
+        }
+        else
+        {
+          elemTr.style.display = 'none'
+        }
+
+      })
+
+      restyleTable()
+
+    }
+
+
+    var restyleTable = function()
+    {
+      var vIndex = 0
+      $('.mod-advrep-datatable tbody tr').each(function(indexTr,elemTr)
+      {
+        $(elemTr).removeClass('odd even')
+        if ( elemTr.style.display != 'none' )
+        {
+          $(elemTr).addClass( vIndex % 2 == 0 ? 'odd' : 'even' )
+          vIndex++
+        }
+      })
+    }
+
+
+    $('.mod-advrep-datatable th').each(function(index, elem)
+    {
+      $(elem).append('<span style="cursor:pointer;position:absolute;right:5px;bottom:10px" ' +
+                     'class="fas fa-filter" title="Filter rows by this field..."></span>')
+
+      $(elem).find('.fas').click(function(ev)
+      {
+        ev.stopPropagation()
+        var vFilter = elem.getAttribute('data-filter')
+        if ( vFilter == null )
+        {
+          vFilter = ''
+        }
+        var vText = prompt('Enter filter text', vFilter)
+        if ( vText !== null )
+        {
+          elem.setAttribute('data-filter', vText)
+          filterTable()
+          if ( vText !== '' )
+          {
+            this.style.color = '#7a80dd'
+          }
+          else
+          {
+            this.style.color = ''
+          }
+        }
+      })
+
+    })
+
+
+    $('.sorting').click(function()
+    {
+      SortTable( 'mod-advrep-table', $(this).index(), this.getAttribute('data-type') )
+      restyleTable()
+      var vIsAsc = $(this).hasClass('sorting_asc')
+      $(this).parent().find('th').removeClass('sorting_asc sorting_desc')
+      if ( vIsAsc )
+      {
+        $(this).addClass('sorting_desc')
+      }
+      else
+      {
+        $(this).addClass('sorting_asc')
+      }
+    })
+
+
+    var vHeader = $('.mod-advrep-datatable thead th')
+    $('.mod-advrep-datatable tbody tr').each(function(indexTr,elemTr)
+    {
+      $(elemTr).find('td').each(function(indexTd,elemTd)
+      {
+        var vType = vHeader[indexTd].getAttribute('data-type')
+        if ( vType === 'string' )
+        {
+          return
+        }
+        var vText = $(elemTd).text()
+        if ( new RegExp('^(0|-?[1-9][0-9]*)$').test(vText) ) // int
+        {
+          if ( vType == null )
+          {
+            vHeader[indexTd].setAttribute('data-type', 'int')
+          }
+          else if ( vType !== 'int' && vType !== 'float' )
+          {
+            vHeader[indexTd].setAttribute('data-type', 'string')
+          }
+        }
+        else if ( new RegExp('^(0|-?[1-9][0-9]*)\\.[0-9]+$').test(vText) ) // float
+        {
+          if ( vType == null || vType === 'int' )
+          {
+            vHeader[indexTd].setAttribute('data-type', 'float')
+          }
+          else if ( vType !== 'float' )
+          {
+            vHeader[indexTd].setAttribute('data-type', 'string')
+          }
+        }
+        else if ( ! Number.isNaN( Date.parse( vText ) ) ) // date
+        {
+          if ( vType == null )
+          {
+            vHeader[indexTd].setAttribute('data-type', 'date')
+          }
+          else if ( vType !== 'date' )
+          {
+            vHeader[indexTd].setAttribute('data-type', 'string')
+          }
+        }
+        else // string
+        {
+          vHeader[indexTd].setAttribute('data-type', 'string')
+        }
+      })
+    })
+    vHeader.each(function(indexTh,elemTh)
+    {
+      if ( elemTh.getAttribute('data-type') == null )
+      {
+        elemTh.setAttribute('data-type', 'string')
+      }
+    })
+  })
+</script>
+<?php
+
+	}
+
+
+
 	// Returns the supplied string with any HTML entity encoded, with the exception of hyperlinks,
 	// and placeholders replaced with the corresponding values.
 	// This is used primarily for report descriptions.
@@ -814,7 +985,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			.mod-advrep-datatable th
 			{
 				background: #ffffe0;
-				padding: 13px 5px;
+				padding: 13px 25px 13px 5px !important;
 				font-weight: bold;
 				border-right: solid 1px #ccc;
 				border-bottom: solid 1px #ccc;
@@ -822,7 +993,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			.mod-advrep-datatable td
 			{
 				background: #fff;
-				padding: 3px;
+				padding: 3px !important;
 				border-right: solid 1px #ccc;
 				border-bottom: solid 1px #ccc;
 			}
@@ -837,11 +1008,12 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 				position: sticky;
 				top: 0px;
 			}
-			.mod-advrep-datatable tr:first-child :first-child
+			.mod-advrep-datatable tr:first-child th:first-child
 			{
 				z-index: 2;
 			}
-			.mod-advrep-datatable tr:nth-child(2n+1) td
+			.mod-advrep-datatable tr:not(.odd):nth-child(2n) td,
+			.mod-advrep-datatable tr.even td
 			{
 				background: #eee;
 			}
