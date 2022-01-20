@@ -897,7 +897,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		                          " WHERE field_name = 'is_development_server'" );
 		$isDev = mysqli_fetch_row( $queryDev );
 		$isDev = $isDev[0] == '1';
-		header( 'Content-Type: text/plain; charset=utf-8' );
+		header( 'Content-Type: text/csv; charset=utf-8' );
 		header( 'Content-Disposition: attachment; filename="' .
 		        trim( preg_replace( '/[^A-Za-z0-9-]+/', '_', \REDCap::getProjectTitle() ), '_-' ) .
 		        "_{$reportID}_" . gmdate( 'Ymd-His' ) . ( $isDev ? '_dev' : '' ) . '.csv"' );

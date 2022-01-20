@@ -79,12 +79,12 @@ if ( isset( $_GET['download'] ) && $module->isReportDownloadable( $reportID ) )
 		foreach ( $columns as $columnName )
 		{
 			echo $first ? '' : ',';
-			echo '"', str_replace( '"', '""', $columnName );
+			echo '"', str_replace( '"', '""', $columnName ), '"';
 			$first = false;
 		}
-		echo "\n";
 		foreach ( $resultData as $infoRecord )
 		{
+			echo "\n";
 			$first = true;
 			foreach ( $columns as $columnName )
 			{
