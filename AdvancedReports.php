@@ -49,6 +49,11 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	// this configuration from all non-administrators.
 	function redcap_module_configure_button_display()
 	{
+		$projectID = $this->getProjectID();
+		if ( $projectID == null )
+		{
+			return true;
+		}
 		return ( $this->getUser()->isSuperUser() &&
 		         ( $this->getProjectSetting( 'edit-if-design' ) ||
 		           $this->getProjectSetting( 'edit-if-reports' ) ) ) ? true : null;
@@ -659,25 +664,40 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
       $(elem).find('.fas').click(function(ev)
       {
         ev.stopPropagation()
+        var vIcon = this
         var vFilter = elem.getAttribute('data-filter')
         if ( vFilter == null )
         {
           vFilter = ''
         }
-        var vText = prompt('Enter filter text', vFilter)
-        if ( vText !== null )
+        var vDialog = $('<div><input type="text" style="width:350px"></div>')
+        vDialog.find('input[type="text"]').val(vFilter)
+        vDialog.dialog(
         {
-          elem.setAttribute('data-filter', vText)
-          filterTable()
-          if ( vText !== '' )
+          autoOpen:true,
+          buttons:{
+            Reset : function()
+            {
+              vFilter = ''
+              vDialog.dialog('close')
+            },
+            Filter : function()
+            {
+              vFilter = vDialog.find('input[type="text"]').val()
+              vDialog.dialog('close')
+            }
+          },
+          close: function()
           {
-            this.style.color = '#7a80dd'
-          }
-          else
-          {
-            this.style.color = ''
-          }
-        }
+            elem.setAttribute('data-filter', vFilter)
+            filterTable()
+            vIcon.style.color = ( vFilter == '' ) ? '' : '#7a80dd'
+          },
+          modal:true,
+          resizable:false,
+          title:'Enter filter text',
+          width:400
+        })
       })
 
     })
