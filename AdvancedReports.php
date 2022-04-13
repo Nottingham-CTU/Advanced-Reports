@@ -5,25 +5,21 @@ namespace Nottingham\AdvancedReports;
 class AdvancedReports extends \ExternalModules\AbstractExternalModule
 {
 
-	// Function run when the module is updated.
-	function redcap_module_system_change_version( $version, $oldVersion )
+	// Function run when the module is enabled/updated.
+	function redcap_module_system_enable( $version )
 	{
-		// Convert reports to v1.2.4+ format.
-		if ( REDCap::versionCompare( $version, '1.2.4', '>=' ) &&
-		     REDCap::versionCompare( $oldVersion, '1.2.4', '<' ) )
+		// Convert old reports data to v1.2.4+ format.
+		foreach ( $this->getProjectsWithModuleEnabled() as $projectID )
 		{
-			foreach ( $this->getProjectsWithModuleEnabled() as $projectID )
+			$settings = $this->getProjectSettings( $projectID );
+			foreach ( $settings as $settingKey => $settingValue )
 			{
-				$settings = $this->getProjectSettings( $projectID );
-				foreach ( $settings as $settingKey => $settingValue )
+				if ( in_array( $settingKey, ['enabled', 'edit-if-design', 'edit-if-reports'] ) )
 				{
-					if ( in_array( $settingKey, ['enabled', 'edit-if-design', 'edit-if-reports'] ) )
-					{
-						continue;
-					}
-					$this->setSystemSetting( "p$projectID-$settingKey", $settingValue );
-					$this->removeProjectSetting( $settingKey, $projectID );
+					continue;
 				}
+				$this->setSystemSetting( "p$projectID-$settingKey", $settingValue );
+				$this->removeProjectSetting( $settingKey, $projectID );
 			}
 		}
 	}
@@ -53,7 +49,9 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	// this configuration from all non-administrators.
 	function redcap_module_configure_button_display()
 	{
-		return $this->framework->getUser()->isSuperUser() ? true : null;
+		return ( $this->getUser()->isSuperUser() &&
+		         ( $this->getProjectSetting( 'edit-if-design' ) ||
+		           $this->getProjectSetting( 'edit-if-reports' ) ) ) ? true : null;
 	}
 
 
@@ -125,12 +123,13 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	function isReportEditable( $reportType = null )
 	{
 		// Administrators can edit all reports.
-		$isSuperUser = $this->framework->getUser()->isSuperUser();
-		$userRights = $this->framework->getUser()->getRights();
+		$isSuperUser = $this->getUser()->isSuperUser();
+		$userRights = $this->getUser()->getRights();
 		if ( $isSuperUser )
 		{
 			return true;
 		}
+
 		// Don't allow editing by non-administrators without user rights.
 		// (in practice, such users probably cannot access the project)
 		// SQL reports are never editable by non-administrators.
@@ -138,12 +137,20 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		{
 			return false;
 		}
-		// Allow editing if enabled for the user's role.
+
+		// Allow editing if enabled for the user's role (deprecated).
 		if ( ( $this->getProjectSetting( 'edit-if-design' ) && $userRights[ 'design' ] == '1' ) ||
 			 ( $this->getProjectSetting( 'edit-if-reports' ) && $userRights[ 'reports' ] == '1' ) )
 		{
 			return true;
 		}
+
+		// If module specific rights are enabled, use this to determine whether editing is allowed.
+		if ( $this->getSystemSetting( 'config-require-user-permission' ) == 'true' )
+		{
+			return in_array( 'advanced_reports', $userRights['external_module_config'] );
+		}
+
 		// Otherwise don't allow editing.
 		return false;
 	}
@@ -316,7 +323,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	// Get the role name of the current user.
 	function getUserRole()
 	{
-		$userRights = $this->framework->getUser()->getRights();
+		$userRights = $this->getUser()->getRights();
 		if ( $userRights === null )
 		{
 			return null;
@@ -830,9 +837,9 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		}
 		else
 		{
-			$userRole = $this->framework->getUser()->getRights()['role_id'];
+			$userRole = $this->getUser()->getRights()['role_id'];
 			$userRole = $userRole == null ? 'NULL' : intval( $userRole );
-			$userDAG = $this->framework->getUser()->getRights()['group_id'];
+			$userDAG = $this->getUser()->getRights()['group_id'];
 			$userDAG = $userDAG == null ? 'NULL' : intval( $userDAG );
 			$sql = str_replace( '$$DAG$$', $userDAG, $sql );
 			$sql = str_replace( '$$PROJECT$$', intval( $this->getProjectId() ), $sql );
