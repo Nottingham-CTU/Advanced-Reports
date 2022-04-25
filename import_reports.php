@@ -10,7 +10,7 @@ if ( ! $module->framework->getUser()->isSuperUser() )
 }
 
 
-$projectID = $this->getProjectID();
+$projectID = $module->getProjectID();
 
 
 $mode = 'upload';

@@ -153,7 +153,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		// If module specific rights are enabled, use this to determine whether editing is allowed.
 		if ( $this->getSystemSetting( 'config-require-user-permission' ) == 'true' )
 		{
-			return in_array( 'advanced_reports', $userRights['external_module_config'] );
+			return is_array( $userRights['external_module_config'] ) &&
+			       in_array( 'advanced_reports', $userRights['external_module_config'] );
 		}
 
 		// Otherwise don't allow editing.
