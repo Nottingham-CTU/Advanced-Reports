@@ -5,6 +5,25 @@ namespace Nottingham\AdvancedReports;
 class AdvancedReports extends \ExternalModules\AbstractExternalModule
 {
 
+	// Function run when the module is enabled/updated.
+	function redcap_module_system_enable( $version )
+	{
+		// Convert old reports data to v1.2.4+ format.
+		foreach ( $this->getProjectsWithModuleEnabled() as $projectID )
+		{
+			$settings = $this->getProjectSettings( $projectID );
+			foreach ( $settings as $settingKey => $settingValue )
+			{
+				if ( in_array( $settingKey, ['enabled', 'edit-if-design', 'edit-if-reports'] ) )
+				{
+					continue;
+				}
+				$this->setSystemSetting( "p$projectID-$settingKey", $settingValue );
+				$this->removeProjectSetting( $settingKey, $projectID );
+			}
+		}
+	}
+
 	// Show the advanced reports link based on whether the user is able to view or edit any
 	// reports. If the user has no access, hide the link.
 	function redcap_module_link_check_display( $project_id, $link )
@@ -28,9 +47,16 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 	// As the REDCap built-in module configuration only contains options for administrators, hide
 	// this configuration from all non-administrators.
-	function redcap_module_configure_button_display( $project_id )
+	function redcap_module_configure_button_display()
 	{
-		return $this->framework->getUser()->isSuperUser() ? true : null;
+		$projectID = $this->getProjectID();
+		if ( $projectID == null )
+		{
+			return true;
+		}
+		return ( $this->getUser()->isSuperUser() &&
+		         ( $this->getProjectSetting( 'edit-if-design' ) ||
+		           $this->getProjectSetting( 'edit-if-reports' ) ) ) ? true : null;
 	}
 
 
@@ -102,12 +128,13 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	function isReportEditable( $reportType = null )
 	{
 		// Administrators can edit all reports.
-		$isSuperUser = $this->framework->getUser()->isSuperUser();
-		$userRights = $this->framework->getUser()->getRights();
+		$isSuperUser = $this->getUser()->isSuperUser();
+		$userRights = $this->getUser()->getRights();
 		if ( $isSuperUser )
 		{
 			return true;
 		}
+
 		// Don't allow editing by non-administrators without user rights.
 		// (in practice, such users probably cannot access the project)
 		// SQL reports are never editable by non-administrators.
@@ -115,12 +142,21 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		{
 			return false;
 		}
-		// Allow editing if enabled for the user's role.
+
+		// Allow editing if enabled for the user's role (deprecated).
 		if ( ( $this->getProjectSetting( 'edit-if-design' ) && $userRights[ 'design' ] == '1' ) ||
 			 ( $this->getProjectSetting( 'edit-if-reports' ) && $userRights[ 'reports' ] == '1' ) )
 		{
 			return true;
 		}
+
+		// If module specific rights are enabled, use this to determine whether editing is allowed.
+		if ( $this->getSystemSetting( 'config-require-user-permission' ) == 'true' )
+		{
+			return is_array( $userRights['external_module_config'] ) &&
+			       in_array( 'advanced_reports', $userRights['external_module_config'] );
+		}
+
 		// Otherwise don't allow editing.
 		return false;
 	}
@@ -130,12 +166,13 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	// Add a new report, with the specified ID (unique name), report type, and label.
 	function addReport( $reportID, $reportType, $reportLabel )
 	{
+		$projectID = $this->getProjectID();
 		// Set the report configuration.
 		$config = [ 'type' => $reportType, 'label' => $reportLabel, 'visible' => false,
 		            'lastupdated_user' => USERID, 'lastupdated_time' => time() ];
-		$this->setProjectSetting( "report-config-$reportID", json_encode( $config ) );
+		$this->setSystemSetting( "p$projectID-report-config-$reportID", json_encode( $config ) );
 		// Add the report to the list of reports.
-		$listIDs = $this->getProjectSetting( 'report-list' );
+		$listIDs = $this->getSystemSetting( "p$projectID-report-list" );
 		if ( $listIDs === null )
 		{
 			$listIDs = [];
@@ -145,7 +182,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			$listIDs = json_decode( $listIDs, true );
 		}
 		$listIDs[] = $reportID;
-		$this->setProjectSetting( 'report-list', json_encode( $listIDs ) );
+		$this->setSystemSetting( "p$projectID-report-list", json_encode( $listIDs ) );
 	}
 
 
@@ -153,11 +190,12 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	// Delete the specified report.
 	function deleteReport( $reportID )
 	{
+		$projectID = $this->getProjectID();
 		// Remove the report configuration and data.
-		$this->removeProjectSetting( "report-config-$reportID" );
-		$this->removeProjectSetting( "report-data-$reportID" );
+		$this->removeSystemSetting( "p$projectID-report-config-$reportID" );
+		$this->removeSystemSetting( "p$projectID-report-data-$reportID" );
 		// Remove the report from the list of reports.
-		$listIDs = $this->getProjectSetting( 'report-list' );
+		$listIDs = $this->getSystemSetting( "p$projectID-report-list" );
 		if ( $listIDs === null )
 		{
 			return;
@@ -167,7 +205,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		{
 			unset( $listIDs[$k] );
 		}
-		$this->setProjectSetting( 'report-list', json_encode( $listIDs ) );
+		$this->setSystemSetting( "p$projectID-report-list", json_encode( $listIDs ) );
 	}
 
 
@@ -217,7 +255,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	// Optionally specify the configuration option name, otherwise all options are returned.
 	function getReportConfig( $reportID, $configName = null )
 	{
-		$config = $this->getProjectSetting( "report-config-$reportID" );
+		$projectID = $this->getProjectID();
+		$config = $this->getSystemSetting( "p$projectID-report-config-$reportID" );
 		if ( $config !== null )
 		{
 			$config = json_decode( $config, true );
@@ -241,7 +280,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	// Get the report definition data for the specified report.
 	function getReportData( $reportID )
 	{
-		$data = $this->getProjectSetting( "report-data-$reportID" );
+		$projectID = $this->getProjectID();
+		$data = $this->getSystemSetting( "p$projectID-report-data-$reportID" );
 		if ( $data !== null )
 		{
 			$data = json_decode( $data, true );
@@ -254,7 +294,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	// Gets the list of reports, with the configuration data for each report.
 	function getReportList()
 	{
-		$listIDs = $this->getProjectSetting( 'report-list' );
+		$projectID = $this->getProjectID();
+		$listIDs = $this->getSystemSetting( "p$projectID-report-list" );
 		if ( $listIDs === null )
 		{
 			return [];
@@ -288,7 +329,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	// Get the role name of the current user.
 	function getUserRole()
 	{
-		$userRights = $this->framework->getUser()->getRights();
+		$userRights = $this->getUser()->getRights();
 		if ( $userRights === null )
 		{
 			return null;
@@ -624,25 +665,40 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
       $(elem).find('.fas').click(function(ev)
       {
         ev.stopPropagation()
+        var vIcon = this
         var vFilter = elem.getAttribute('data-filter')
         if ( vFilter == null )
         {
           vFilter = ''
         }
-        var vText = prompt('Enter filter text', vFilter)
-        if ( vText !== null )
+        var vDialog = $('<div><input type="text" style="width:350px"></div>')
+        vDialog.find('input[type="text"]').val(vFilter)
+        vDialog.dialog(
         {
-          elem.setAttribute('data-filter', vText)
-          filterTable()
-          if ( vText !== '' )
+          autoOpen:true,
+          buttons:{
+            Reset : function()
+            {
+              vFilter = ''
+              vDialog.dialog('close')
+            },
+            Filter : function()
+            {
+              vFilter = vDialog.find('input[type="text"]').val()
+              vDialog.dialog('close')
+            }
+          },
+          close: function()
           {
-            this.style.color = '#7a80dd'
-          }
-          else
-          {
-            this.style.color = ''
-          }
-        }
+            elem.setAttribute('data-filter', vFilter)
+            filterTable()
+            vIcon.style.color = ( vFilter == '' ) ? '' : '#7a80dd'
+          },
+          modal:true,
+          resizable:false,
+          title:'Enter filter text',
+          width:400
+        })
       })
 
     })
@@ -760,9 +816,10 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	// Sets the specified configuration option for a report to the specified value.
 	function setReportConfig( $reportID, $configName, $configValue )
 	{
+		$projectID = $this->getProjectID();
 		$reportConfig = $this->getReportConfig( $reportID );
 		$reportConfig[ $configName ] = $configValue;
-		$this->setProjectSetting( "report-config-$reportID", json_encode( $reportConfig ) );
+		$this->setSystemSetting( "p$projectID-report-config-$reportID", json_encode( $reportConfig ) );
 	}
 
 
@@ -770,7 +827,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	// Sets the definition data for the specified report.
 	function setReportData( $reportID, $reportData )
 	{
-		$this->setProjectSetting( "report-data-$reportID", json_encode( $reportData ) );
+		$projectID = $this->getProjectID();
+		$this->setSystemSetting( "p$projectID-report-data-$reportID", json_encode( $reportData ) );
 	}
 
 
@@ -800,9 +858,9 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		}
 		else
 		{
-			$userRole = $this->framework->getUser()->getRights()['role_id'];
+			$userRole = $this->getUser()->getRights()['role_id'];
 			$userRole = $userRole == null ? 'NULL' : intval( $userRole );
-			$userDAG = $this->framework->getUser()->getRights()['group_id'];
+			$userDAG = $this->getUser()->getRights()['group_id'];
 			$userDAG = $userDAG == null ? 'NULL' : intval( $userDAG );
 			$sql = str_replace( '$$DAG$$', $userDAG, $sql );
 			$sql = str_replace( '$$PROJECT$$', intval( $this->getProjectId() ), $sql );

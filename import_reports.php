@@ -10,6 +10,8 @@ if ( ! $module->framework->getUser()->isSuperUser() )
 }
 
 
+$projectID = $module->getProjectID();
+
 
 $mode = 'upload';
 if ( ! empty( $_FILES ) ) // file is uploaded
@@ -49,7 +51,8 @@ if ( ! empty( $_FILES ) ) // file is uploaded
 	// within the file. The user will be asked to confirm the changes.
 	if ( $mode == 'verify' ) // no error
 	{
-		$listCurrent = json_decode( $module->getProjectSetting( 'report-list' ), true ) ?? [];
+		$listCurrent = json_decode( $module->getSystemSetting( "p$projectID-report-list" ),
+		                            true ) ?? [];
 		$listImported = $data['report-list'] ?? [];
 		$listNew = array_diff( $listImported, $listCurrent );
 		$listDeleted = array_diff( $listCurrent, $listImported );
@@ -98,16 +101,16 @@ elseif ( ! empty( $_POST ) ) // normal POST request (confirming import)
 				$reportType = $data["report-config-$reportID"]['type'];
 				$reportLabel = $data["report-config-$reportID"]['label'];
 				$module->addReport( $reportID, $reportType, $reportLabel );
-				$module->setProjectSetting( "report-config-$reportID",
-				                            json_encode( $data["report-config-$reportID"] ) );
+				$module->setSystemSetting( "p$projectID-report-config-$reportID",
+				                           json_encode( $data["report-config-$reportID"] ) );
 				$module->setReportData( $reportID, $data["report-data-$reportID"] );
 			}
 			elseif ( substr( $key, 0, 14 ) == 'report-config-' )
 			{
 				// Update report configuration (label, category, access permissions etc.)
 				$reportID = substr( $key, 14 );
-				$module->setProjectSetting( "report-config-$reportID",
-				                            json_encode( $data["report-config-$reportID"] ) );
+				$module->setSystemSetting( "p$projectID-report-config-$reportID",
+				                           json_encode( $data["report-config-$reportID"] ) );
 				$module->setReportConfig( $reportID, 'lastupdated_user', USERID );
 				$module->setReportConfig( $reportID, 'lastupdated_time', time() );
 			}

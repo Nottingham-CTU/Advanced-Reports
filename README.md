@@ -4,23 +4,6 @@ This REDCap module provides advanced reporting capability.
 
 
 
-## Project-level configuration options
-
-This module provides two project-level configuration options, which are only visible to
-administrators.
-
-* Allow users with *project design and setup* rights to edit reports
-* Allow users with *add/edit/organize reports* rights to edit reports
-
-The rights referred to in these options are REDCap's user rights. This can be used to provide edit
-rights for advanced reports to users other than administrators. Note however that some report types
-can only be edited by administrators regardless of these settings.
-
-The configuration for the reports themselves are located on the edit pages within the module's
-plugin pages.
-
-
-
 ## Accessing Advanced Reports
 
 The link to the advanced reports plugin pages will appear under the external modules heading once
@@ -30,6 +13,17 @@ granted report editing rights will also see the edit reports link.
 
 To view a report, click on the link in the list of reports. Users with download rights will also get
 a download link on the report page.
+
+
+
+## Configuring Edit Rights
+
+By default, only administrators can edit advanced reports. Edit rights can be granted to other users
+by changing the system setting **Module configuration permissions in projects** to **Require
+module-specific user privilege**. Edit rights can then be granted by assigning the module-specific
+privilege to a user or role within the REDCap user rights page.
+
+Note that some report types can only be edited by administrators regardless of these settings.
 
 
 
@@ -90,3 +84,14 @@ as a Unix timestamp representing a UTC date/time.
 * **Result Type** choose how the SQL result is to be interpreted (normal or EAV)
 
 Please refer to the [SQL report instructions](README-SQL.md) for more information.
+
+
+
+## Project-level configuration options
+
+The following project-level configuration options are deprecated. They are only visible to
+administrators and only if at least one of them has been set. To permit non-administrators to edit
+reports, please use the REDCap module permission as described above.
+
+* Allow users with *project design and setup* rights to edit reports
+* Allow users with *add/edit/organize reports* rights to edit reports
