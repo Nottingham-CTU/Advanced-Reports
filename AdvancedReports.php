@@ -953,7 +953,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	{
 		$queryDev = $this->query( 'SELECT value FROM redcap_config WHERE field_name = ?',
 		                          [ 'is_development_server' ] );
-		$isDev = mysqli_fetch_row( $queryDev );
+		$isDev = $queryDev->fetch_row();
 		$isDev = $isDev[0] == '1';
 		header( 'Content-Type: text/csv; charset=utf-8' );
 		header( 'Content-Disposition: attachment; filename="' .
