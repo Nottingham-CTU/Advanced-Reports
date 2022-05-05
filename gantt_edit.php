@@ -27,6 +27,7 @@ if ( ! empty( $_POST ) )
 	// - Check the groups of variables are complete.
 	$hasLabelEvents = ( isset( $_POST['label_event'] ) && count( $_POST['label_event'] ) != 0 );
 	$hasCategoryEvents = ( isset( $_POST['chart_start_event'] ) &&
+	                       isset( $_POST['chart_end_event'] ) &&
 	                       count( $_POST['chart_start_event'] ) +
 	                       count( $_POST['chart_end_event'] ) != 0 );
 	if ( $hasLabelEvents != $hasCategoryEvents ||
