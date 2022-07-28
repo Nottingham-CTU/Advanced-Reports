@@ -1,7 +1,7 @@
 {
 	"name" : "Advanced Reports",
 	"namespace" : "Nottingham\\AdvancedReports",
-	"description" : "Create advanced reports beyond the standard REDCap functionality.",
+	"description" : "Provides additional report types for use in projects.<br>Report types: Gantt, SQL*<br>* Only administrators can create/edit SQL reports.",
 	"authors": [
 		{
 			"name": "Richard Dooley",

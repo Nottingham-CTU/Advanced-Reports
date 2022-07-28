@@ -221,6 +221,9 @@ if ( isset( $_GET['as_image']) && $reportConfig['as_image'] )
 require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
 $module->outputViewReportHeader( $reportConfig['label'], 'sql' );
 
+// Initialise the row counter.
+$rowCount = 0;
+
 ?>
 </p>
 <?php
@@ -259,6 +262,7 @@ if ( $resultType == 'eav' || $resultType == 'eav-id' )
 <?php
 	foreach ( $resultData as $infoRecord )
 	{
+		$rowCount++;
 ?>
   <tr>
 <?php
@@ -273,6 +277,12 @@ if ( $resultType == 'eav' || $resultType == 'eav-id' )
   </tr>
 <?php
 	}
+	if ( $rowCount == 0 )
+	{
+?>
+  <tr><td>No rows returned</td></tr>
+<?php
+	}
 ?>
  </tbody>
 <?php
@@ -282,6 +292,7 @@ else
 {
 	while ( $infoRecord = mysqli_fetch_assoc( $query ) )
 	{
+		$rowCount++;
 		if ( empty( $columns ) )
 		{
 ?>
@@ -303,16 +314,22 @@ else
 		}
 ?>
 
- <tr>
+  <tr>
 <?php
 		foreach ( $columns as $fieldName )
 		{
 ?>
-  <td><?php echo $module->parseHTML( $infoRecord[ $fieldName ] ); ?></td>
+   <td><?php echo $module->parseHTML( $infoRecord[ $fieldName ] ); ?></td>
 <?php
 		}
 ?>
- </tr>
+  </tr>
+<?php
+	}
+	if ( $rowCount == 0 )
+	{
+?>
+  <tr><td>No rows returned</td></tr>
 <?php
 	}
 ?>
@@ -322,6 +339,15 @@ else
 ?>
 </table>
 <?php
+
+if ( $rowCount > 0 )
+{
+?>
+<p>Total rows returned: <?php echo $rowCount; ?></p>
+<?php
+}
+
+
 $module->outputViewReportJS();
 
 
