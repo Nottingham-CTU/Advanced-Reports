@@ -309,6 +309,7 @@ elseif ( $mode == 'verify' )
 			            'as_image' => 'Report can be retrieved as an image' ]
 			          as $configName => $configLabel )
 			{
+				$configValue = [];
 				$configValue['old'] = $module->getReportConfig( $reportID, $configName );
 				$configValue['new'] = $data["report-config-$reportID"][$configName];
 				if ( $configValue['old'] === null && $configValue['new'] === null )
