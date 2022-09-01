@@ -59,6 +59,17 @@ if ( ! empty( $_POST ) && isset( $_POST['action'] ) )
 
 
 
+// Clean up report data for deleted projects.
+$moduleName = preg_replace( '_v[0-9.]+$', '', $module->getModuleDirectoryName() );
+$module->query( 'DELETE FROM redcap_external_module_settings ' .
+                'WHERE external_module_id = (SELECT external_module_id FROM' .
+                ' redcap_external_modules WHERE directory_prefix = ?) AND project_id IS NULL ' .
+                "AND `key` REGEXP '^p[1-9][0-9]*-' AND `key` NOT REGEXP concat('^p(', " .
+                "(SELECT group_concat(project_id SEPARATOR '|') FROM redcap_projects), ')-') " .
+                'LIMIT 50', [ $moduleName ] );
+
+
+
 // Get and sort the list of reports.
 $listReports = $module->getReportList();
 uasort( $listReports, [ $module, 'sortReports' ] );

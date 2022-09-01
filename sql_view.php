@@ -37,9 +37,13 @@ $columns = [];
 // If the result type is EAV, construct the result dataset before outputting.
 if ( $resultType == 'eav' || $resultType == 'eav-id' )
 {
+	if ( isset( $reportData['sql_cols'] ) && $reportData['sql_cols'] != '' )
+	{
+		$columns = str_getcsv( $reportData['sql_cols'], ',', '"', '' );
+	}
 	if ( $resultType == 'eav-id' )
 	{
-		$columns[] = mysqli_fetch_field( $query )->name;
+		array_unshift( $columns, mysqli_fetch_field( $query )->name );
 	}
 	$resultData = [];
 	while ( $infoRecord = mysqli_fetch_row( $query ) )

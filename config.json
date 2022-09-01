@@ -9,7 +9,7 @@
 			"institution": "University of Nottingham"
 		}
 	],
-	"permissions" : [ "redcap_module_system_enable" ],
+	"permissions" : [],
 	"framework-version" : 6,
 	"compatibility" : { "redcap-version-min" : "10.6.0" },
 	"links" : {

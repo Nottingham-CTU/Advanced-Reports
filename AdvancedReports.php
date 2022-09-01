@@ -5,25 +5,6 @@ namespace Nottingham\AdvancedReports;
 class AdvancedReports extends \ExternalModules\AbstractExternalModule
 {
 
-	// Function run when the module is enabled/updated.
-	function redcap_module_system_enable( $version )
-	{
-		// Convert old reports data to v1.2.4+ format.
-		foreach ( $this->getProjectsWithModuleEnabled() as $projectID )
-		{
-			$settings = $this->getProjectSettings( $projectID );
-			foreach ( $settings as $settingKey => $settingValue )
-			{
-				if ( in_array( $settingKey, ['enabled', 'edit-if-design', 'edit-if-reports'] ) )
-				{
-					continue;
-				}
-				$this->setSystemSetting( "p$projectID-$settingKey", $settingValue );
-				$this->removeProjectSetting( $settingKey, $projectID );
-			}
-		}
-	}
-
 	// Show the advanced reports link based on whether the user is able to view or edit any
 	// reports. If the user has no access, hide the link.
 	function redcap_module_link_check_display( $project_id, $link )
@@ -852,17 +833,22 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		if ( $test )
 		{
 			$sql = str_replace( [ '$$DAG$$', '$$PROJECT$$', '$$ROLE$$' ], '0', $sql );
-			$sql = str_replace( ['$$USER$$', '$$WEBROOT$$'], "'text'", $sql );
+			$sql = str_replace( '$$LOGTABLE$$', "text", $sql );
+			$sql = str_replace( [ '$$USER$$', '$$WEBROOT$$' ], "'text'", $sql );
 			$sql = preg_replace( '/\$\$QINT\:[a-z0-9_]+\$\$/', '0', $sql );
 			$sql = preg_replace( '/\$\$QSTR\:[a-z0-9_]+\$\$/', "'text'", $sql );
 		}
 		else
 		{
+			list( $logTable ) = $this->query( 'SELECT log_event_table FROM redcap_projects ' .
+			                                  'WHERE project_id = ?',
+			                                  [ $this->getProjectId() ] )->fetch_row();
 			$userRole = $this->getUser()->getRights()['role_id'];
 			$userRole = $userRole == null ? 'NULL' : intval( $userRole );
 			$userDAG = $this->getUser()->getRights()['group_id'];
 			$userDAG = $userDAG == null ? 'NULL' : intval( $userDAG );
 			$sql = str_replace( '$$DAG$$', $userDAG, $sql );
+			$sql = str_replace( '$$LOGTABLE$$', $logTable, $sql );
 			$sql = str_replace( '$$PROJECT$$', intval( $this->getProjectId() ), $sql );
 			$sql = str_replace( '$$ROLE$$', $userRole, $sql );
 			$sql = str_replace( '$$USER$$',
@@ -967,6 +953,11 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	function writeStyle()
 	{
 		$style = '
+			.mod-advrep-errmsg
+			{
+				color: #c00;
+				font-size: x-small;
+			}
 			.mod-advrep-description a:link
 			{
 				text-decoration: underline dotted;
@@ -1116,6 +1107,11 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 				border-bottom-width: 2px;
 				text-align: center;
 				padding-right: 10px;
+			}
+			.mod-advrep-gantt-date div
+			{
+				border: none;
+				font-size: xx-small;
 			}
 			.mod-advrep-gantt-date span
 			{

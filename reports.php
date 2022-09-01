@@ -4,6 +4,22 @@
  */
 
 
+// Convert old reports data to v1.2.4+ format.
+$projectID = $module->getProjectID();
+if ( $module->getProjectSetting( 'report-list' ) !== null )
+{
+	$settings = $module->getProjectSettings( $projectID );
+	foreach ( $settings as $settingKey => $settingValue )
+	{
+		if ( in_array( $settingKey, ['enabled', 'edit-if-design', 'edit-if-reports'] ) )
+		{
+			continue;
+		}
+		$module->setSystemSetting( "p$projectID-$settingKey", $settingValue );
+		$module->removeProjectSetting( $settingKey, $projectID );
+	}
+}
+
 
 // Get and sort the list of reports.
 $listReports = $module->getReportList();

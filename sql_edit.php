@@ -52,7 +52,7 @@ if ( ! empty( $_POST ) )
 	// Save data
 	$module->submitReportConfig( $reportID, true, 'image' );
 	$reportData = [ 'sql_desc' => $_POST['sql_desc'], 'sql_query' => $_POST['sql_query'],
-	                'sql_type' => $_POST['sql_type'] ];
+	                'sql_type' => $_POST['sql_type'], 'sql_cols' => $_POST['sql_cols'] ];
 	$module->setReportData( $reportID, $reportData );
 	header( 'Location: ' . $module->getUrl( 'reports_edit.php' ) );
 	exit;
@@ -90,6 +90,10 @@ echo $reportData['sql_desc'] ?? ''; ?></textarea>
   <tr>
    <td>SQL Query</td>
    <td>
+    <div id="sql_err_msg" class="mod-advrep-errmsg" style="display:none;margin-top:5px">
+     <i class="fas fa-exclamation-triangle"></i>
+     <span></span>
+    </div>
     <textarea name="sql_query" spellcheck="false"
               style="height:500px;max-width:95%;font-family:monospace;white-space:pre"><?php
 echo $reportData['sql_query'] ?? ''; ?></textarea>
@@ -100,6 +104,7 @@ echo $reportData['sql_query'] ?? ''; ?></textarea>
      You can use the following placeholder values in SQL queries:<br>
      <tt>$$DAG$$</tt> &#8212; the REDCap unique DAG ID of the user viewing the report
      (<i>NULL</i> if the user is not in a DAG)<br>
+     <tt>$$LOGTABLE$$</tt> &#8212; the redcap_log_event table used by the current project<br>
      <tt>$$PROJECT$$</tt> &#8212; the current project ID<br>
      <tt>$$QINT:<i>name</i>$$</tt> &#8212; the value of the named query string parameter, as an
      integer (<i>NULL</i> if the value is missing or not an integer)<br>
@@ -135,6 +140,17 @@ echo htmlspecialchars( APP_PATH_WEBROOT ); ?></tt>), for use in URLs<br>&nbsp;
     </label>
    </td>
   </tr>
+  <tr>
+   <td>Result Columns</td>
+   <td>
+    <input name="sql_cols" style="max-width:95%" value="<?php
+echo htmlspecialchars( $reportData['sql_cols'] ?? '' ); ?>">
+    <br>
+    <span class="field-desc">
+     Optional. If specified, prepare EAV output using the specified columnns.
+    </span>
+   </td>
+  </tr>
   <tr><td colspan="2">&nbsp;</td></tr>
   <tr>
    <td></td>
@@ -152,10 +168,13 @@ echo htmlspecialchars( APP_PATH_WEBROOT ); ?></tt>), for use in URLs<br>&nbsp;
      if ( this.value.toLowerCase().substring( 0, 7 ).replace( /[\r\n]/, ' ' ) != 'select ' )
      {
        this.setCustomValidity( 'Invalid SQL query: Must start with SELECT' )
+       $('#sql_err_msg span').text( 'Invalid SQL query: Must start with SELECT' )
+       $('#sql_err_msg').css( 'display', '' )
      }
      else
      {
        this.setCustomValidity( '' )
+       $('#sql_err_msg').css( 'display', 'none' )
      }
    }
    var vValidated = false
@@ -176,11 +195,14 @@ echo htmlspecialchars( APP_PATH_WEBROOT ); ?></tt>), for use in URLs<br>&nbsp;
                           {
                             vValidated = true
                             $('#sqlform')[0].submit()
+                            $('#sql_err_msg').css( 'display', 'none' )
                           }
                           else
                           {
                             var vMsg = 'Invalid SQL query: ' + result
                             $('[name="sql_query"]')[0].setCustomValidity( vMsg )
+                            $('#sql_err_msg span').text( vMsg )
+                            $('#sql_err_msg').css( 'display', '' )
                           }
                         }
              } )
