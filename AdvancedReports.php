@@ -638,6 +638,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
     }
 
 
+    $('body').append('<datalist id="mod-advrep-filterlist"></datalist>')
     $('.mod-advrep-datatable th').each(function(index, elem)
     {
       $(elem).append('<span style="cursor:pointer;position:absolute;right:5px;bottom:10px" ' +
@@ -652,7 +653,17 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
         {
           vFilter = ''
         }
-        var vDialog = $('<div><input type="text" style="width:350px"></div>')
+        var vItems = JSON.parse( elem.getAttribute('data-items') )
+        $('#mod-advrep-filterlist').empty()
+        if ( vItems !== false && vItems.length > 0 )
+        {
+          for ( var i = 0; i < vItems.length; i++ )
+          {
+            $('#mod-advrep-filterlist').append($('<option></option>').text(vItems[i]))
+          }
+        }
+        var vDialog = $('<div><input type="text" style="width:350px" ' +
+                        'list="mod-advrep-filterlist"></div>')
         vDialog.find('input[type="text"]').val(vFilter)
         vDialog.dialog(
         {
@@ -707,12 +718,27 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
     {
       $(elemTr).find('td').each(function(indexTd,elemTd)
       {
+        var vText = $(elemTd).text()
+        var vItems = vHeader[indexTd].getAttribute('data-items')
+        vItems = JSON.parse( vItems === null ? '[]' : vItems )
+        if ( vItems !== false && vText != '' && vItems.indexOf( vText ) == -1 )
+        {
+          vItems.push( vText )
+          if ( vItems.length > 20 )
+          {
+            vItems = false
+          }
+          else
+          {
+            vItems.sort()
+          }
+          vHeader[indexTd].setAttribute('data-items', JSON.stringify(vItems))
+        }
         var vType = vHeader[indexTd].getAttribute('data-type')
         if ( vType === 'string' )
         {
           return
         }
-        var vText = $(elemTd).text()
         if ( new RegExp('^(0|-?[1-9][0-9]*)$').test(vText) ) // int
         {
           if ( vType == null )
