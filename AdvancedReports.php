@@ -859,7 +859,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		if ( $test )
 		{
 			$sql = str_replace( [ '$$DAG$$', '$$PROJECT$$', '$$ROLE$$' ], '0', $sql );
-			$sql = str_replace( '$$LOGTABLE$$', "text", $sql );
+			$sql = str_replace( '$$LOGTABLE$$', 'redcap_log_event', $sql );
 			$sql = str_replace( [ '$$USER$$', '$$WEBROOT$$' ], "'text'", $sql );
 			$sql = preg_replace( '/\$\$QINT\:[a-z0-9_]+\$\$/', '0', $sql );
 			$sql = preg_replace( '/\$\$QSTR\:[a-z0-9_]+\$\$/', "'text'", $sql );
