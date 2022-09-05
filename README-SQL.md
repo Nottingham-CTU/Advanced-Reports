@@ -98,7 +98,8 @@ column in the report and will be named according to the name of the first column
 Each entity-attribute pair (row ID and column name) should be unique in the dataset. If an
 entity-attribute pair is repeated, the last value for the pair will be used.
 
-Row IDs and column names will be placed in the report in the order they first appear in the dataset.
+Row IDs and column names will be placed in the report in the order they first appear in the dataset,
+unless column names have been specified in the *result columns* option (see below).
 
 If the dataset contains fewer or more than 3 columns, then the data will not be displayed. It is
 impossible to render the report if fewer than 3 columns are used, and additional columns are
