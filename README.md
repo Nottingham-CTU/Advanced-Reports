@@ -82,6 +82,7 @@ as a Unix timestamp representing a UTC date/time.
     `$$WEBROOT$$` (REDCap version directory web path) can be used in the description.
 * **SQL Query** enter SELECT query here
 * **Result Type** choose how the SQL result is to be interpreted (normal or EAV)
+* **Result Columns** pre-specify column names for EAV datasets
 
 Please refer to the [SQL report instructions](README-SQL.md) for more information.
 

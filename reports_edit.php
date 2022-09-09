@@ -59,6 +59,17 @@ if ( ! empty( $_POST ) && isset( $_POST['action'] ) )
 
 
 
+// Clean up report data for deleted projects.
+$moduleName = preg_replace( '_v[0-9.]+$', '', $module->getModuleDirectoryName() );
+$module->query( 'DELETE FROM redcap_external_module_settings ' .
+                'WHERE external_module_id = (SELECT external_module_id FROM' .
+                ' redcap_external_modules WHERE directory_prefix = ?) AND project_id IS NULL ' .
+                "AND `key` REGEXP '^p[1-9][0-9]*-' AND `key` NOT REGEXP concat('^p(', " .
+                "(SELECT group_concat(project_id SEPARATOR '|') FROM redcap_projects), ')-') " .
+                'LIMIT 50', [ $moduleName ] );
+
+
+
 // Get and sort the list of reports.
 $listReports = $module->getReportList();
 uasort( $listReports, [ $module, 'sortReports' ] );
@@ -157,36 +168,37 @@ if ( count( $listReports ) > 0 )
 ?>
    </span>
   </td>
-  <td style="width:80px;text-align:center">
+  <td style="width:85px;text-align:center">
 <?php
 		if ( $module->isReportEditable( $infoReport['type'] ) )
 		{
 ?>
    <a href="<?php echo $module->getUrl( $infoReport['type'] . '_view.php?report_id=' . $reportID );
-?>" class="far fa-file-alt fs12"> View</a>
+?>" class="fs12"><i class="far fa-file-alt fs14"></i> View</a>
 <?php
 		}
 ?>
   </td>
-  <td style="width:90px;text-align:center">
+  <td style="width:85px;text-align:center">
 <?php
 		if ( $module->isReportEditable( $infoReport['type'] ) )
 		{
 ?>
    <a href="<?php echo $module->getUrl( $infoReport['type'] . '_edit.php?report_id=' . $reportID );
-?>" class="fas fa-pencil-alt fs12"> Edit</a>
+?>" class="fs12"><i class="fas fa-pencil-alt fs14"></i> Edit</a>
 <?php
 		}
 ?>
   </td>
-  <td style="width:90px;text-align:center">
+  <td style="width:95px;text-align:center">
 <?php
 		if ( $module->isReportEditable( $infoReport['type'] ) )
 		{
 ?>
-   <a href="" class="fas fa-trash fs12" onclick="return mod_advrep_delete( '<?php
+   <a href="" class="fs12" style="color:#b00" onclick="return mod_advrep_delete( '<?php
 			echo $reportID, "', '";
-			echo addslashes( htmlspecialchars( $infoReport['label'] ) ); ?>')"> Delete</a>
+			echo addslashes( htmlspecialchars( $infoReport['label'] ) );
+?>')"><i class="fas fa-trash fs14"></i> Delete</a>
    <form method="post" id="delreport_<?php echo $reportID; ?>">
     <input type="hidden" name="action" value="delete_report">
     <input type="hidden" name="report_id" value="<?php echo $reportID; ?>">
@@ -201,14 +213,30 @@ if ( count( $listReports ) > 0 )
 ?>
 </table>
 <script type="text/javascript">
- function mod_advrep_delete( id, label )
- {
-   if ( confirm( 'Are you sure you want to delete this report?\n\n  ' + label ) )
+ $(function(){
+   var vDialog = $('<div>Are you sure you want to delete the report <i></i>?</div>')
+   var vDelID = ''
+   vDialog.dialog(
    {
-     $('#delreport_' + id)[0].submit()
+     autoOpen:false,
+     buttons:
+     {
+       OK : function() { vDialog.dialog('close'); $('#delreport_' + vDelID)[0].submit() },
+       Cancel : function() { vDialog.dialog('close') }
+     },
+     modal:true,
+     resizable:false,
+     title:'Delete Report',
+     width:350
+   })
+   window.mod_advrep_delete = function( id, label )
+   {
+     vDelID = id
+     vDialog.find('i').text(label)
+     vDialog.dialog('open')
+     return false
    }
-   return false
- }
+ })
 </script>
 <?php
 }

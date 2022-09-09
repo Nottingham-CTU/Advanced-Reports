@@ -293,6 +293,7 @@ foreach ( $reportData['labels'] as $infoLabel )
 <?php
 
 }
+$prevYearHdr = '';
 $prevMonthHdr = '';
 $prevDateIncrement = '';
 if ( $squashMode )
@@ -324,6 +325,15 @@ for ( $date = $reportStart; $date < $reportEnd; $date += $dateIncrement )
 			$dateStyle = ';border-bottom-width:5px';
 		}
 	}
+	$thisYearHdr = gmdate( 'Y', $date );
+	if ( $thisYearHdr == $prevYearHdr )
+	{
+		$thisYearHdr = '&nbsp;';
+	}
+	else
+	{
+		$prevYearHdr = $thisYearHdr;
+	}
 	$thisMonthHdr = gmdate( 'M', $date );
 	if ( $thisMonthHdr == $prevMonthHdr && $dateIncrement == $prevDateIncrement )
 	{
@@ -335,7 +345,8 @@ for ( $date = $reportStart; $date < $reportEnd; $date += $dateIncrement )
 		$prevDateIncrement = $dateIncrement;
 	}
 	$thisDayHdr = gmdate( 'j', $date );
-	$thisDateHdr = '<span>' . $thisMonthHdr . '&nbsp;</span>' . $thisDayHdr;
+	$thisDateHdr = '<div>' . $thisYearHdr . '</div><span>' .
+	               $thisMonthHdr . '&nbsp;</span>' . $thisDayHdr;
 ?>
  <div class="mod-advrep-gantt-date" style="grid-column:span <?php
 	echo $dateSpan, $dateStyle; ?>"><?php echo $thisDateHdr; ?></div>
