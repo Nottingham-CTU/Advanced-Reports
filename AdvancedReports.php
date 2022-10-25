@@ -970,7 +970,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		header( 'Content-Type: text/csv; charset=utf-8' );
 		header( 'Content-Disposition: attachment; filename="' .
 		        trim( preg_replace( '/[^A-Za-z0-9-]+/', '_', \REDCap::getProjectTitle() ), '_-' ) .
-		        "_{$reportID}_" . gmdate( 'Ymd-His' ) . ( $isDev ? '_dev' : '' ) . '.csv"' );
+		        '_' . preg_replace( '/[^A-Za-z0-9-]+/', '_', $reportID ) . '_' .
+		        gmdate( 'Ymd-His' ) . ( $isDev ? '_dev' : '' ) . '.csv"' );
 	}
 
 

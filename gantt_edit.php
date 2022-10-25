@@ -182,7 +182,8 @@ require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
 $module->writeStyle();
 ?>
 <div class="projhdr">
- Advanced Reports &#8212; Edit SQL Report: <?php echo "$reportID\n"; ?>
+ Advanced Reports &#8212;
+ Edit Gantt Report: <?php echo preg_replace( '/[^A-Za-z0-9-]+/', '_', $reportID), "\n"; ?>
 </div>
 <p style="font-size:11px">
  <a href="<?php echo $module->getUrl( 'reports_edit.php' );
