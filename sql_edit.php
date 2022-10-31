@@ -67,7 +67,7 @@ $module->writeStyle();
 ?>
 <div class="projhdr">
  Advanced Reports &#8212;
- Edit SQL Report: <?php echo preg_replace( '/[^A-Za-z0-9-]+/', '_', $reportID), "\n"; ?>
+ Edit SQL Report: <?php echo $module->escapeHTML( $reportID ), "\n"; ?>
 </div>
 <p style="font-size:11px">
  <a href="<?php echo $module->getUrl( 'reports_edit.php' )
@@ -115,7 +115,7 @@ echo $reportData['sql_query'] ?? ''; ?></textarea>
      (<i>NULL</i> if the user is not in a role)<br>
      <tt>$$USER$$</tt> &#8212; the username of the user viewing the report<br>
      <tt>$$WEBROOT$$</tt> &#8212; the REDCap version directory web path (<tt><?php
-echo htmlspecialchars( APP_PATH_WEBROOT ); ?></tt>), for use in URLs<br>&nbsp;
+echo $module->escapeHTML( APP_PATH_WEBROOT ); ?></tt>), for use in URLs<br>&nbsp;
     </span>
    </td>
   </tr>
@@ -145,7 +145,7 @@ echo htmlspecialchars( APP_PATH_WEBROOT ); ?></tt>), for use in URLs<br>&nbsp;
    <td>Result Columns</td>
    <td>
     <input name="sql_cols" style="max-width:95%" value="<?php
-echo htmlspecialchars( $reportData['sql_cols'] ?? '' ); ?>">
+echo $module->escapeHTML( $reportData['sql_cols'] ?? '' ); ?>">
     <br>
     <span class="field-desc">
      Optional. If specified, prepare EAV output using the specified columnns.

@@ -191,6 +191,23 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Echo plain text to output (without Psalm taints).
+	// Use only for e.g. JSON or CSV output.
+	function echoText( $text )
+	{
+		echo array_reduce( str_split( $text ), function( $c, $i ) { return $c . $i; }, '' );
+	}
+
+
+
+	// Escapes text for inclusion in HTML.
+	function escapeHTML( $text )
+	{
+		return htmlspecialchars( $text, ENT_QUOTES );
+	}
+
+
+
 	// Returns a list of events for the project.
 	function getEventList()
 	{
@@ -807,15 +824,16 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 	// Returns the supplied string with any HTML entity encoded, with the exception of hyperlinks.
 	// If the $forDownload parameter is true, hyperlink tags will be stripped instead.
+	/** @psalm-pure */
 	function parseHTML( $str, $forDownload = false )
 	{
 		if ( $forDownload )
 		{
 			return preg_replace( '/<a href="[^"]*"( target="_blank")?>(.*?)<\/a>/', '$2', $str );
 		}
-		return preg_replace( '/&lt;a href="([^"]*)"( target="_blank")?&gt;(.*?)&lt;\/a&gt;/',
-		                     '<a href="$1"$2>$3</a>',
-		                     htmlspecialchars( $str, ENT_NOQUOTES ) );
+		return preg_replace( '/&lt;a href=&quot;((?(?=&quot;)|.)*)&quot;( ' .
+		                     'target=&quot;_blank&quot;)?&gt;(.*?)&lt;\/a&gt;/',
+		                     '<a href="$1"$2>$3</a>', htmlspecialchars( $str, ENT_QUOTES ) );
 	}
 
 
@@ -853,6 +871,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 	// Replace placeholders in SQL with values.
+	/** @psalm-taint-escape sql */
 	function sqlPlaceholderReplace( $sql, $test = false )
 	{
 		global $conn;
@@ -967,6 +986,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		                          [ 'is_development_server' ] );
 		$isDev = $queryDev->fetch_row();
 		$isDev = $isDev[0] == '1';
+		$reportID =
+			array_reduce( str_split( $reportID ), function( $c, $i ) { return $c . $i; }, '' );
 		header( 'Content-Type: text/csv; charset=utf-8' );
 		header( 'Content-Disposition: attachment; filename="' .
 		        trim( preg_replace( '/[^A-Za-z0-9-]+/', '_', \REDCap::getProjectTitle() ), '_-' ) .

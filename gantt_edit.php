@@ -110,7 +110,7 @@ function outputGanttLabelFields( $name = '', $event = '', $field = '' )
   <tr>
    <td>Label Name</td>
    <td>
-    <input type="text" name="label_name[]" value="<?php echo htmlspecialchars( $name ); ?>">
+    <input type="text" name="label_name[]" value="<?php echo $module->escapeHTML( $name ); ?>">
    </td>
   </tr>
   <tr>
@@ -141,7 +141,7 @@ function outputGanttChartFields( $name = '', $startEvent = '', $startField = '',
   <tr>
    <td>Name</td>
    <td>
-    <input type="text" name="chart_category[]" value="<?php echo htmlspecialchars( $name ); ?>">
+    <input type="text" name="chart_category[]" value="<?php echo $module->escapeHTML( $name ); ?>">
    </td>
   </tr>
   <tr>
@@ -183,7 +183,7 @@ $module->writeStyle();
 ?>
 <div class="projhdr">
  Advanced Reports &#8212;
- Edit Gantt Report: <?php echo preg_replace( '/[^A-Za-z0-9-]+/', '_', $reportID), "\n"; ?>
+ Edit Gantt Report: <?php echo $module->escapeHTML( $reportID ), "\n"; ?>
 </div>
 <p style="font-size:11px">
  <a href="<?php echo $module->getUrl( 'reports_edit.php' );
