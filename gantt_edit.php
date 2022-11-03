@@ -110,7 +110,7 @@ function outputGanttLabelFields( $name = '', $event = '', $field = '' )
   <tr>
    <td>Label Name</td>
    <td>
-    <input type="text" name="label_name[]" value="<?php echo htmlspecialchars( $name ); ?>">
+    <input type="text" name="label_name[]" value="<?php echo $module->escapeHTML( $name ); ?>">
    </td>
   </tr>
   <tr>
@@ -141,7 +141,7 @@ function outputGanttChartFields( $name = '', $startEvent = '', $startField = '',
   <tr>
    <td>Name</td>
    <td>
-    <input type="text" name="chart_category[]" value="<?php echo htmlspecialchars( $name ); ?>">
+    <input type="text" name="chart_category[]" value="<?php echo $module->escapeHTML( $name ); ?>">
    </td>
   </tr>
   <tr>
@@ -182,7 +182,8 @@ require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
 $module->writeStyle();
 ?>
 <div class="projhdr">
- Advanced Reports &#8212; Edit SQL Report: <?php echo "$reportID\n"; ?>
+ Advanced Reports &#8212;
+ Edit Gantt Report: <?php echo $module->escapeHTML( $reportID ), "\n"; ?>
 </div>
 <p style="font-size:11px">
  <a href="<?php echo $module->getUrl( 'reports_edit.php' );

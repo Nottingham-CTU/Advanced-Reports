@@ -289,7 +289,7 @@ foreach ( $reportData['labels'] as $infoLabel )
 {
 
 ?>
- <div class="mod-advrep-gantt-hdr"><?php echo htmlspecialchars( $infoLabel['name'] ); ?></div>
+ <div class="mod-advrep-gantt-hdr"><?php echo $module->escapeHTML( $infoLabel['name'] ); ?></div>
 <?php
 
 }
@@ -364,7 +364,7 @@ foreach ( $listChartEntries as $infoChartEntry )
 ?>
  <div style="grid-row-end:span <?php
 		echo count( $infoChartEntry['categories'] ), $firstLabel ? ';grid-column-start:1' : '';
-?>"><?php echo $labelValue == '' ? '&nbsp;' : htmlspecialchars( $labelValue ); ?></div>
+?>"><?php echo $labelValue == '' ? '&nbsp;' : $module->escapeHTML( $labelValue ); ?></div>
 <?php
 		$firstLabel = false;
 	}
@@ -404,7 +404,7 @@ foreach ( $listChartEntries as $infoChartEntry )
 ?>
  <div class="mod-advrep-chart-style<?php echo $categoryIndex; ?>" style="grid-column:<?php
 echo "$itemStart/$itemEnd"; ?>" title="<?php
-		echo htmlspecialchars( $infoChartCategory['name'] ), "\n";
+		echo $module->escapeHTML( $infoChartCategory['name'] ), "\n";
 		if ( gmdate( 'H:i ', $infoChartCategory['start'] ) .
 		     gmdate( 'H:i', $infoChartCategory['end'] ) == '00:00 00:00' )
 		{
@@ -416,7 +416,7 @@ echo "$itemStart/$itemEnd"; ?>" title="<?php
 		}
 		echo 'Start: ', gmdate( $tooltipDateFormat, $infoChartCategory['start'] ), "\n";
 		echo 'End:  ', gmdate( $tooltipDateFormat, $infoChartCategory['end'] );
-?>"><?php echo htmlspecialchars( $infoChartCategory['name'] ); ?></div>
+?>"><?php echo $module->escapeHTML( $infoChartCategory['name'] ); ?></div>
 <?php
 	}
 }
@@ -429,7 +429,7 @@ foreach ( $listCategories as $categoryIndex => $categoryName )
 {
 ?>
  <div><div class="mod-advrep-chart-style<?php
-	echo $categoryIndex; ?>"></div><?php echo htmlspecialchars( $categoryName ); ?></div>
+	echo $categoryIndex; ?>"></div><?php echo $module->escapeHTML( $categoryName ); ?></div>
 <?php
 }
 ?>

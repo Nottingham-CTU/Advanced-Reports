@@ -83,7 +83,9 @@ if ( isset( $_GET['download'] ) && $module->isReportDownloadable( $reportID ) )
 		foreach ( $columns as $columnName )
 		{
 			echo $first ? '' : ',';
-			echo '"', str_replace( '"', '""', $columnName ), '"';
+			echo '"';
+			$module->echoText( str_replace( '"', '""', $columnName ) );
+			echo '"';
 			$first = false;
 		}
 		foreach ( $resultData as $infoRecord )
@@ -113,7 +115,9 @@ if ( isset( $_GET['download'] ) && $module->isReportDownloadable( $reportID ) )
 			{
 				echo count( $columns ) == 0 ? '' : ',';
 				$columns[] = $fieldName;
-				echo '"', str_replace( '"', '""', $fieldName ), '"';
+				echo '"';
+				$module->echoText( str_replace( '"', '""', $fieldName ) );
+				echo '"';
 			}
 		}
 		echo "\n";
@@ -256,7 +260,7 @@ if ( $resultType == 'eav' || $resultType == 'eav-id' )
 	foreach ( $columns as $columnName )
 	{
 ?>
-   <th class="sorting"><?php echo htmlspecialchars( $columnName ); ?></th>
+   <th class="sorting"><?php echo $module->escapeHTML( $columnName ); ?></th>
 <?php
 	}
 ?>
@@ -307,7 +311,7 @@ else
 			{
 				$columns[] = $fieldName;
 ?>
-  <th class="sorting"><?php echo htmlspecialchars( $fieldName ); ?></th>
+  <th class="sorting"><?php echo $module->escapeHTML( $fieldName ); ?></th>
 <?php
 			}
 ?>
