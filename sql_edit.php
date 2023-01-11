@@ -71,7 +71,7 @@ $module->writeStyle();
 </div>
 <p style="font-size:11px">
  <a href="<?php echo $module->getUrl( 'reports_edit.php' )
-?>" class="fas fa-arrow-circle-left fs11"> Back to edit reports</a>
+?>"><i class="fas fa-arrow-circle-left fs11"></i> Back to edit reports</a>
 </p>
 <form method="post" id="sqlform">
  <table class="mod-advrep-formtable">
