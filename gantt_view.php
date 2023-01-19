@@ -288,8 +288,9 @@ $module->outputViewReportHeader( $reportConfig['label'], 'gantt' );
 ?>
 <p>
  <b>Zoom:</b>
- &nbsp;
- <span id="ganttzoom" style="width:250px;display:inline-block"></span>
+ &nbsp;&nbsp;
+ &#8211;&nbsp;&nbsp;&nbsp;<span style="width:250px;display:inline-block"
+                                id="ganttzoom"></span>&nbsp;&nbsp;&nbsp;+
 </p>
 <?php
 
