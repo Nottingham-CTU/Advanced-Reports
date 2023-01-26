@@ -187,7 +187,7 @@ $module->writeStyle();
 </div>
 <p style="font-size:11px">
  <a href="<?php echo $module->getUrl( 'reports_edit.php' );
-?>" class="fas fa-arrow-circle-left fs11"> Back to edit reports</a>
+?>"><i class="fas fa-arrow-circle-left fs11"></i> Back to edit reports</a>
 </p>
 <form method="post" id="advrep-gantt-form">
  <table class="mod-advrep-formtable">
@@ -208,7 +208,9 @@ outputGanttLabelFields();
 ?>
   <tr>
    <td></td>
-   <td><a href="#" class="fas fa-plus-circle fs12" id="gantt-add-lbl"> Add label field</a></td>
+   <td>
+    <a href="#" id="gantt-add-lbl"><i class="fas fa-plus-circle fs12"></i> Add label field</a>
+   </td>
   </tr>
   <tr><th colspan="2">Report Definition - Chart Categories</th></tr>
 <?php
@@ -227,7 +229,9 @@ outputGanttChartFields();
 ?>
   <tr>
    <td></td>
-   <td><a href="#" class="fas fa-plus-circle fs12" id="gantt-add-cat"> Add chart category</a></td>
+   <td>
+    <a href="#" id="gantt-add-cat"><i class="fas fa-plus-circle fs12"></i> Add chart category</a>
+   </td>
   </tr>
   <tr><td colspan="2">&nbsp;</td></tr>
   <tr>

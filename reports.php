@@ -42,7 +42,7 @@ if ( $module->isReportEditable() )
 ?>
 <p style="font-size:11px;text-align:right">
  <a href="<?php echo $module->getUrl( 'reports_edit.php' )
-?>" class="fas fa-pencil-alt fs11"> Edit reports</a>
+?>"><i class="fas fa-pencil-alt fs11"></i> Edit reports</a>
 </p>
 <?php
 }

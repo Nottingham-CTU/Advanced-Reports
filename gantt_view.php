@@ -16,6 +16,9 @@ define( 'GANTT_STEP_DAY', ( GANTT_DAY / GANTT_SPLIT_DAY ) );
 define( 'GANTT_STEP_WEEK', ( GANTT_WEEK / GANTT_SPLIT_WEEK ) );
 define( 'GANTT_STEP_MONTH', ( GANTT_MONTH / GANTT_SPLIT_MONTH ) );
 
+// Define mapping of Gantt zoom level names to numbers.
+$zoomLevels = [ 1 => 'ultra', 2 => 'more', 3 => 'compact', 4 => 'standard', 5 => 'expand' ];
+
 
 
 // Verify the report exists, is a Gantt report, and is visible.
@@ -37,6 +40,39 @@ if ( ! $module->isReportAccessible( $reportID ) )
 {
 	header( 'Location: ' . $module->getUrl( 'reports.php' ) );
 	exit;
+}
+
+
+
+// Determine the selected zoom level.
+if ( isset( $_GET['gantt_mode'] ) && in_array( $_GET['gantt_mode'], $zoomLevels ) )
+{
+	$module->query( "DO GET_LOCK('rc-mod-advrep-ganttzoom',20)", [] );
+	$listUserZoomLevels = json_decode( $module->getSystemSetting('user-gantt-zoom') ?? '[]', true );
+	if ( $_GET['gantt_mode'] == 'standard' )
+	{
+		unset( $listUserZoomLevels[USERID] );
+	}
+	else
+	{
+		$listUserZoomLevels[USERID] = $_GET['gantt_mode'];
+	}
+	$module->setSystemSetting( 'user-gantt-zoom', json_encode( $listUserZoomLevels ) );
+	$module->query( "DO RELEASE_LOCK('rc-mod-advrep-ganttzoom')", [] );
+	header( 'Location: ' . $module->makeQueryURL( 'gantt_mode' ) );
+	exit;
+}
+else
+{
+	$listUserZoomLevels = json_decode( $module->getSystemSetting('user-gantt-zoom') ?? '[]', true );
+	if ( isset( $listUserZoomLevels[USERID] ) )
+	{
+		$_GET['gantt_mode'] = $listUserZoomLevels[USERID];
+	}
+	else
+	{
+		$_GET['gantt_mode'] = 'standard';
+	}
 }
 
 
@@ -251,16 +287,10 @@ $module->outputViewReportHeader( $reportConfig['label'], 'gantt' );
 
 ?>
 <p>
- <b>View:</b>
- <?php echo $module->makeQueryLink( 'expanded', 'gantt_mode', 'expand' ), "\n"; ?>
- |
- <?php echo $module->makeQueryLink( 'standard', 'gantt_mode' ), "\n"; ?>
- |
- <?php echo $module->makeQueryLink( 'compact', 'gantt_mode', 'compact' ), "\n"; ?>
- |
- <?php echo $module->makeQueryLink( 'more-compact', 'gantt_mode', 'more' ), "\n"; ?>
- |
- <?php echo $module->makeQueryLink( 'ultra-compact', 'gantt_mode', 'ultra' ), "\n"; ?>
+ <b>Zoom:</b>
+ &nbsp;&nbsp;
+ &#8211;&nbsp;&nbsp;&nbsp;<span style="width:250px;display:inline-block"
+                                id="ganttzoom"></span>&nbsp;&nbsp;&nbsp;+
 </p>
 <?php
 
@@ -434,6 +464,15 @@ foreach ( $listCategories as $categoryIndex => $categoryName )
 }
 ?>
 </div>
+<script type="text/javascript">
+  $(function()
+  {
+    var vZoomLevels = <?php echo json_encode( $zoomLevels ), "\n"; ?>
+    $('#ganttzoom').slider({min:1,max:5,value:<?php
+echo array_search( $_GET['gantt_mode'], $zoomLevels );
+?>,change:function(e,u){window.location+='&gantt_mode='+vZoomLevels[u.value]}})
+  })
+</script>
 <?php
 
 // Display the project footer

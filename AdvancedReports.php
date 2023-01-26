@@ -564,7 +564,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 </div>
 <p style="font-size:11px" class="hide_in_print">
  <a href="<?php echo $this->getUrl( 'reports.php' )
-?>" class="fas fa-arrow-circle-left fs11"> Back to Advanced Reports</a>
+?>"><i class="fas fa-arrow-circle-left fs11"></i> Back to Advanced Reports</a>
 <?php
 
 		// If report can be downloaded, show the download link.
@@ -576,7 +576,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
  <a href="<?php
 			echo $this->getUrl( $reportType . '_view.php?report_id=' . $_GET['report_id'] .
 			                    '&download=1' );
-?>" class="fas fa-file-download fs11"> Download report</a>
+?>"><i class="fas fa-file-download fs11"></i> Download report</a>
 <?php
 
 		}
@@ -589,7 +589,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
  <a href="<?php
 			echo $this->getUrl( $reportType . '_edit.php?report_id=' . $_GET['report_id'] );
-?>" class="fas fa-pencil-alt fs11"> Edit report</a>
+?>"><i class="fas fa-pencil-alt fs11"></i> Edit report</a>
 <?php
 
 		}
