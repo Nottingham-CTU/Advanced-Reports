@@ -257,11 +257,15 @@ if ( $resultType == 'eav' || $resultType == 'eav-id' )
  <thead>
   <tr>
 <?php
+	$colNum = 0;
 	foreach ( $columns as $columnName )
 	{
 ?>
-   <th class="sorting"><?php echo $module->escapeHTML( $columnName ); ?></th>
+   <th class="sorting" data-colnum="<?php echo $colNum; ?>">
+    <?php echo $module->escapeHTML( $columnName ), "\n"; ?>
+   </th>
 <?php
+		$colNum++;
 	}
 ?>
   </tr>
@@ -307,12 +311,16 @@ else
  <thead>
   <tr>
 <?php
+			$colNum = 0;
 			foreach ( $infoRecord as $fieldName => $value )
 			{
 				$columns[] = $fieldName;
 ?>
-  <th class="sorting"><?php echo $module->escapeHTML( $fieldName ); ?></th>
+  <th class="sorting" data-colnum="<?php echo $colNum; ?>">
+   <?php echo $module->escapeHTML( $fieldName ), "\n"; ?>
+  </th>
 <?php
+				$colNum++;
 			}
 ?>
   </tr>
@@ -351,7 +359,7 @@ else
 if ( $rowCount > 0 )
 {
 ?>
-<p>Total rows returned: <?php echo $rowCount; ?></p>
+<p>Total rows returned: <span id="filtercount"></span><?php echo $rowCount; ?></p>
 <?php
 }
 

@@ -607,8 +607,22 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
   $(function()
   {
 
+    var vReportParams = {}
+    try
+    {
+      vReportParams =
+          JSON.parse(new URLSearchParams(new URL(window.location).search).get('report_state'))
+      if ( vReportParams === null )
+      {
+        vReportParams = {}
+      }
+    } catch (e) {} // Keep default value if exception.
+
+
     var filterTable = function()
     {
+      var vShowAllRows = true
+      var vShowNumRows = 0
       var vHeader = $('.mod-advrep-datatable thead th')
       $('.mod-advrep-datatable tbody tr').each(function(indexTr,elemTr)
       {
@@ -627,15 +641,18 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
         if ( vShowRow )
         {
           elemTr.style.display = ''
+          vShowNumRows++
         }
         else
         {
           elemTr.style.display = 'none'
+          vShowAllRows = false
         }
 
       })
 
       restyleTable()
+      $('#filtercount').text( vShowAllRows ? '' : ( vShowNumRows + ' / ' ) )
 
     }
 
@@ -655,11 +672,36 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
     }
 
 
+    var updateURL = function()
+    {
+      var objURL = new URL(window.location)
+      var objParams = new URLSearchParams(objURL.search)
+      var newState = JSON.stringify(vReportParams)
+      if ( newState == '{}' )
+      {
+        objParams.delete('report_state')
+      }
+      else
+      {
+        objParams.set('report_state',newState)
+      }
+      objURL.search = objParams.toString()
+      history.replaceState( null, null, objURL.toString() )
+    }
+
+
     $('body').append('<datalist id="mod-advrep-filterlist"></datalist>')
     $('.mod-advrep-datatable th').each(function(index, elem)
     {
       $(elem).append('<span style="cursor:pointer;position:absolute;right:5px;bottom:10px" ' +
                      'class="fas fa-filter" title="Filter rows by this field..."></span>')
+
+      if ( vReportParams.filter != undefined &&
+           vReportParams.filter[elem.getAttribute('data-colnum')] != undefined )
+      {
+        elem.setAttribute('data-filter', vReportParams.filter[elem.getAttribute('data-colnum')])
+        $(elem).find('.fas')[0].style.color = '#7a80dd'
+      }
 
       $(elem).find('.fas').click(function(ev)
       {
@@ -670,6 +712,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
         {
           vFilter = ''
         }
+        var vColNum = elem.getAttribute('data-colnum')
         var vItems = JSON.parse( elem.getAttribute('data-items') )
         $('#mod-advrep-filterlist').empty()
         if ( vItems !== false && vItems.length > 0 )
@@ -700,6 +743,27 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
           close: function()
           {
             elem.setAttribute('data-filter', vFilter)
+            if ( vFilter == '' )
+            {
+              if ( vReportParams.filter != undefined && vReportParams.filter[vColNum] != undefined )
+              {
+                delete vReportParams.filter[vColNum]
+              }
+              if ( vReportParams.filter != undefined &&
+                   Object.keys(vReportParams.filter).length == 0 )
+              {
+                delete vReportParams.filter
+              }
+            }
+            else
+            {
+              if ( vReportParams.filter == undefined )
+              {
+                vReportParams.filter = {}
+              }
+              vReportParams.filter[vColNum] = vFilter
+            }
+            updateURL()
             filterTable()
             vIcon.style.color = ( vFilter == '' ) ? '' : '#7a80dd'
           },
@@ -711,22 +775,24 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
       })
 
     })
+    filterTable()
 
 
     $('.sorting').click(function()
     {
+      var vColNum = this.getAttribute('data-colnum') - 0
+      if ( vReportParams.sort == undefined )
+      {
+        vReportParams.sort = []
+      }
+      vReportParams.sort = vReportParams.sort.filter( function(i) { return i.col != vColNum } )
       SortTable( 'mod-advrep-table', $(this).index(), this.getAttribute('data-type') )
       restyleTable()
       var vIsAsc = $(this).hasClass('sorting_asc')
       $(this).parent().find('th').removeClass('sorting_asc sorting_desc')
-      if ( vIsAsc )
-      {
-        $(this).addClass('sorting_desc')
-      }
-      else
-      {
-        $(this).addClass('sorting_asc')
-      }
+      $(this).addClass( vIsAsc ? 'sorting_desc' : 'sorting_asc' )
+      vReportParams.sort.unshift( { col: vColNum, dir: ( vIsAsc ? 'desc' : 'asc' ) } )
+      updateURL()
     })
 
 
@@ -801,7 +867,31 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
       {
         elemTh.setAttribute('data-type', 'string')
       }
-    })
+    });
+
+
+    (function()
+    {
+      if ( vReportParams.sort != undefined && Array.isArray( vReportParams.sort ) )
+      {
+        for ( var i = vReportParams.sort.length - 1; i >= 0; i-- )
+        {
+          var vColNum = vReportParams.sort[i].col
+          var vSortDir = vReportParams.sort[i].dir
+          var vColHdr = $('th[data-colnum="' + vColNum + '"]')
+          var vDataType = vColHdr[0].getAttribute('data-type')
+          SortTable( 'mod-advrep-table', vColNum, vDataType )
+          if ( vSortDir == 'desc' )
+          {
+            SortTable( 'mod-advrep-table', vColNum, vDataType )
+          }
+          if ( i == 0 )
+          {
+            vColHdr.addClass( vSortDir == 'desc' ? 'sorting_desc' : 'sorting_asc' )
+          }
+        }
+      }
+    })()
   })
 </script>
 <?php
@@ -1102,7 +1192,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			}
 			.mod-advrep-datatable tr:first-child th
 			{
-				position: sticky;
+				position: sticky !important;
 				top: 0px;
 			}
 			.mod-advrep-datatable tr:first-child th:first-child
