@@ -671,7 +671,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 	// Output the report navigation links.
-	function outputViewReportHeader( $reportLabel, $reportType )
+	function outputViewReportHeader( $reportLabel, $reportType, $canReset = false )
 	{
 		$canDownload = $this->isReportDownloadable( $_GET['report_id'] );
 		$this->writeStyle();
@@ -712,6 +712,22 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 		}
 
+		// If applicable for the report type, show a link to reset the report state.
+		if ( $canReset )
+		{
+
+?>
+ <span id="mod-advrep-resetstate" style="display:none">
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="<?php
+			echo $this->escapeHTML( preg_replace( '/&report_state=[^&]+/', '',
+			                                      $_SERVER['REQUEST_URI'] ) );
+?>"><i class="fas fa-rotate-left fs11"></i> Reset</a>
+ </span>
+<?php
+
+		}
+
 	}
 
 
@@ -733,6 +749,10 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
       if ( vReportParams === null )
       {
         vReportParams = {}
+      }
+      else
+      {
+        $('#mod-advrep-resetstate').css('display','')
       }
     } catch (e) {} // Keep default value if exception.
 
@@ -798,10 +818,12 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
       if ( newState == '{}' )
       {
         objParams.delete('report_state')
+        $('#mod-advrep-resetstate').css('display','none')
       }
       else
       {
         objParams.set('report_state',newState)
+        $('#mod-advrep-resetstate').css('display','')
       }
       objURL.search = objParams.toString()
       history.replaceState( null, null, objURL.toString() )
