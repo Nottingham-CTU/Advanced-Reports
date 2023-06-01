@@ -42,6 +42,124 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Supply data to the REDCap UI Tweaker module for use on simplified views.
+	function redcap_every_page_before_render( $project_id )
+	{
+		if ( $this->isModuleEnabled('redcap_ui_tweaker') )
+		{
+			$UITweaker = \ExternalModules\ExternalModules::getModuleInstance('redcap_ui_tweaker');
+			// Supply report data to the reports simplified view.
+			if ( $UITweaker->areCustomReportsExpected() )
+			{
+				$listReports = $this->getReportList();
+				$reportTypes = $this->getReportTypes();
+				foreach ( $listReports as $reportID => $reportConfig )
+				{
+					$reportData = $this->getReportData( $reportID );
+					$description = '';
+					$definition = '';
+					$options = '';
+					// Get report permissions.
+					if ( $reportConfig['roles_access'] == '*' )
+					{
+						$reportConfig['roles_access'] = 'ALL';
+					}
+					if ( $reportConfig['roles_download'] == '*' )
+					{
+						$reportConfig['roles_download'] = $reportConfig['roles_access'];
+					}
+					$permissions = 'View Access: ' .
+					               str_replace( "\n", ', ', $reportConfig['roles_access'] );
+					if ( array_key_exists('as_image', $reportConfig) && $reportConfig['as_image'] )
+					{
+						$permissions .= "\nCan retrieve as image";
+					}
+					if ( $reportConfig['download'] )
+					{
+						$permissions .= "\nDownload: " .
+						                str_replace( "\n", ', ', $reportConfig['roles_download'] );
+					}
+					if ( ! $reportConfig['visible'] )
+					{
+						$permissions = "(hidden)\n$permissions";
+					}
+					// For SQL reports...
+					if ( $reportConfig['type'] == 'sql' )
+					{
+						// Populate description and definition with the report description and SQL.
+						$description = $reportData['sql_desc'];
+						$definition = $reportData['sql_query'];
+						// Note if the report is EAV format.
+						if ( in_array( $reportData['sql_type'], [ 'eav', 'eav-id' ] ) )
+						{
+							$options .= 'EAV';
+							if ( $reportData['sql_type'] == 'eav-id' )
+							{
+								$options .= ' (+Row ID)';
+							}
+							if ( $reportData['sql_cols'] != '' )
+							{
+								$options .= ', columns: ' . $reportData['sql_cols'];
+							}
+						}
+					}
+					// For Gantt charts...
+					elseif ( $reportConfig['type'] == 'gantt' )
+					{
+						$definition = 'Labels:';
+						foreach ( $reportData['labels'] as $infoLabel )
+						{
+							$definition .= "\n- " . $infoLabel['name'] . ': [';
+							if ( $infoLabel['event'] != '' )
+							{
+								$definition .= $infoLabel['event'] . '][';
+							}
+							$definition .= $infoLabel['field'] . ']';
+						}
+						$definition .= "\nCategories:";
+						foreach ( $reportData['chart_categories'] as $infoCategory )
+						{
+							$definition .= "\n- " . $infoCategory['name'] . ': [';
+							if ( $infoCategory['start_event'] != '' )
+							{
+								$definition .= $infoCategory['start_event'] . '][';
+							}
+							$definition .= $infoCategory['start_field'] . '] - [';
+							if ( $infoCategory['end_event'] != '' )
+							{
+								$definition .= $infoCategory['end_event'] . '][';
+							}
+							$definition .= $infoCategory['end_field'] . ']';
+						}
+					}
+					// Add the report to the simplified view.
+					$UITweaker->addCustomReport( [ 'title' => $reportConfig['label'],
+					                               'type' => $reportTypes[ $reportConfig['type'] ],
+					                               'description' => $description,
+					                               'permissions' => $permissions,
+					                               'definition' => $definition,
+					                               'options' => $options ] );
+				}
+			}
+			// Remove module settings from the external modules simplified view (report data will
+			// be displayed on the reports simplified view so is not required here).
+			if ( $UITweaker->areExtModFuncExpected() )
+			{
+				$UITweaker->addExtModFunc( 'advanced_reports', function( $data )
+				{
+					if ( $data['value'] == 'false' ||
+					     substr( $data['setting'], 0, 7 ) == 'report-' )
+					{
+						return false;
+					}
+					return true;
+				});
+			}
+		}
+	}
+
+
+
 	// Check if the specified report is accessible by the current user,
 	// as determined by the specified access roles.
 	function isReportAccessible( $reportID )
