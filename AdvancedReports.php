@@ -329,7 +329,6 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	// Returns a list of events for the project.
 	function getEventList()
 	{
-		$listTypes = explode( ',', $fieldTypes );
 		$listEventNames = \REDCap::getEventNames( false, true );
 		$listUniqueNames = \REDCap::getEventNames( true );
 		$listEvents = [];
