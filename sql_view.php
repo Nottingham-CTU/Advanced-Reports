@@ -3,6 +3,8 @@
  *	SQL Reports view page.
  */
 
+namespace Nottingham\AdvancedReports;
+
 
 
 // Verify the report exists, is an SQL report, and is visible.

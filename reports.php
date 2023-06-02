@@ -3,6 +3,8 @@
  *	Advanced reports overview page.
  */
 
+namespace Nottingham\AdvancedReports;
+
 
 // Convert old reports data to v1.2.4+ format.
 $projectID = $module->getProjectID();

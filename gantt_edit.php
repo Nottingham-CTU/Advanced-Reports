@@ -3,6 +3,8 @@
  *	Gantt chart edit page.
  */
 
+namespace Nottingham\AdvancedReports;
+
 
 
 // Check user can edit Gantt reports and verify the report exists and is a Gantt report.
@@ -117,7 +119,7 @@ function outputGanttLabelFields( $name = '', $event = '', $field = '' )
    <td>Label Field</td>
    <td>
 <?php
-if ( REDCap::isLongitudinal() )
+if ( \REDCap::isLongitudinal() )
 {
 	$module->outputEventDropdown( 'label_event[]', $event );
 	echo ' ';
@@ -148,7 +150,7 @@ function outputGanttChartFields( $name = '', $startEvent = '', $startField = '',
    <td>Start Date Field</td>
    <td>
 <?php
-if ( REDCap::isLongitudinal() )
+if ( \REDCap::isLongitudinal() )
 {
 	$module->outputEventDropdown( 'chart_start_event[]', $startEvent );
 	echo ' ';
@@ -162,7 +164,7 @@ echo "\n";
    <td>End Date Field</td>
    <td>
 <?php
-if ( REDCap::isLongitudinal() )
+if ( \REDCap::isLongitudinal() )
 {
 	$module->outputEventDropdown( 'chart_end_event[]', $endEvent );
 	echo ' ';

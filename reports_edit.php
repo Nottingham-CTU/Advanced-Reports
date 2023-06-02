@@ -3,6 +3,8 @@
  *	Advanced reports edit page.
  */
 
+namespace Nottingham\AdvancedReports;
+
 
 
 // Check user can edit reports, redirect to main reports page if not.
