@@ -49,7 +49,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		{
 			$UITweaker = \ExternalModules\ExternalModules::getModuleInstance('redcap_ui_tweaker');
 			// Supply report data to the reports simplified view.
-			if ( $UITweaker->areCustomReportsExpected() )
+			if ( method_exists( $UITweaker, 'areCustomReportsExpected' ) &&
+			     $UITweaker->areCustomReportsExpected() )
 			{
 				$listReports = $this->getReportList();
 				$reportTypes = $this->getReportTypes();
@@ -143,7 +144,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			}
 			// Remove module settings from the external modules simplified view (report data will
 			// be displayed on the reports simplified view so is not required here).
-			if ( $UITweaker->areExtModFuncExpected() )
+			if ( method_exists( $UITweaker, 'areExtModFuncExpected' ) &&
+			     $UITweaker->areExtModFuncExpected() )
 			{
 				$UITweaker->addExtModFunc( 'advanced_reports', function( $data )
 				{
