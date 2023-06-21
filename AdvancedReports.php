@@ -368,6 +368,19 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Returns a list of instruments for the project.
+	function getInstrumentList()
+	{
+		$listInstruments = [];
+		foreach ( \REDCap::getInstrumentNames() as $instrumentID => $instrumentName )
+		{
+			$listInstruments[ $instrumentID ] = $instrumentID . ' - ' . $instrumentName;
+		}
+		return $listInstruments;
+	}
+
+
+
 	// Get the configuration for the specified report.
 	// Optionally specify the configuration option name, otherwise all options are returned.
 	function getReportConfig( $reportID, $configName = null )
@@ -438,6 +451,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	function getReportTypes()
 	{
 		return [ 'gantt' => 'Gantt',
+		         'instrument' => 'Instrument Query',
 		         'sql' => 'SQL' ];
 	}
 
@@ -531,6 +545,22 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		echo '<select name="', htmlspecialchars( $dropDownName ), '">';
 		echo '<option value=""', ( $value == '' ? ' selected' : '' ), '></option>';
 		foreach ( $this->getFieldList( $fieldType ) as $optValue => $optLabel )
+		{
+			echo '<option value="', htmlspecialchars( $optValue ), '"',
+			     ( $value == $optValue ? ' selected' : '' ), '>',
+			     htmlspecialchars( $optLabel ), '</option>';
+		}
+		echo '</select>';
+	}
+
+
+
+	// Output a drop-down list of instruments for the project.
+	function outputInstrumentDropdown( $dropDownName, $value )
+	{
+		echo '<select name="', htmlspecialchars( $dropDownName ), '">';
+		echo '<option value=""', ( $value == '' ? ' selected' : '' ), '></option>';
+		foreach ( $this->getInstrumentList() as $optValue => $optLabel )
 		{
 			echo '<option value="', htmlspecialchars( $optValue ), '"',
 			     ( $value == $optValue ? ' selected' : '' ), '>',
