@@ -759,6 +759,10 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 		}
 
+?>
+</p>
+<?php
+
 	}
 
 
@@ -1095,6 +1099,65 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		return preg_replace( '/&lt;a href=&quot;((?(?=&quot;)|.)*)&quot;( ' .
 		                     'target=&quot;_blank&quot;)?&gt;(.*?)&lt;\/a&gt;/',
 		                     '<a href="$1"$2>$3</a>', htmlspecialchars( $str, ENT_QUOTES ) );
+	}
+
+
+
+	// Takes logic and parses it, returning an array consisting of a function and information about
+	// the parameters to be passed to the function to evaluate the logic.
+	function parseLogic( $str, $createFunction = true )
+	{
+		// Convert [value] and [label] parameters after a field to numbers so they will be accepted
+		// by the REDCap logic lexer/parser.
+		$listStr = preg_split('/([\'"])/', $str, -1, PREG_SPLIT_DELIM_CAPTURE );
+		$quote = '';
+		$str = '';
+		foreach ( $listStr as $strPart )
+		{
+			if ( $quote == '' && ( $strPart == "'" || $strPart == '"' ) )
+			{
+				$quote = $strPart;
+			}
+			elseif ( $quote != '' && $quote == $strPart )
+			{
+				$quote = '';
+			}
+			elseif ( $quote == '' )
+			{
+				$strPart = preg_replace( '/((\[[A-Za-z0-9_]+\]){2}):value/', '$1[1]', $strPart );
+				$strPart = preg_replace( '/((\[[A-Za-z0-9_]+\]){2}):label/', '$1[2]', $strPart );
+			}
+			$str .= $strPart;
+		}
+
+		// Parse the logic.
+		$lp = new \LogicParser();
+		$logic = $lp->parse( $str, null, $createFunction );
+		// If a function has not been created, just return the value from the REDCap logic parser.
+		if ( ! $createFunction || ! is_array( $logic ) )
+		{
+			return $logic;
+		}
+		// Reformat the REDCap parser parameter details output.
+		$logicParams = [];
+		foreach ( $logic[1] as $param )
+		{
+			if ( $param[0] == '' || $param[1] == '' )
+			{
+				throw new Exception( 'Invalid field identifier.' );
+			}
+			$dataType = null;
+			if ( $param[3] === '1' )
+			{
+				$dataType = 'value';
+			}
+			elseif ( $param[3] === '2' )
+			{
+				$dataType = 'label';
+			}
+			$logicParams[] = [ $param[0], $param[1], $dataType ];
+		}
+		return [ $logic[0], $logicParams ];
 	}
 
 
