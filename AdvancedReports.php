@@ -1076,7 +1076,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 	// Returns the supplied string with any HTML entity encoded, with the exception of hyperlinks,
-	// and placeholders replaced with the corresponding values.
+	// bold and italic tags (if not nested). Placeholders for the project ID and web root path are
+	// replaced with the corresponding values.
 	// This is used primarily for report descriptions.
 	function parseDescription( $str )
 	{
@@ -1087,18 +1088,21 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 
-	// Returns the supplied string with any HTML entity encoded, with the exception of hyperlinks.
-	// If the $forDownload parameter is true, hyperlink tags will be stripped instead.
+	// Returns the supplied string with any HTML entity encoded, with the exception of hyperlinks,
+	// bold and italic tags. Nested tags are not supported and will remain entity encoded.
+	// If the $forDownload parameter is true, supported HTML tags will be stripped instead.
 	/** @psalm-pure */
 	function parseHTML( $str, $forDownload = false )
 	{
 		if ( $forDownload )
 		{
-			return preg_replace( '/<a href="[^"]*"( target="_blank")?>(.*?)<\/a>/', '$2', $str );
+			return preg_replace( '/<((?<t1>a) href="[^"]*"( target="_blank")?|(?<t2>b|i))>(.*?)' .
+			                     '<\/((?P=t1)|(?P=t2))>/', '$5', $str );
 		}
-		return preg_replace( '/&lt;a href=&quot;((?(?=&quot;)|.)*)&quot;( ' .
-		                     'target=&quot;_blank&quot;)?&gt;(.*?)&lt;\/a&gt;/',
-		                     '<a href="$1"$2>$3</a>', htmlspecialchars( $str, ENT_QUOTES ) );
+		return preg_replace( '/&lt;((?<t1>a) href=&quot;((?(?=&quot;)|.)*)&quot;( target=&quot;' .
+		                     '_blank&quot;)?|(?<t2>b|i))&gt;(.*?)&lt;\/((?P=t1)|(?P=t2))&gt;/',
+		                     '<$2$5${2:+ href="$3"${4:+ target="_blank"}}>$6</$7>',
+		                     htmlspecialchars( $str, ENT_QUOTES ) );
 	}
 
 
