@@ -3,6 +3,8 @@
  *	SQL Reports view page.
  */
 
+namespace Nottingham\AdvancedReports;
+
 
 
 // Verify the report exists, is an SQL report, and is visible.
@@ -227,7 +229,7 @@ if ( isset( $_GET['as_image']) && $reportConfig['as_image'] )
 
 // Display the project header and report navigation links.
 require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
-$module->outputViewReportHeader( $reportConfig['label'], 'sql' );
+$module->outputViewReportHeader( $reportConfig['label'], 'sql', true );
 
 // Initialise the row counter.
 $rowCount = 0;
@@ -257,11 +259,15 @@ if ( $resultType == 'eav' || $resultType == 'eav-id' )
  <thead>
   <tr>
 <?php
+	$colNum = 0;
 	foreach ( $columns as $columnName )
 	{
 ?>
-   <th class="sorting"><?php echo $module->escapeHTML( $columnName ); ?></th>
+   <th class="sorting" data-colnum="<?php echo $colNum; ?>">
+    <?php echo $module->escapeHTML( $columnName ), "\n"; ?>
+   </th>
 <?php
+		$colNum++;
 	}
 ?>
   </tr>
@@ -307,12 +313,16 @@ else
  <thead>
   <tr>
 <?php
+			$colNum = 0;
 			foreach ( $infoRecord as $fieldName => $value )
 			{
 				$columns[] = $fieldName;
 ?>
-  <th class="sorting"><?php echo $module->escapeHTML( $fieldName ); ?></th>
+  <th class="sorting" data-colnum="<?php echo $colNum; ?>">
+   <?php echo $module->escapeHTML( $fieldName ), "\n"; ?>
+  </th>
 <?php
+				$colNum++;
 			}
 ?>
   </tr>
@@ -351,7 +361,7 @@ else
 if ( $rowCount > 0 )
 {
 ?>
-<p>Total rows returned: <?php echo $rowCount; ?></p>
+<p>Total rows returned: <span id="filtercount"></span><?php echo $rowCount; ?></p>
 <?php
 }
 

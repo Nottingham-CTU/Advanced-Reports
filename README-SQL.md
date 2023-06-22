@@ -76,6 +76,7 @@ to pick parameter names different from the following (unless you want to use tho
 * pid
 * prefix
 * report_id
+* report_state
 
 ## Result Type
 

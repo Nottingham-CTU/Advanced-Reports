@@ -3,6 +3,8 @@
  *	Exports the advanced reports configuration as a JSON document.
  */
 
+namespace Nottingham\AdvancedReports;
+
 
 if ( ! $module->framework->getUser()->isSuperUser() )
 {

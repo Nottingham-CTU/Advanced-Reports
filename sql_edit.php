@@ -3,6 +3,8 @@
  *	SQL Reports edit page.
  */
 
+namespace Nottingham\AdvancedReports;
+
 
 
 // Check user can edit SQL reports and verify the report exists and is an SQL report.

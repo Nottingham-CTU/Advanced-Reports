@@ -42,6 +42,126 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Supply data to the REDCap UI Tweaker module for use on simplified views.
+	function redcap_every_page_before_render( $project_id )
+	{
+		if ( $this->isModuleEnabled('redcap_ui_tweaker') )
+		{
+			$UITweaker = \ExternalModules\ExternalModules::getModuleInstance('redcap_ui_tweaker');
+			// Supply report data to the reports simplified view.
+			if ( method_exists( $UITweaker, 'areCustomReportsExpected' ) &&
+			     $UITweaker->areCustomReportsExpected() )
+			{
+				$listReports = $this->getReportList();
+				$reportTypes = $this->getReportTypes();
+				foreach ( $listReports as $reportID => $reportConfig )
+				{
+					$reportData = $this->getReportData( $reportID );
+					$description = '';
+					$definition = '';
+					$options = '';
+					// Get report permissions.
+					if ( $reportConfig['roles_access'] == '*' )
+					{
+						$reportConfig['roles_access'] = 'ALL';
+					}
+					if ( $reportConfig['roles_download'] == '*' )
+					{
+						$reportConfig['roles_download'] = $reportConfig['roles_access'];
+					}
+					$permissions = 'View Access: ' .
+					               str_replace( "\n", ', ', $reportConfig['roles_access'] );
+					if ( array_key_exists('as_image', $reportConfig) && $reportConfig['as_image'] )
+					{
+						$permissions .= "\nCan retrieve as image";
+					}
+					if ( $reportConfig['download'] )
+					{
+						$permissions .= "\nDownload: " .
+						                str_replace( "\n", ', ', $reportConfig['roles_download'] );
+					}
+					if ( ! $reportConfig['visible'] )
+					{
+						$permissions = "(hidden)\n$permissions";
+					}
+					// For SQL reports...
+					if ( $reportConfig['type'] == 'sql' )
+					{
+						// Populate description and definition with the report description and SQL.
+						$description = $reportData['sql_desc'];
+						$definition = $reportData['sql_query'];
+						// Note if the report is EAV format.
+						if ( in_array( $reportData['sql_type'], [ 'eav', 'eav-id' ] ) )
+						{
+							$options .= 'EAV';
+							if ( $reportData['sql_type'] == 'eav-id' )
+							{
+								$options .= ' (+Row ID)';
+							}
+							if ( $reportData['sql_cols'] != '' )
+							{
+								$options .= ', columns: ' . $reportData['sql_cols'];
+							}
+						}
+					}
+					// For Gantt charts...
+					elseif ( $reportConfig['type'] == 'gantt' )
+					{
+						$definition = 'Labels:';
+						foreach ( $reportData['labels'] as $infoLabel )
+						{
+							$definition .= "\n- " . $infoLabel['name'] . ': [';
+							if ( $infoLabel['event'] != '' )
+							{
+								$definition .= $infoLabel['event'] . '][';
+							}
+							$definition .= $infoLabel['field'] . ']';
+						}
+						$definition .= "\nCategories:";
+						foreach ( $reportData['chart_categories'] as $infoCategory )
+						{
+							$definition .= "\n- " . $infoCategory['name'] . ': [';
+							if ( $infoCategory['start_event'] != '' )
+							{
+								$definition .= $infoCategory['start_event'] . '][';
+							}
+							$definition .= $infoCategory['start_field'] . '] - [';
+							if ( $infoCategory['end_event'] != '' )
+							{
+								$definition .= $infoCategory['end_event'] . '][';
+							}
+							$definition .= $infoCategory['end_field'] . ']';
+						}
+					}
+					// Add the report to the simplified view.
+					$UITweaker->addCustomReport( [ 'title' => $reportConfig['label'],
+					                               'type' => $reportTypes[ $reportConfig['type'] ],
+					                               'description' => $description,
+					                               'permissions' => $permissions,
+					                               'definition' => $definition,
+					                               'options' => $options ] );
+				}
+			}
+			// Remove module settings from the external modules simplified view (report data will
+			// be displayed on the reports simplified view so is not required here).
+			if ( method_exists( $UITweaker, 'areExtModFuncExpected' ) &&
+			     $UITweaker->areExtModFuncExpected() )
+			{
+				$UITweaker->addExtModFunc( 'advanced_reports', function( $data )
+				{
+					if ( $data['value'] == 'false' ||
+					     substr( $data['setting'], 0, 7 ) == 'report-' )
+					{
+						return false;
+					}
+					return true;
+				});
+			}
+		}
+	}
+
+
+
 	// Check if the specified report is accessible by the current user,
 	// as determined by the specified access roles.
 	function isReportAccessible( $reportID )
@@ -211,7 +331,6 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	// Returns a list of events for the project.
 	function getEventList()
 	{
-		$listTypes = explode( ',', $fieldTypes );
 		$listEventNames = \REDCap::getEventNames( false, true );
 		$listUniqueNames = \REDCap::getEventNames( true );
 		$listEvents = [];
@@ -553,7 +672,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 	// Output the report navigation links.
-	function outputViewReportHeader( $reportLabel, $reportType )
+	function outputViewReportHeader( $reportLabel, $reportType, $canReset = false )
 	{
 		$canDownload = $this->isReportDownloadable( $_GET['report_id'] );
 		$this->writeStyle();
@@ -594,6 +713,22 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 		}
 
+		// If applicable for the report type, show a link to reset the report state.
+		if ( $canReset )
+		{
+
+?>
+ <span id="mod-advrep-resetstate" style="display:none">
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="<?php
+			echo $this->escapeHTML( preg_replace( '/&report_state=[^&]+/', '',
+			                                      $_SERVER['REQUEST_URI'] ) );
+?>"><i class="fas fa-rotate-left fs11"></i> Reset</a>
+ </span>
+<?php
+
+		}
+
 	}
 
 
@@ -607,8 +742,26 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
   $(function()
   {
 
+    var vReportParams = {}
+    try
+    {
+      vReportParams =
+          JSON.parse(new URLSearchParams(new URL(window.location).search).get('report_state'))
+      if ( vReportParams === null )
+      {
+        vReportParams = {}
+      }
+      else
+      {
+        $('#mod-advrep-resetstate').css('display','')
+      }
+    } catch (e) {} // Keep default value if exception.
+
+
     var filterTable = function()
     {
+      var vShowAllRows = true
+      var vShowNumRows = 0
       var vHeader = $('.mod-advrep-datatable thead th')
       $('.mod-advrep-datatable tbody tr').each(function(indexTr,elemTr)
       {
@@ -627,15 +780,18 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
         if ( vShowRow )
         {
           elemTr.style.display = ''
+          vShowNumRows++
         }
         else
         {
           elemTr.style.display = 'none'
+          vShowAllRows = false
         }
 
       })
 
       restyleTable()
+      $('#filtercount').text( vShowAllRows ? '' : ( vShowNumRows + ' / ' ) )
 
     }
 
@@ -655,11 +811,38 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
     }
 
 
+    var updateURL = function()
+    {
+      var objURL = new URL(window.location)
+      var objParams = new URLSearchParams(objURL.search)
+      var newState = JSON.stringify(vReportParams)
+      if ( newState == '{}' )
+      {
+        objParams.delete('report_state')
+        $('#mod-advrep-resetstate').css('display','none')
+      }
+      else
+      {
+        objParams.set('report_state',newState)
+        $('#mod-advrep-resetstate').css('display','')
+      }
+      objURL.search = objParams.toString()
+      history.replaceState( null, null, objURL.toString() )
+    }
+
+
     $('body').append('<datalist id="mod-advrep-filterlist"></datalist>')
     $('.mod-advrep-datatable th').each(function(index, elem)
     {
       $(elem).append('<span style="cursor:pointer;position:absolute;right:5px;bottom:10px" ' +
                      'class="fas fa-filter" title="Filter rows by this field..."></span>')
+
+      if ( vReportParams.filter != undefined &&
+           vReportParams.filter[elem.getAttribute('data-colnum')] != undefined )
+      {
+        elem.setAttribute('data-filter', vReportParams.filter[elem.getAttribute('data-colnum')])
+        $(elem).find('.fas')[0].style.color = '#7a80dd'
+      }
 
       $(elem).find('.fas').click(function(ev)
       {
@@ -670,6 +853,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
         {
           vFilter = ''
         }
+        var vColNum = elem.getAttribute('data-colnum')
         var vItems = JSON.parse( elem.getAttribute('data-items') )
         $('#mod-advrep-filterlist').empty()
         if ( vItems !== false && vItems.length > 0 )
@@ -700,6 +884,27 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
           close: function()
           {
             elem.setAttribute('data-filter', vFilter)
+            if ( vFilter == '' )
+            {
+              if ( vReportParams.filter != undefined && vReportParams.filter[vColNum] != undefined )
+              {
+                delete vReportParams.filter[vColNum]
+              }
+              if ( vReportParams.filter != undefined &&
+                   Object.keys(vReportParams.filter).length == 0 )
+              {
+                delete vReportParams.filter
+              }
+            }
+            else
+            {
+              if ( vReportParams.filter == undefined )
+              {
+                vReportParams.filter = {}
+              }
+              vReportParams.filter[vColNum] = vFilter
+            }
+            updateURL()
             filterTable()
             vIcon.style.color = ( vFilter == '' ) ? '' : '#7a80dd'
           },
@@ -711,22 +916,24 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
       })
 
     })
+    filterTable()
 
 
     $('.sorting').click(function()
     {
+      var vColNum = this.getAttribute('data-colnum') - 0
+      if ( vReportParams.sort == undefined )
+      {
+        vReportParams.sort = []
+      }
+      vReportParams.sort = vReportParams.sort.filter( function(i) { return i.col != vColNum } )
       SortTable( 'mod-advrep-table', $(this).index(), this.getAttribute('data-type') )
       restyleTable()
       var vIsAsc = $(this).hasClass('sorting_asc')
       $(this).parent().find('th').removeClass('sorting_asc sorting_desc')
-      if ( vIsAsc )
-      {
-        $(this).addClass('sorting_desc')
-      }
-      else
-      {
-        $(this).addClass('sorting_asc')
-      }
+      $(this).addClass( vIsAsc ? 'sorting_desc' : 'sorting_asc' )
+      vReportParams.sort.unshift( { col: vColNum, dir: ( vIsAsc ? 'desc' : 'asc' ) } )
+      updateURL()
     })
 
 
@@ -801,7 +1008,31 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
       {
         elemTh.setAttribute('data-type', 'string')
       }
-    })
+    });
+
+
+    (function()
+    {
+      if ( vReportParams.sort != undefined && Array.isArray( vReportParams.sort ) )
+      {
+        for ( var i = vReportParams.sort.length - 1; i >= 0; i-- )
+        {
+          var vColNum = vReportParams.sort[i].col
+          var vSortDir = vReportParams.sort[i].dir
+          var vColHdr = $('th[data-colnum="' + vColNum + '"]')
+          var vDataType = vColHdr[0].getAttribute('data-type')
+          SortTable( 'mod-advrep-table', vColNum, vDataType )
+          if ( vSortDir == 'desc' )
+          {
+            SortTable( 'mod-advrep-table', vColNum, vDataType )
+          }
+          if ( i == 0 )
+          {
+            vColHdr.addClass( vSortDir == 'desc' ? 'sorting_desc' : 'sorting_asc' )
+          }
+        }
+      }
+    })()
   })
 </script>
 <?php
@@ -1102,7 +1333,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			}
 			.mod-advrep-datatable tr:first-child th
 			{
-				position: sticky;
+				position: sticky !important;
 				top: 0px;
 			}
 			.mod-advrep-datatable tr:first-child th:first-child

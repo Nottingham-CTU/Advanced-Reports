@@ -3,6 +3,8 @@
  *	Imports the advanced reports configuration from a JSON document.
  */
 
+namespace Nottingham\AdvancedReports;
+
 
 if ( ! $module->framework->getUser()->isSuperUser() )
 {

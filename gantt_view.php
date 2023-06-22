@@ -3,6 +3,8 @@
  *	Gantt chart view page.
  */
 
+namespace Nottingham\AdvancedReports;
+
 
 
 // Define constants for day/week length, and time spans used in chart.
@@ -140,9 +142,9 @@ $listProjectData = [];
 foreach ( [ 'values' => false, 'labels' => true ] as $dataMode => $dataIsLabels )
 {
 	$listProjectData[ $dataMode ] =
-		json_decode( REDCap::getData( [ 'return_format' => 'json',
-		                                'combine_checkbox_values' => true,
-		                                'exportAsLabels' => $dataIsLabels ] ), true );
+		json_decode( \REDCap::getData( [ 'return_format' => 'json',
+		                                 'combine_checkbox_values' => true,
+		                                 'exportAsLabels' => $dataIsLabels ] ), true );
 }
 
 
@@ -153,7 +155,7 @@ $latestItemEndDate = $reportStart;
 foreach ( $listProjectData['values'] as $rowNum => $infoDataValues )
 {
 	$infoDataLabels = $listProjectData['labels'][$rowNum];
-	$recordID = $infoDataValues[ REDCap::getRecordIdField() ];
+	$recordID = $infoDataValues[ \REDCap::getRecordIdField() ];
 	if ( ! isset( $listChartEntries[ $recordID ] ) )
 	{
 		$listChartEntries[ $recordID ] = [ 'labels' => [], 'categories' => [],
@@ -162,7 +164,7 @@ foreach ( $listProjectData['values'] as $rowNum => $infoDataValues )
 	// Get the values for the chart labels (displayed on the left of the chart).
 	foreach ( $reportData['labels'] as $infoLabel )
 	{
-		if ( REDCap::isLongitudinal() &&
+		if ( \REDCap::isLongitudinal() &&
 		     $infoDataValues['redcap_event_name'] != $infoLabel['event'] )
 		{
 			continue;
@@ -180,7 +182,7 @@ foreach ( $listProjectData['values'] as $rowNum => $infoDataValues )
 	// they are on different events) and merged later.
 	foreach ( $reportData['chart_categories'] as $infoCategory )
 	{
-		if ( REDCap::isLongitudinal() &&
+		if ( \REDCap::isLongitudinal() &&
 		     $infoDataValues['redcap_event_name'] != $infoCategory['start_event'] &&
 		     $infoDataValues['redcap_event_name'] != $infoCategory['end_event'] )
 		{
@@ -191,7 +193,7 @@ foreach ( $listProjectData['values'] as $rowNum => $infoDataValues )
 		$repeatInstance = ( isset( $infoDataValues['redcap_repeat_instance'] ) &&
 		                    $infoDataValues['redcap_repeat_instance'] != '' )
 		                  ? $infoDataValues['redcap_repeat_instance'] : 1;
-		if ( ! REDCap::isLongitudinal() ||
+		if ( ! \REDCap::isLongitudinal() ||
 		     $infoDataValues['redcap_event_name'] == $infoCategory['start_event'] )
 		{
 			$date = $infoDataValues[ $infoCategory['start_field'] ];
@@ -208,7 +210,7 @@ foreach ( $listProjectData['values'] as $rowNum => $infoDataValues )
 				}
 			}
 		}
-		if ( ! REDCap::isLongitudinal() ||
+		if ( ! \REDCap::isLongitudinal() ||
 		     $infoDataValues['redcap_event_name'] == $infoCategory['end_event'] )
 		{
 			$date = $infoDataValues[ $infoCategory['end_field'] ];
