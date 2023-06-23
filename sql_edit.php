@@ -82,11 +82,12 @@ $module->writeStyle();
   <tr>
    <td>Description</td>
    <td>
-    <textarea name="sql_desc" style="height:50px;max-width:95%;white-space:pre"><?php
+    <textarea name="sql_desc" style="height:70px;max-width:95%;white-space:pre"><?php
 echo $reportData['sql_desc'] ?? ''; ?></textarea>
     <br>
     <span class="field-desc">
      Optional. If specified, displays this text above the report.
+     Supports &lt;a&gt;, &lt;b&gt; and &lt;i&gt; HTML tags.
     </span>
    </td>
   </tr>

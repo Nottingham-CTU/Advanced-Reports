@@ -57,7 +57,7 @@ if ( ! empty( $_POST ) )
 
 	// Save data
 	$module->submitReportConfig( $reportID );
-	$reportData = [ 'forms' => [], 'where' => $_POST['query_where'],
+	$reportData = [ 'desc' => $_POST['query_desc'], 'forms' => [], 'where' => $_POST['query_where'],
 	                'orderby' => $_POST['query_orderby'], 'select' => $_POST['query_select'],
 	                'nomissingdatacodes' => isset( $_POST['query_nomissingdatacodes'] ) ];
 	foreach ( $_POST['query_form'] as $i => $formName )
@@ -83,7 +83,8 @@ $module->writeStyle();
 
 ?>
 <div class="projhdr">
- Advanced Reports &#8212; Edit Instrument Query Report: <?php echo "$reportID\n"; ?>
+ Advanced Reports &#8212; Edit Instrument Query Report: <?php
+echo $module->escapeHTML( $reportID ), "\n"; ?>
 </div>
 <p style="font-size:11px">
  <a href="<?php echo $module->getUrl( 'reports_edit.php' )
@@ -93,6 +94,18 @@ $module->writeStyle();
  <table class="mod-advrep-formtable">
 <?php $module->outputReportConfigOptions( $reportConfig ); ?>
   <tr><th colspan="2">Report Definition</th></tr>
+  <tr>
+   <td>Description</td>
+   <td>
+    <textarea name="query_desc" style="height:70px;max-width:95%;white-space:pre"><?php
+echo $reportData['desc'] ?? ''; ?></textarea>
+    <br>
+    <span class="field-desc">
+     Optional. If specified, displays this text above the report.
+     Supports &lt;a&gt;, &lt;b&gt; and &lt;i&gt; HTML tags.
+    </span>
+   </td>
+  </tr>
   <tr>
    <td>Instruments</td>
    <td>
@@ -131,7 +144,7 @@ foreach ( $reportData['forms'] as $formData )
      <tr>
       <td style="text-align:left;width:unset">ON</td>
       <td colspan="2" style="text-align:left;width:unset">
-       <input type="text" name="query_form_on[]" placeholder="condition" style="width:100%"
+       <input type="text" name="query_form_on[]" placeholder="condition logic" style="width:100%"
               value="<?php echo $module->escapeHTML( $formData['on'] ); ?>">
       </td>
      </tr>
@@ -151,7 +164,7 @@ $module->outputInstrumentDropdown( 'query_form[]', '' );
      <tr style="display:none">
       <td style="text-align:left;width:unset">ON</td>
       <td colspan="2" style="text-align:left;width:unset">
-       <input type="text" name="query_form_on[]" placeholder="condition" style="width:100%">
+       <input type="text" name="query_form_on[]" placeholder="condition logic" style="width:100%">
       </td>
      </tr>
     </table>
@@ -165,14 +178,14 @@ $module->outputInstrumentDropdown( 'query_form[]', '' );
   <tr>
    <td>Condition</td>
    <td>
-    <input type="text" name="query_where" style="width:100%"
+    <input type="text" name="query_where" style="width:100%" placeholder="condition logic"
            value="<?php echo $module->escapeHTML( $reportData['where'] ?? '' ); ?>">
    </td>
   </tr>
   <tr>
    <td>Sorting</td>
    <td>
-    <input type="text" name="query_orderby" style="width:100%"
+    <input type="text" name="query_orderby" style="width:100%" placeholder="sorting logic"
            value="<?php echo $module->escapeHTML( $reportData['orderby'] ?? '' ); ?>">
    </td>
   </tr>
