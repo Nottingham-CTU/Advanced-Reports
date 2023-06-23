@@ -58,7 +58,7 @@ if ( ! empty( $_POST ) )
 	// Save data
 	$module->submitReportConfig( $reportID );
 	$reportData = [ 'desc' => $_POST['query_desc'], 'forms' => [], 'where' => $_POST['query_where'],
-	                'orderby' => $_POST['query_orderby'], 'select' => $_POST['query_select'],
+	                'orderby' => $_POST['query_orderby'], 'select' => [],
 	                'nomissingdatacodes' => isset( $_POST['query_nomissingdatacodes'] ) ];
 	foreach ( $_POST['query_form'] as $i => $formName )
 	{
@@ -69,6 +69,15 @@ if ( ! empty( $_POST ) )
 		$reportData['forms'][] = [ 'form' => $formName, 'alias' => $_POST['query_form_alias'][$i],
 		                           'on' => ( ( $i == 0 ) ? ''
 		                                                 : $_POST['query_form_on'][ $i - 1 ] ) ];
+	}
+	foreach ( $_POST['query_select_field'] as $i => $fieldName )
+	{
+		if ( $fieldName == '' )
+		{
+			continue;
+		}
+		$reportData['select'][] = [ 'field' => $fieldName,
+		                            'alias' => $_POST['query_select_alias'][$i] ];
 	}
 	$module->setReportData( $reportID, $reportData );
 	header( 'Location: ' . $module->getUrl( 'reports_edit.php' ) );
@@ -109,16 +118,16 @@ echo $reportData['desc'] ?? ''; ?></textarea>
   <tr>
    <td>Instruments</td>
    <td>
-    <table id="inst-entries-tbl">
+    <table id="inst-entries-tbl" style="width:95%;max-width:550px">
      <tr>
-      <td style="text-align:left;width:unset"></td>
-      <td style="text-align:left;width:unset"><?php
+      <td style="text-align:left;width:60px"></td>
+      <td style="text-align:left;width:60px"><?php
 $module->outputInstrumentDropdown( 'query_form[]', $reportData['forms'][0]['form'] ?? '' );
 ?></td>
       <td style="text-align:left;width:unset">
        <input type="text" name="query_form_alias[]" placeholder="alias (optional)"
               value="<?php echo $module->escapeHTML( $reportData['forms'][0]['alias'] ?? '' ); ?>"
-              style="width:250px">
+              style="width:100%">
       </td>
      </tr>
 <?php
@@ -138,7 +147,7 @@ foreach ( $reportData['forms'] as $formData )
 ?></td>
       <td style="text-align:left;width:unset">
        <input type="text" name="query_form_alias[]" placeholder="alias (optional)"
-              value="<?php echo $module->escapeHTML( $formData['alias'] ); ?>" style="width:250px">
+              value="<?php echo $module->escapeHTML( $formData['alias'] ); ?>" style="width:100%">
       </td>
      </tr>
      <tr>
@@ -158,7 +167,7 @@ $module->outputInstrumentDropdown( 'query_form[]', '' );
 ?></td>
       <td style="text-align:left;width:unset">
        <input type="text" name="query_form_alias[]" placeholder="alias (optional)"
-              style="width:250px">
+              style="width:100%">
       </td>
      </tr>
      <tr style="display:none">
@@ -191,9 +200,62 @@ $module->outputInstrumentDropdown( 'query_form[]', '' );
   </tr>
   <tr>
    <td>Fields to display</td>
-   <td>
-    <input type="text" name="query_select" style="width:100%"
-           value="<?php echo $module->escapeHTML( $reportData['select'] ?? '' ); ?>">
+   <td style="padding:0px">
+    <table id="field-entries-tbl" style="width:95%;max-width:550px">
+     <tr>
+      <td style="text-align:left;width:60%">
+       <input type="text" name="query_select_field[]" placeholder="field name/logic"
+              value="<?php echo $module->escapeHTML( $reportData['select'][0]['field'] ?? '' ); ?>"
+              style="width:100%">
+      </td>
+      <td style="text-align:left;width:unset">
+       <input type="text" name="query_select_alias[]" placeholder="alias (optional)"
+              value="<?php echo $module->escapeHTML( $reportData['select'][0]['alias'] ?? '' ); ?>"
+              style="width:100%">
+      </td>
+     </tr>
+<?php
+$firstField = true;
+foreach ( $reportData['select'] as $fieldData )
+{
+	if ( $firstField )
+	{
+		$firstField = false;
+		continue;
+	}
+?>
+     <tr>
+      <td style="text-align:left;width:unset">
+       <input type="text" name="query_select_field[]" placeholder="field name/logic"
+              value="<?php echo $module->escapeHTML( $fieldData['field'] ); ?>"
+              style="width:100%">
+      </td>
+      <td style="text-align:left;width:unset">
+       <input type="text" name="query_select_alias[]" placeholder="alias (optional)"
+              value="<?php echo $module->escapeHTML( $fieldData['alias'] ); ?>"
+              style="width:100%">
+      </td>
+     </tr>
+<?php
+}
+?>
+     <tr style="display:none">
+      <td style="text-align:left;width:unset">
+       <input type="text" name="query_select_field[]" placeholder="field name/logic"
+              style="width:100%">
+      </td>
+      <td style="text-align:left;width:unset">
+       <input type="text" name="query_select_alias[]" placeholder="alias (optional)"
+              style="width:100%">
+      </td>
+     </tr>
+    </table>
+    <span id="field-entries-link" style="display:none">
+     &nbsp;
+     <a onclick="$('#field-entries-tbl tr').last().clone().css('display',''
+                    ).insertBefore($('#field-entries-tbl tr').last());return false"
+        href="#" class=""><i class="fas fa-plus-circle fs12"></i> Add field</a>
+    </span>
    </td>
   </tr>
   <tr>
@@ -216,7 +278,7 @@ echo $reportData['nomissingdatacodes'] ? ' checked' : '';
 <script type="text/javascript">
  (function ()
  {
-   $('#inst-entries-link').css('display','')
+   $('#inst-entries-link, #field-entries-link').css('display','')
    var vValidated = false
    $('#queryform')[0].onsubmit = function()
    {

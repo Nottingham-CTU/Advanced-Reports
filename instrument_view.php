@@ -122,9 +122,9 @@ foreach ( $reportData['forms'] as $queryForm )
 if ( $reportData['where'] != '' )
 {
 	$newResultTable = [];
+	list( $whereFunction, $whereParamData ) = $module->parseLogic( $reportData['where'] );
 	foreach ( $resultTable as $resultRow )
 	{
-		list( $whereFunction, $whereParamData ) = $module->parseLogic( $reportData['where'] );
 		$whereParams = [];
 		foreach ( $whereParamData as $whereParamItem )
 		{
@@ -174,6 +174,42 @@ if ( $reportData['orderby'] != '' )
 	} );
 }
 
+// If fields to select specified, select them.
+if ( ! empty( $reportData['select'] ) )
+{
+	$newResultTable = [];
+	$selectFields = [];
+	foreach ( $reportData['select'] as $selectField )
+	{
+		if ( $selectField['alias'] == '' )
+		{
+			$selectField['alias'] = $selectField['field'];
+		}
+		$selectFields[] = [ 'field' => $selectField['field'], 'alias' => $selectField['alias'],
+		                    'function' => $module->parseLogic( $selectField['field'] ) ];
+	}
+	foreach ( $resultTable as $resultRow )
+	{
+		$newResultRow = [];
+		foreach ( $selectFields as $selectField )
+		{
+			$selectParams = [];
+			foreach ( $selectField['function'][1] as $selectParamItem )
+			{
+				$selectParams[] = $resultRow[ '[' . $selectParamItem[0] . '][' .
+			                                  $selectParamItem[1] . ']' ][
+			                                    $selectParamItem[2] == 'value'
+			                                    ? 'value' : 'label' ];
+			}
+			$newResultRow[ $selectField['alias'] ] =
+					$selectField['function'][0]( ...$selectParams );
+		}
+		$newResultTable[] = $newResultRow;
+	}
+	$resultTable = &$newResultTable;
+	unset( $newResultTable );
+}
+
 // Display the project header and report navigation links.
 
 require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
@@ -181,6 +217,16 @@ $module->outputViewReportHeader( $reportConfig['label'], 'instrument', true );
 
 // Initialise the row counter.
 $rowCount = 0;
+
+
+// If a description is provided, output it here.
+if ( isset( $reportData['desc'] ) && $reportData['desc'] != '' )
+{
+?>
+<p class="mod-advrep-description"><?php
+	echo $module->parseDescription( $reportData['desc'] ); ?></p>
+<?php
+}
 
 
 ?>
@@ -210,8 +256,12 @@ foreach ( $resultTable as $resultRow )
 <?php
 	foreach ( $resultRow as $value )
 	{
+		if ( is_array( $value ) )
+		{
+			$value = $value['label'];
+		}
 ?>
-   <td><?php echo $module->parseHTML( $value['label'] ); ?></td>
+   <td><?php echo $module->parseHTML( $value ); ?></td>
 <?php
 	}
 	if ( $rowCount == 0 )
@@ -235,8 +285,6 @@ if ( $rowCount > 0 )
 <p>Total rows returned: <span id="filtercount"></span><?php echo $rowCount; ?></p>
 <?php
 }
-
-echo json_encode( $resultTable, JSON_PRETTY_PRINT );
 
 
 $module->outputViewReportJS();
