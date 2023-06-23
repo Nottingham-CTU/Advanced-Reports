@@ -210,6 +210,127 @@ if ( ! empty( $reportData['select'] ) )
 	unset( $newResultTable );
 }
 
+
+
+// Handle report download.
+if ( isset( $_GET['download'] ) && $module->isReportDownloadable( $reportID ) )
+{
+	$module->writeCSVDownloadHeaders( $reportID );
+	$firstRow = true;
+	foreach ( $resultTable as $resultRow )
+	{
+		if ( $firstRow )
+		{
+			$firstField = true;
+			foreach ( $resultRow as $fieldName => $value )
+			{
+				echo $firstField ? '' : ',';
+				$firstField = false;
+				echo '"';
+				$module->echoText( str_replace( '"', '""', $fieldName ) );
+				echo '"';
+			}
+		}
+		echo "\n";
+		$firstField = true;
+		foreach ( $resultRow as $value )
+		{
+			if ( is_array( $value ) )
+			{
+				$value = $value['label'];
+			}
+			echo $firstField ? '' : ',';
+			$firstField = false;
+			echo '"', str_replace( '"', '""', $module->parseHTML( $value, true ) ), '"';
+		}
+	}
+	exit;
+}
+
+
+
+// Handle retrieve report as image.
+if ( isset( $_GET['as_image']) && $reportConfig['as_image'] )
+{
+	header( 'Content-Type: image/png' );
+	// Determine the fonts and character sizes for the report.
+	$imgHeaderFont = 5;
+	$imgDataFont = 4;
+	$imgHeaderCharW = imagefontwidth( $imgHeaderFont );
+	$imgHeaderCharH = imagefontheight( $imgHeaderFont );
+	$imgDataCharW = imagefontwidth( $imgDataFont );
+	$imgDataCharH = imagefontheight( $imgDataFont );
+	$imgHeaderH = $imgHeaderCharH + 2;
+	$imgDataH = $imgDataCharH + 2;
+	// Get all the column names.
+	$columns = [];
+	if ( ! empty( $resultTable ) )
+	{
+		foreach ( $resultTable[0] as $fieldName => $value )
+		{
+			$columns[] = $fieldName;
+		}
+	}
+	// Calculate column widths based on column name string lengths.
+	$imgColumnWidths = [];
+	foreach ( $columns as $columnName )
+	{
+		$imgColumnWidths[ $columnName ] = ( strlen( $columnName ) * $imgHeaderCharW ) + 5;
+	}
+	// Check the data in each column for each record, increase the column widths if necessary.
+	foreach ( $resultTable as $resultRow )
+	{
+		foreach ( $columns as $columnName )
+		{
+			$imgParsedData = isset( $resultRow[$columnName] )
+			                    ? $module->parseHTML( $resultRow[$columnName], true ) : '';
+			$thisWidth = ( strlen( $imgParsedData ) * $imgDataCharW ) + 5;
+			if ( $imgColumnWidths[$columnName] < $thisWidth )
+			{
+				$imgColumnWidths[$columnName] = $thisWidth;
+			}
+		}
+	}
+	// Calculate the image dimensions, create the image, and set the colours (black/white).
+	$imgWidth = array_sum( $imgColumnWidths ) + 1;
+	$imgHeight = $imgHeaderH + ( count( $resultTable ) * ( $imgDataH ) ) + 1;
+	$img = imagecreate( $imgWidth, $imgHeight );
+	imagecolorallocate( $img, 255, 255, 255 );
+	$imgBlack = imagecolorallocate( $img, 0, 0, 0 );
+	// Draw the column headers.
+	$posW = 0;
+	$posH = 0;
+	foreach ( $columns as $columnName )
+	{
+		$thisWidth = $imgColumnWidths[$columnName];
+		imagerectangle( $img, $posW, $posH, $posW + $thisWidth, $posH + $imgHeaderH, $imgBlack );
+		imagestring( $img, $imgHeaderFont, $posW + 2, $posH + 1, $columnName, $imgBlack );
+		$posW += $thisWidth;
+	}
+	// Draw each row of data.
+	$posW = 0;
+	$posH += $imgHeaderH;
+	foreach ( $resultTable as $resultRow )
+	{
+		foreach ( $columns as $columnName )
+		{
+			$imgParsedData = isset( $resultRow[$columnName] )
+			                    ? $module->parseHTML( $resultRow[$columnName], true ) : '';
+			$thisWidth = $imgColumnWidths[$columnName];
+			imagerectangle( $img, $posW, $posH, $posW + $thisWidth, $posH + $imgDataH, $imgBlack );
+			imagestring( $img, $imgDataFont, $posW + 2, $posH + 1, $imgParsedData, $imgBlack );
+			$posW += $thisWidth;
+		}
+		$posW = 0;
+		$posH += $imgDataH;
+	}
+	// Output the image as a PNG and exit.
+	imagepng( $img );
+	exit;
+}
+
+
+
 // Display the project header and report navigation links.
 
 require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
@@ -236,10 +357,10 @@ if ( isset( $reportData['desc'] ) && $reportData['desc'] != '' )
 <?php
 if ( count( $resultTable ) > 0 )
 {
-	foreach ( $resultTable[0] as $field => $value )
+	foreach ( $resultTable[0] as $fieldName => $value )
 	{
 ?>
-   <th class="sorting"><?php echo $module->escapeHTML( $field ); ?></th>
+   <th class="sorting"><?php echo $module->escapeHTML( $fieldName ); ?></th>
 <?php
 	}
 }
