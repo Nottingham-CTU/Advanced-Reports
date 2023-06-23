@@ -1099,10 +1099,17 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			return preg_replace( '/<((?<t1>a) href="[^"]*"( target="_blank")?|(?<t2>b|i))>(.*?)' .
 			                     '<\/((?P=t1)|(?P=t2))>/', '$5', $str );
 		}
-		return preg_replace( '/&lt;((?<t1>a) href=&quot;((?(?=&quot;)|.)*)&quot;( target=&quot;' .
-		                     '_blank&quot;)?|(?<t2>b|i))&gt;(.*?)&lt;\/((?P=t1)|(?P=t2))&gt;/',
-		                     '<$2$5${2:+ href="$3"${4:+ target="_blank"}}>$6</$7>',
-		                     htmlspecialchars( $str, ENT_QUOTES ) );
+		$fnParse = function( $m )
+		{
+			return '<' . $m[2] . $m[5] .
+			       ( $m[2] == '' ? '' : ( ' href="' . $m[3] . '"' .
+			                              ( $m[4] == '' ? '' : ' target="_blank"' ) ) ) .
+			       '>' . $m[6] . '</' . $m[7] . '>';
+		};
+		return preg_replace_callback( '/&lt;((?<t1>a) href=&quot;((?(?=&quot;)|.)*)&quot;( ' .
+		                              'target=&quot;_blank&quot;)?|(?<t2>b|i))&gt;(.*?)&lt;\/' .
+		                              '((?P=t1)|(?P=t2))&gt;/',
+		                              $fnParse, htmlspecialchars( $str, ENT_QUOTES ) );
 	}
 
 
