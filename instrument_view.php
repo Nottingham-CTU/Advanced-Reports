@@ -117,6 +117,7 @@ foreach ( $reportData['forms'] as $queryForm )
 	$resultTable = &$newResultTable;
 	unset( $newResultTable );
 }
+
 // Run any where condition.
 if ( $reportData['where'] != '' )
 {
@@ -139,6 +140,38 @@ if ( $reportData['where'] != '' )
 	}
 	$resultTable = &$newResultTable;
 	unset( $newResultTable );
+}
+
+// Perform any sorting.
+if ( $reportData['orderby'] != '' )
+{
+	$sortDirection = 1;
+	if ( strtolower( substr( rtrim( $reportData['orderby'] ), -5 ) ) == ' desc' )
+	{
+		$sortDirection = -1;
+		$reportData['orderby'] = substr( rtrim( $reportData['orderby'] ), 0, -5 );
+	}
+	list( $sortFunction, $sortParamData ) = $module->parseLogic( $reportData['orderby'] );
+	usort( $resultTable, function ( $resultRow1, $resultRow2 )
+	                     use ( $sortFunction, $sortParamData, $sortDirection )
+	{
+		$sortParams1 = [];
+		$sortParams2 = [];
+		foreach ( $sortParamData as $sortParamItem )
+		{
+			$sortParams1[] = $resultRow1[ '[' . $sortParamItem[0] . '][' . $sortParamItem[1] . ']' ]
+			                            [ $sortParamItem[2] == 'label' ? 'label' : 'value' ];
+			$sortParams2[] = $resultRow2[ '[' . $sortParamItem[0] . '][' . $sortParamItem[1] . ']' ]
+			                            [ $sortParamItem[2] == 'label' ? 'label' : 'value' ];
+		}
+		$sortValue1 = $sortFunction( ...$sortParams1 );
+		$sortValue2 = $sortFunction( ...$sortParams2 );
+		if ( $sortValue1 == $sortValue2 )
+		{
+			return 0;
+		}
+		return ( $sortValue1 < $sortValue2 ? -1 : 1 ) * $sortDirection;
+	} );
 }
 
 // Display the project header and report navigation links.
