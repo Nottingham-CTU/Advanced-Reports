@@ -1119,7 +1119,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	function parseLogic( $str, $createFunction = true )
 	{
 		// Convert [value] and [label] parameters after a field to numbers so they will be accepted
-		// by the REDCap logic lexer/parser.
+		// by the REDCap logic lexer/parser. Also pipe in the values for any smart variables.
 		$listStr = preg_split('/([\'"])/', $str, -1, PREG_SPLIT_DELIM_CAPTURE );
 		$quote = '';
 		$str = '';
@@ -1137,6 +1137,9 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			{
 				$strPart = preg_replace( '/((\[[A-Za-z0-9_]+\]){2}):value/', '$1[1]', $strPart );
 				$strPart = preg_replace( '/((\[[A-Za-z0-9_]+\]){2}):label/', '$1[2]', $strPart );
+				$strPart = \Piping::pipeSpecialTags( $strPart, $this->getProjectId(),
+				                                     wrapInQuotes: true,
+				                                     isUsedInCalcBranching: true );
 			}
 			$str .= $strPart;
 		}
