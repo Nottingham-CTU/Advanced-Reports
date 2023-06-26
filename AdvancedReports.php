@@ -104,6 +104,53 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 							}
 						}
 					}
+					// For Instrument Queries...
+					elseif ( $reportConfig['type'] == 'instrument' )
+					{
+						$description = $reportData['desc'];
+						$definition = 'Instruments:';
+						foreach ( $reportData['forms'] as $queryForm )
+						{
+							$definition .= "\n- ";
+							if ( $definition != "Instruments:\n- " )
+							{
+								$definition .= 'JOIN ';
+							}
+							$definition .= $queryForm['form'];
+							if ( $queryForm['alias'] != '' )
+							{
+								$definition .= ' AS `' . $queryForm['alias'] . '`';
+							}
+							if ( $queryForm['on'] != '' )
+							{
+								$definition .= ' ON ' . $queryForm['on'];
+							}
+						}
+						if ( $reportData['where'] != '' )
+						{
+							$definition .= "\nCondition: " . $reportData['where'];
+						}
+						if ( $reportData['orderby'] != '' )
+						{
+							$definition .= "\nSorting: " . $reportData['orderby'];
+						}
+						if ( ! empty( $reportData['select'] ) )
+						{
+							$definition .= "\nFields to display:";
+							foreach ( $reportData['select'] as $queryField )
+							{
+								$definition .= "\n- " . $queryField['field'];
+								if ( $queryField['alias'] != '' )
+								{
+									$definition .= ' AS `' . $queryField['alias'] . '`';
+								}
+							}
+						}
+						if ( $reportData['nomissingdatacodes'] )
+						{
+							$options .= 'Hide missing data codes';
+						}
+					}
 					// For Gantt charts...
 					elseif ( $reportConfig['type'] == 'gantt' )
 					{
