@@ -156,6 +156,22 @@ if ( ! empty( $_POST ) )
 
 
 
+// Get fields and smart variables for field suggestions.
+$smartVarsInfo = \Piping::getSpecialTagsInfo();
+$listSmartVars = array_merge( array_keys( $smartVarsInfo[ $GLOBALS['lang']['global_17'] ] ),
+                              array_keys( $smartVarsInfo[ $GLOBALS['lang']['global_156'] ] ) );
+array_walk( $listSmartVars, function( &$i ) { $i = '[' . $i . ']'; } );
+$listFormVars = [];
+foreach ( array_keys( $module->getInstrumentList() ) as $instrument )
+{
+	$listFormVars[ $instrument ] = array_values(
+	                                array_unique( array_merge( [ \REDCap::getRecordIdField() ],
+	                                                    \REDCap::getFieldNames( $instrument ) ) ) );
+}
+
+
+
+
 // Display the project header
 require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
 $module->writeStyle();
@@ -257,7 +273,7 @@ $module->outputInstrumentDropdown( 'query_form[]', '' );
      </tr>
     </table>
     <span id="inst-entries-link" style="display:none">
-     <a onclick="$('#inst-entries-tbl tr').slice(-2).clone().css('display',''
+     <a onclick="$('#inst-entries-tbl tr').slice(-2).clone(true).css('display',''
                     ).insertBefore($('#inst-entries-tbl tr').slice(-2,-1));return false"
         href="#" class=""><i class="fas fa-plus-circle fs12"></i> Add instrument</a>
     </span>
@@ -274,6 +290,7 @@ $module->outputInstrumentDropdown( 'query_form[]', '' );
    <td>Sorting</td>
    <td>
     <input type="text" name="query_orderby" style="width:100%" placeholder="sorting logic"
+           list="field-var-list-sort"
            value="<?php echo $module->escapeHTML( $reportData['orderby'] ?? '' ); ?>">
    </td>
   </tr>
@@ -285,7 +302,7 @@ $module->outputInstrumentDropdown( 'query_form[]', '' );
       <td style="text-align:left;width:60%">
        <input type="text" name="query_select_field[]" placeholder="field name/logic"
               value="<?php echo $module->escapeHTML( $reportData['select'][0]['field'] ?? '' ); ?>"
-              style="width:100%">
+              list="field-var-list" style="width:100%">
       </td>
       <td style="text-align:left;width:unset">
        <input type="text" name="query_select_alias[]" placeholder="alias (optional)"
@@ -307,7 +324,7 @@ foreach ( $reportData['select'] as $fieldData )
       <td style="text-align:left;width:unset">
        <input type="text" name="query_select_field[]" placeholder="field name/logic"
               value="<?php echo $module->escapeHTML( $fieldData['field'] ); ?>"
-              style="width:100%">
+              list="field-var-list" style="width:100%">
       </td>
       <td style="text-align:left;width:unset">
        <input type="text" name="query_select_alias[]" placeholder="alias (optional)"
@@ -321,7 +338,7 @@ foreach ( $reportData['select'] as $fieldData )
      <tr style="display:none">
       <td style="text-align:left;width:unset">
        <input type="text" name="query_select_field[]" placeholder="field name/logic"
-              style="width:100%">
+              list="field-var-list" style="width:100%">
       </td>
       <td style="text-align:left;width:unset">
        <input type="text" name="query_select_alias[]" placeholder="alias (optional)"
@@ -354,6 +371,8 @@ echo $reportData['nomissingdatacodes'] ? ' checked' : '';
   </tr>
  </table>
 </form>
+<datalist id="field-var-list"></datalist>
+<datalist id="field-var-list-sort"></datalist>
 <script type="text/javascript">
  (function ()
  {
@@ -388,6 +407,40 @@ echo $reportData['nomissingdatacodes'] ? ' checked' : '';
              } )
      return false
    }
+   var vSmartVars = <?php echo json_encode( $listSmartVars ), "\n"; ?>
+   var vFormVars = <?php echo json_encode( $listFormVars ), "\n"; ?>
+   var vFuncUpdateVars = function()
+   {
+     $('#field-var-list').html('')
+     $('#field-var-list-sort').html('')
+     var vFormElems = $('[name="query_form[]"]')
+     var vAliasElems = $('[name="query_form_alias[]"]')
+     for ( vIndex = 0; vIndex < vFormElems.length; vIndex++ )
+     {
+       var vFormName = vFormElems[ vIndex ].value
+       if ( vFormName == '' )
+       {
+         continue
+       }
+       var vAlias = vAliasElems[ vIndex ].value == '' ? vFormName : vAliasElems[ vIndex ].value
+       vFormVars[ vFormName ].forEach( function( vItem )
+       {
+         $('<option></option>').text( '[' + vAlias + '][' + vItem + ']'
+                                                        ).appendTo( $('#field-var-list') )
+         $('<option></option>').text( '[' + vAlias + '][' + vItem + ']'
+                                                        ).appendTo( $('#field-var-list-sort') )
+         $('<option></option>').text( '[' + vAlias + '][' + vItem + '] DESC'
+                                                        ).appendTo( $('#field-var-list-sort') )
+       } )
+     }
+     vSmartVars.forEach( function( vItem )
+     {
+       $('<option></option>').text( vItem ).appendTo( $('#field-var-list') )
+     } )
+   }
+   vFuncUpdateVars()
+   $('[name="query_form[]"]').change( vFuncUpdateVars )
+   $('[name="query_form_alias[]"]').keyup( vFuncUpdateVars )
  })()
 </script>
 <?php
