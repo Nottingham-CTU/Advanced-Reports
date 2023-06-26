@@ -25,8 +25,8 @@ $reportData = $module->getReportData( $reportID );
 if ( ! empty( $_POST ) )
 {
 	// Validate data
-	$validData = true;
 	$validationMsg = '';
+	// - Check the forms/fields are specified if an alias or join condition is specified.
 	foreach ( $_POST['query_form'] as $i => $formName )
 	{
 		if ( $formName == '' &&
@@ -35,12 +35,82 @@ if ( ! empty( $_POST ) )
 		{
 			$validationMsg =
 					'Form cannot be empty if the first entry or if alias/condition specified.';
+			break;
+		}
+	}
+	if ( $validationMsg == '' )
+	{
+		foreach ( $_POST['query_select_field'] as $i => $fieldName )
+		{
+			if ( $fieldName == '' && $_POST['query_select_alias'][$i] != '' )
+			{
+				$validationMsg = 'Field cannot be empty if alias specified.';
+			}
+		}
+	}
+	// - Check the validity of forms join condition logic.
+	if ( $validationMsg == '' )
+	{
+		try
+		{
+			foreach ( $_POST['query_form_on'] as $formCond )
+			{
+				$module->parseLogic( $formCond, false );
+			}
+		}
+		catch ( Exception $e )
+		{
+			$validationMsg = 'Error in form join condition logic - ' . $e->getMessage();
+		}
+	}
+	// - Check the validity of condition logic.
+	if ( $validationMsg == '' )
+	{
+		try
+		{
+			$module->parseLogic( $_POST['query_where'], false );
+		}
+		catch ( Exception $e )
+		{
+			$validationMsg = 'Error in condition logic - ' . $e->getMessage();
+		}
+	}
+	// - Check the validity of sorting logic.
+	if ( $validationMsg == '' )
+	{
+		try
+		{
+			$orderby = $_POST['query_orderby'];
+			if ( strtolower( substr( rtrim( $orderby ), -5 ) ) == ' desc' )
+			{
+				$orderby = substr( rtrim( $orderby ), 0, -5 );
+			}
+			$module->parseLogic( $orderby, false );
+		}
+		catch ( Exception $e )
+		{
+			$validationMsg = 'Error in sorting logic - ' . $e->getMessage();
+		}
+	}
+	// - Check the validity of field name/logic.
+	if ( $validationMsg == '' )
+	{
+		try
+		{
+			foreach ( $_POST['query_select_field'] as $fieldName )
+			{
+				$module->parseLogic( $fieldName, false );
+			}
+		}
+		catch ( Exception $e )
+		{
+			$validationMsg = 'Error in field name/logic - ' . $e->getMessage();
 		}
 	}
 	if ( isset( $_SERVER['HTTP_X_RC_ADVREP_INSTQUERYCHK'] ) )
 	{
 		header( 'Content-Type: application/json' );
-		if ( $validData )
+		if ( $validationMsg == '' )
 		{
 			echo 'true';
 		}
@@ -50,7 +120,7 @@ if ( ! empty( $_POST ) )
 		}
 		exit;
 	}
-	if ( ! $validData )
+	if ( $validationMsg != '' )
 	{
 		exit;
 	}
@@ -113,6 +183,15 @@ echo $reportData['desc'] ?? ''; ?></textarea>
      Optional. If specified, displays this text above the report.
      Supports &lt;a&gt;, &lt;b&gt; and &lt;i&gt; HTML tags.
     </span>
+   </td>
+  </tr>
+  <tr>
+   <td></td>
+   <td>
+    <div id="query_err_msg" class="mod-advrep-errmsg" style="display:none;margin-top:5px">
+     <i class="fas fa-exclamation-triangle"></i>
+     <span></span>
+    </div>
    </td>
   </tr>
   <tr>
@@ -286,9 +365,9 @@ echo $reportData['nomissingdatacodes'] ? ' checked' : '';
      {
        return true
      }
-     $.ajax( { url : '<?php echo $module->getUrl( 'sql_edit.php?report_id=' . $reportID ); ?>',
+     $.ajax( { url : '<?php echo $module->getUrl( 'instrument_edit.php?report_id=' . $reportID ); ?>',
                method : 'POST',
-               data : { sql_query : $('[name=sql_query')[0].value },
+               data : $('#queryform').serialize(),
                         headers : { 'X-RC-AdvRep-InstQueryChk' : '1' },
                         dataType : 'json',
                         success : function ( result )
@@ -297,11 +376,13 @@ echo $reportData['nomissingdatacodes'] ? ' checked' : '';
                           {
                             vValidated = true
                             $('#queryform')[0].submit()
+                            $('#query_err_msg').css( 'display', 'none' )
                           }
                           else
                           {
                             var vMsg = 'Invalid instrument query: ' + result
-                            $('[name="instrument_query"]')[0].setCustomValidity( vMsg )
+                            $('#query_err_msg span').text( vMsg )
+                            $('#query_err_msg').css( 'display', '' )
                           }
                         }
              } )
