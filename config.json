@@ -10,8 +10,12 @@
 		}
 	],
 	"permissions" : [ "redcap_every_page_before_render" ],
-	"framework-version" : 6,
-	"compatibility" : { "redcap-version-min" : "10.6.0" },
+	"framework-version" : 9,
+	"compatibility" : {
+		"redcap-version-min" : "12.0.4",
+		"php-version-min" : "8.0.0",
+		"php-version-max" : "8.99.99"
+	},
 	"links" : {
 		"project" : [
 			{ "name" : "Advanced Reports", "icon" : "far fa-file-alt", "url" : "reports.php" }
