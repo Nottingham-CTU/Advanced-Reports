@@ -221,6 +221,7 @@ if ( isset( $_GET['download'] ) && $module->isReportDownloadable( $reportID ) )
 	{
 		if ( $firstRow )
 		{
+			$firstRow = false;
 			$firstField = true;
 			foreach ( $resultRow as $fieldName => $value )
 			{

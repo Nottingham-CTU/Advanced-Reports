@@ -56,7 +56,7 @@ if ( ! empty( $_POST ) )
 	}
 
 	// Save data
-	$module->submitReportConfig( $reportID );
+	$module->submitReportConfig( $reportID, true, 'image' );
 	$reportData = [ 'desc' => $_POST['query_desc'], 'forms' => [], 'where' => $_POST['query_where'],
 	                'orderby' => $_POST['query_orderby'], 'select' => [],
 	                'nomissingdatacodes' => isset( $_POST['query_nomissingdatacodes'] ) ];
