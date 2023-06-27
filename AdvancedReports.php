@@ -1184,9 +1184,17 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			{
 				$strPart = preg_replace( '/((\[[A-Za-z0-9_]+\]){2}):value/', '$1[1]', $strPart );
 				$strPart = preg_replace( '/((\[[A-Za-z0-9_]+\]){2}):label/', '$1[2]', $strPart );
-				$strPart = \Piping::pipeSpecialTags( $strPart, $this->getProjectId(),
-				                                     wrapInQuotes: true,
-				                                     isUsedInCalcBranching: true );
+				try
+				{
+					$strPart = \Piping::pipeSpecialTags( $strPart, $this->getProjectId(),
+					                                     wrapInQuotes: true,
+					                                     isUsedInCalcBranching: true );
+				}
+				catch ( \Error $e )
+				{
+					$strPart = \Piping::pipeSpecialTags( $strPart, $this->getProjectId(),
+					                                     wrapInQuotes: true );
+				}
 			}
 			$str .= $strPart;
 		}
@@ -1205,7 +1213,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		{
 			if ( $param[0] == '' || $param[1] == '' )
 			{
-				throw new Exception( 'Invalid field identifier.' );
+				throw new \Exception( 'Invalid field identifier.' );
 			}
 			$dataType = null;
 			if ( $param[3] === '1' )

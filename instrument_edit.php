@@ -3,6 +3,8 @@
  *	Instrument Query Reports edit page.
  */
 
+namespace Nottingham\AdvancedReports;
+
 
 
 // Check user can edit Instrument Query reports and verify the report exists and is an Instrument
@@ -55,28 +57,29 @@ if ( ! empty( $_POST ) )
 		{
 			foreach ( $_POST['query_form_on'] as $formCond )
 			{
+				if ( $formCond != '' )
 				$module->parseLogic( $formCond, false );
 			}
 		}
-		catch ( Exception $e )
+		catch ( \Exception $e )
 		{
 			$validationMsg = 'Error in form join condition logic - ' . $e->getMessage();
 		}
 	}
 	// - Check the validity of condition logic.
-	if ( $validationMsg == '' )
+	if ( $validationMsg == '' && $_POST['query_where'] != '' )
 	{
 		try
 		{
 			$module->parseLogic( $_POST['query_where'], false );
 		}
-		catch ( Exception $e )
+		catch ( \Exception $e )
 		{
 			$validationMsg = 'Error in condition logic - ' . $e->getMessage();
 		}
 	}
 	// - Check the validity of sorting logic.
-	if ( $validationMsg == '' )
+	if ( $validationMsg == '' && $_POST['query_orderby'] != '' )
 	{
 		try
 		{
@@ -87,7 +90,7 @@ if ( ! empty( $_POST ) )
 			}
 			$module->parseLogic( $orderby, false );
 		}
-		catch ( Exception $e )
+		catch ( \Exception $e )
 		{
 			$validationMsg = 'Error in sorting logic - ' . $e->getMessage();
 		}
@@ -99,10 +102,13 @@ if ( ! empty( $_POST ) )
 		{
 			foreach ( $_POST['query_select_field'] as $fieldName )
 			{
-				$module->parseLogic( $fieldName, false );
+				if ( $fieldName != '' )
+				{
+					$module->parseLogic( $fieldName, false );
+				}
 			}
 		}
-		catch ( Exception $e )
+		catch ( \Exception $e )
 		{
 			$validationMsg = 'Error in field name/logic - ' . $e->getMessage();
 		}
