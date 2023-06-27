@@ -4,6 +4,7 @@
  */
 
 namespace Nottingham\AdvancedReports;
+const TVALIDSTR = 'text_validation_type_or_show_slider_number';
 
 
 
@@ -25,6 +26,8 @@ if ( ! $module->isReportAccessible( $reportID ) )
 	exit;
 }
 
+$isCsvDownload = ( isset( $_GET['download'] ) && $module->isReportDownloadable( $reportID ) );
+
 // Get the report data.
 $reportConfig = $listReports[$reportID];
 $reportData = $module->getReportData( $reportID );
@@ -44,10 +47,25 @@ foreach ( $reportData['forms'] as $queryForm )
 	// Get the fields for the form and retrieve the values and value labels for each record.
 	$fields = array_unique( array_merge( [ \REDCap::getRecordIdField() ],
 	                                     \REDCap::getFieldNames( $form ) ) );
+	$fieldMetadata = \REDCap::getDataDictionary( 'array', false, $fields );
 	$formValues = \REDCap::getData( $resultParams +
 	                                [ 'exportAsLabels' => false, 'fields' => $fields ] );
 	$formLabels = \REDCap::getData( $resultParams +
 	                                [ 'exportAsLabels' => true, 'fields' => $fields ] );
+	$dateFields = [];
+	if ( ! $isCsvDownload )
+	{
+		foreach ( $fieldMetadata as $fieldName => $fieldParams )
+		{
+			if ( $fieldParams['field_type'] == 'text' &&
+			     ( substr( $fieldParams[TVALIDSTR], 0, 5 ) == 'date_' ||
+			       substr( $fieldParams[TVALIDSTR], 0, 9 ) == 'datetime_' ||
+			       in_array( $fieldParams[TVALIDSTR], [ 'time', 'time_hh_mm_ss' ] ) ) )
+			{
+				$dateFields[] = $fieldName;
+			}
+		}
+	}
 	$newResultTable = [];
 	foreach ( $resultTable as $resultRow )
 	{
@@ -58,6 +76,14 @@ foreach ( $reportData['forms'] as $queryForm )
 				continue;
 			}
 			$formLabelsRow = $formLabels[$i];
+			foreach ( $formLabelsRow as $fieldName => $value )
+			{
+				if ( in_array( $fieldName, $dateFields ) )
+				{
+					$formLabelsRow[ $fieldName ] =
+							\DateTimeRC::format_ts_from_ymd( $value, false, true );
+				}
+			}
 			// Check if the row from this form should be joined with the result table row.
 			$doJoin = true;
 			if ( $queryForm['on'] != '' )
@@ -213,7 +239,7 @@ if ( ! empty( $reportData['select'] ) )
 
 
 // Handle report download.
-if ( isset( $_GET['download'] ) && $module->isReportDownloadable( $reportID ) )
+if ( $isCsvDownload )
 {
 	$module->writeCSVDownloadHeaders( $reportID );
 	$firstRow = true;
