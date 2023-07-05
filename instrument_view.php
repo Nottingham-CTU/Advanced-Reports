@@ -98,7 +98,8 @@ foreach ( $reportData['forms'] as $queryForm )
 			$doJoin = true;
 			if ( $queryForm['on'] != '' )
 			{
-				list( $joinFunction, $joinParamData ) = $module->parseLogic( $queryForm['on'] );
+				list( $joinFunction, $joinParamData ) =
+					$module->parseLogic( $queryForm['on'], $isCsvDownload );
 				$joinParams = [];
 				foreach ( $joinParamData as $joinParamItem )
 				{
@@ -158,7 +159,8 @@ foreach ( $reportData['forms'] as $queryForm )
 if ( $reportData['where'] != '' )
 {
 	$newResultTable = [];
-	list( $whereFunction, $whereParamData ) = $module->parseLogic( $reportData['where'] );
+	list( $whereFunction, $whereParamData ) =
+		$module->parseLogic( $reportData['where'], $isCsvDownload );
 	foreach ( $resultTable as $resultRow )
 	{
 		$whereParams = [];
@@ -187,7 +189,8 @@ if ( $reportData['orderby'] != '' )
 		$sortDirection = -1;
 		$reportData['orderby'] = substr( rtrim( $reportData['orderby'] ), 0, -5 );
 	}
-	list( $sortFunction, $sortParamData ) = $module->parseLogic( $reportData['orderby'] );
+	list( $sortFunction, $sortParamData ) =
+		$module->parseLogic( $reportData['orderby'], $isCsvDownload );
 	usort( $resultTable, function ( $resultRow1, $resultRow2 )
 	                     use ( $sortFunction, $sortParamData, $sortDirection )
 	{
@@ -222,7 +225,8 @@ if ( ! empty( $reportData['select'] ) )
 			$selectField['alias'] = $selectField['field'];
 		}
 		$selectFields[] = [ 'field' => $selectField['field'], 'alias' => $selectField['alias'],
-		                    'function' => $module->parseLogic( $selectField['field'] ) ];
+		                    'function' => $module->parseLogic( $selectField['field'],
+		                                                       $isCsvDownload ) ];
 	}
 	foreach ( $resultTable as $resultRow )
 	{

@@ -767,12 +767,22 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		// If report can be downloaded, show the download link.
 		if ( $canDownload )
 		{
+			$extraVarsDL = '';
+			parse_str( $_SERVER['QUERY_STRING'], $getVars );
+			foreach ( $getVars as $getVar => $getVal )
+			{
+				if ( ! in_array( $getVar, [ 'as_image', 'download', 'page', 'pid', 'prefix',
+				                            'report_id', 'report_state' ] ) )
+				{
+					$extraVarsDL .= '&' . $getVar . '=' . rawurlencode( $getVal );
+				}
+			}
 
 ?>
  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
  <a href="<?php
 			echo $this->getUrl( $reportType . '_view.php?report_id=' . $_GET['report_id'] .
-			                    '&download=1' );
+			                    $extraVarsDL . '&download=1' );
 ?>"><i class="fas fa-file-download fs11"></i> Download report</a>
 <?php
 
@@ -1164,7 +1174,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 	// Takes logic and parses it, returning an array consisting of a function and information about
 	// the parameters to be passed to the function to evaluate the logic.
-	function parseLogic( $str, $createFunction = true )
+	function parseLogic( $str, $isDownload = false, $createFunction = true )
 	{
 		// Convert [value] and [label] parameters after a field to numbers so they will be accepted
 		// by the REDCap logic lexer/parser. Also pipe in the values for any smart variables.
@@ -1185,6 +1195,24 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			{
 				$strPart = preg_replace( '/((\[[A-Za-z0-9_]+\]){2}):value/', '$1[1]', $strPart );
 				$strPart = preg_replace( '/((\[[A-Za-z0-9_]+\]){2}):label/', '$1[2]', $strPart );
+				$strPart = str_replace( '[is-download]', ( $isDownload ? '1' : '0' ), $strPart );
+				$strPart =
+					preg_replace_callback( '/\[q(int|str):([a-z0-9_]+)\]/', function ( $m )
+					{
+						if ( !isset( $_GET[ $m[2] ] ) )
+						{
+							return "''";
+						}
+						if ( $m[1] == 'int' )
+						{
+							if ( preg_match( '/^(0|(-?[1-9][0-9]*))$/', $_GET[ $m[2] ] ) )
+							{
+								return $_GET[ $m[2] ];
+							}
+							return "''";
+						}
+						return "'" . str_replace( "'", '', $_GET[ $m[2] ] ) . "'";
+					}, $strPart );
 				try
 				{
 					$strPart = \Piping::pipeSpecialTags( $strPart, $this->getProjectId(),

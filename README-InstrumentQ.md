@@ -16,6 +16,47 @@ using `:value` and `:label`, for example: `[instrument_1][choice_field]:value`
 In the options which support calculation logic, you can use any REDCap calculation logic/functions.
 Some smart variables are also supported (those which do not require a record context).
 
+### Report Specific Smart Variables
+
+Instrument Query reports support the `[is-download]` smart variable, which has a value of `1` if the
+report is being downloaded as a CSV file, and `0` otherwise.
+
+Query string smart variables are also supported.
+
+#### Query String Smart Variables
+
+:warning: **Important security note:**
+Query string smart variables allow the user to supply *any value* via the URL. The module will
+handle validating and escaping the values so they are safe to use in calculation logic, but care
+must be taken to ensure that the user is not able to access data they shouldn't have access to via
+their choice of parameter value.
+
+Query string smart variables can be used on Instrument Query reports like any other REDCap smart
+variable. They take a value supplied in the URL of the report to use in the query. The query string
+smart variables are of the following formats (where *name* is the query string parameter):
+
+* `[qint:name]` &ndash; the named query string value, as an integer
+  * if the value is missing or is not an integer, the empty string is used
+* `[qstr:name]` &ndash; the named query string value, as a string
+  * if the value is missing, the empty string is used
+
+To use query string smart variables, simply append the query string parameters to the end of the URL
+of the report, for example:
+
+<tt style="white-space:nowrap">https://your-redcap-instance/ExternalModules/?prefix=advanced_reports&pid=1&page=instrument_view&report_id=my_report<b>&my_parameter=AnExampleParameterValue</b></tt>
+
+Parameter names can consist of lowercase letters, numbers, and underscores.
+
+Bear in mind that some query string parameters are used by REDCap and by this module. You will need
+to pick parameter names different from the following (unless you want to use those values):
+* as_image
+* download
+* page
+* pid
+* prefix
+* report_id
+* report_state
+
 ## Instrument Query Options
 
 ### Instruments

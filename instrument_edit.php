@@ -58,7 +58,7 @@ if ( ! empty( $_POST ) )
 			foreach ( $_POST['query_form_on'] as $formCond )
 			{
 				if ( $formCond != '' )
-				$module->parseLogic( $formCond, false );
+				$module->parseLogic( $formCond, false, false );
 			}
 		}
 		catch ( \Exception $e )
@@ -71,7 +71,7 @@ if ( ! empty( $_POST ) )
 	{
 		try
 		{
-			$module->parseLogic( $_POST['query_where'], false );
+			$module->parseLogic( $_POST['query_where'], false, false );
 		}
 		catch ( \Exception $e )
 		{
@@ -88,7 +88,7 @@ if ( ! empty( $_POST ) )
 			{
 				$orderby = substr( rtrim( $orderby ), 0, -5 );
 			}
-			$module->parseLogic( $orderby, false );
+			$module->parseLogic( $orderby, false, false );
 		}
 		catch ( \Exception $e )
 		{
@@ -104,7 +104,7 @@ if ( ! empty( $_POST ) )
 			{
 				if ( $fieldName != '' )
 				{
-					$module->parseLogic( $fieldName, false );
+					$module->parseLogic( $fieldName, false, false );
 				}
 			}
 		}
@@ -165,7 +165,8 @@ if ( ! empty( $_POST ) )
 // Get fields and smart variables for field suggestions.
 $smartVarsInfo = \Piping::getSpecialTagsInfo();
 $listSmartVars = array_merge( array_keys( $smartVarsInfo[ $GLOBALS['lang']['global_17'] ] ),
-                              array_keys( $smartVarsInfo[ $GLOBALS['lang']['global_156'] ] ) );
+                              array_keys( $smartVarsInfo[ $GLOBALS['lang']['global_156'] ] ),
+                              [ 'is-download' ] );
 array_walk( $listSmartVars, function( &$i ) { $i = '[' . $i . ']'; } );
 $listFormVars = [];
 foreach ( array_keys( $module->getInstrumentList() ) as $instrument )
