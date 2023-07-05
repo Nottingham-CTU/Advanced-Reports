@@ -33,22 +33,57 @@ $reportConfig = $listReports[$reportID];
 $reportData = $module->getReportData( $reportID );
 
 $userRights = $module->getUser()->getRights();
-//var_dump( $userRights ); exit;
+$exportRight = $userRights['data_export_tool'];
 
 $listEvents = \REDCap::getEventNames( true );
+$listForms = ( empty( $reportData['forms'] ) ? array_keys( \REDCap::getInstrumentNames() )
+                                             : $reportData['forms'] );
 
 $recordIDField = \REDCap::getRecordIdField();
 
 $displayFields = [ $recordIDField, 'redcap_data_access_group' ];
-if ( empty( $reportData['forms'] ) )
+foreach ( $listForms as $formName )
 {
-	$displayFields = null;
-}
-else
-{
-	foreach ( $reportData['forms'] as $displayForm )
+	$formExportRight = $exportRight;
+	if ( isset( $userRights['data_export_instruments'] ) )
 	{
-		$displayFields = array_merge( $displayFields, \REDCap::getFieldNames( $displayForm ) );
+		$formExportRight = strpos( $userRights['data_export_instruments'], '[' . $formName . ',' );
+		if ( $formExportRight === false )
+		{
+			$formExportRight = $exportRight;
+		}
+		else
+		{
+			$formExportRight = substr( $userRights['data_export_instruments'],
+			                           $formExportRight + strlen( $formName ) + 2, 1 );
+		}
+	}
+	if ( $formExportRight == '1' ) // full data set
+	{
+		$displayFields = array_merge( $displayFields, \REDCap::getFieldNames( $formName ) );
+	}
+	elseif ( $formExportRight == '2' || $formExportRight == '3' ) // de-identified / remove id's
+	{
+		$listFormFields = \REDCap::getDataDictionary( 'array', false, null, $formName );
+		foreach ( $listFormFields as $fieldName => $infoField )
+		{
+			if ( $infoField['identifier'] == 'y' || $infoField['field_type'] == 'descriptive' )
+			{
+				continue;
+			}
+			if ( $formExportRight == '3' ||
+			     in_array( $infoField['field_type'],
+			               [ 'dropdown', 'radio', 'checkbox', 'calc', 'sql', 'slider',
+			                 'yesno', 'truefalse' ] ) ||
+			     ( $infoField['field_type'] == 'text' &&
+			       in_array( str_replace( '_comma_decimal', '', $infoField[TVALIDSTR] ),
+			                 [ 'integer', 'number', 'number_1dp', 'number_2dp',
+			                   'number_3dp', 'number_4dp' ] ) ) )
+			{
+				$displayFields[] = $fieldName;
+			}
+		}
+		$displayFields[] = $formName . '_complete';
 	}
 }
 
