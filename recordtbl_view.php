@@ -42,8 +42,11 @@ $listForms = ( empty( $reportData['forms'] ) ? array_keys( \REDCap::getInstrumen
 $recordIDField = \REDCap::getRecordIdField();
 
 $displayFields = [ $recordIDField, 'redcap_data_access_group' ];
+$listDateFields = [];
+$listOptionFields = [];
 foreach ( $listForms as $formName )
 {
+	$listFormFields = \REDCap::getDataDictionary( 'array', false, null, $formName );
 	$formExportRight = $exportRight;
 	if ( isset( $userRights['data_export_instruments'] ) )
 	{
@@ -61,10 +64,26 @@ foreach ( $listForms as $formName )
 	if ( $formExportRight == '1' ) // full data set
 	{
 		$displayFields = array_merge( $displayFields, \REDCap::getFieldNames( $formName ) );
+		if ( ! $isCsvDownload )
+		{
+			foreach ( $listFormFields as $fieldName => $infoField )
+			{
+				if ( $infoField['field_type'] == 'text' &&
+				     ( substr( $infoField[TVALIDSTR], 0, 5 ) == 'date_' ||
+				       substr( $infoField[TVALIDSTR], 0, 9 ) == 'datetime_' ||
+				       in_array( $infoField[TVALIDSTR], [ 'time', 'time_hh_mm_ss' ] ) ) )
+				{
+					$listDateFields[] = $fieldName;
+				}
+				elseif ( in_array( $infoField['field_type'], [ 'dropdown', 'radio' ] ) )
+				{
+					$listOptionFields[ $fieldName ] = $module->getChoiceLabels( $fieldName );
+				}
+			}
+		}
 	}
 	elseif ( $formExportRight == '2' || $formExportRight == '3' ) // de-identified / remove id's
 	{
-		$listFormFields = \REDCap::getDataDictionary( 'array', false, null, $formName );
 		foreach ( $listFormFields as $fieldName => $infoField )
 		{
 			if ( $infoField['identifier'] == 'y' || $infoField['field_type'] == 'descriptive' )
@@ -81,6 +100,18 @@ foreach ( $listForms as $formName )
 			                   'number_3dp', 'number_4dp' ] ) ) )
 			{
 				$displayFields[] = $fieldName;
+				if ( ! $isCsvDownload && $infoField['field_type'] == 'text' &&
+				     ( substr( $infoField[TVALIDSTR], 0, 5 ) == 'date_' ||
+				       substr( $infoField[TVALIDSTR], 0, 9 ) == 'datetime_' ||
+				       in_array( $infoField[TVALIDSTR], [ 'time', 'time_hh_mm_ss' ] ) ) )
+				{
+					$listDateFields[] = $fieldName;
+				}
+				elseif ( ! $isCsvDownload &&
+				         in_array( $infoField['field_type'], [ 'dropdown', 'radio' ] ) )
+				{
+					$listOptionFields[ $fieldName ] = $module->getChoiceLabels( $fieldName );
+				}
 			}
 		}
 		$displayFields[] = $formName . '_complete';
@@ -99,6 +130,7 @@ $listData = \REDCap::getData( [ 'return_format' => 'array', 'combine_checkbox_va
 
 $listColumns = [];
 $resultTable = [];
+$showEventNames = ( count( $listEvents ) != 1 );
 
 foreach ( $listData as $infoRecord )
 {
@@ -128,19 +160,36 @@ foreach ( $listData as $infoRecord )
 								$fieldOptions = $fieldValue;
 								foreach ( $fieldOptions as $fieldOption => $fieldValue )
 								{
-									$columnName = $eventName . '__' . $fieldName . '__' .
-									              $instanceID . '___' . $fieldOption;
+									$columnName = ( $showEventNames ? ( $eventName . '__' ) : '' ) .
+									              $fieldName . '__' . $instanceID . '___' .
+									              $fieldOption;
 									$listColumns[ $columnName ] = true;
 									$resultRow[ $columnName ] = $fieldValue;
 								}
 							}
 							else
 							{
-								$columnName = $eventName . '__' . $fieldName . '__' . $instanceID;
+								$columnName = ( $showEventNames ? ( $eventName . '__' ) : '' ) .
+								              $fieldName . '__' . $instanceID;
 								$listColumns[ $columnName ] = true;
 								if ( $fieldValue != '' )
 								{
-									$resultRow[ $columnName ] = $fieldValue;
+									if ( in_array( $fieldName, $listDateFields ) )
+									{
+										$resultRow[ $columnName ] =
+											\DateTimeRC::format_ts_from_ymd( $fieldValue,
+											                                 false, true );
+									}
+									elseif ( isset( $listOptionFields[ $fieldName ] ) )
+									{
+										$resultRow[ $columnName ] =
+											$listOptionFields[ $fieldName ][ $fieldValue ] .
+											' (' . $fieldValue . ')';
+									}
+									else
+									{
+										$resultRow[ $columnName ] = $fieldValue;
+									}
 								}
 							}
 						}
@@ -163,18 +212,32 @@ foreach ( $listData as $infoRecord )
 				$fieldOptions = $fieldValue;
 				foreach ( $fieldOptions as $fieldOption => $fieldValue )
 				{
-					$columnName = $eventName . '__' . $fieldName . '__1___' . $fieldOption;
+					$columnName = ( $showEventNames ? ( $eventName . '__' ) : '' ) .
+					              $fieldName . '__1___' . $fieldOption;
 					$listColumns[ $columnName ] = true;
 					$resultRow[ $columnName ] = $fieldValue;
 				}
 			}
 			else
 			{
-				$columnName = $eventName . '__' . $fieldName . '__1';
+				$columnName = ( $showEventNames ? ( $eventName . '__' ) : '' ) . $fieldName . '__1';
 				$listColumns[ $columnName ] = true;
 				if ( $fieldValue != '' )
 				{
-					$resultRow[ $columnName ] = $fieldValue;
+					if ( in_array( $fieldName, $listDateFields ) )
+					{
+						$resultRow[ $columnName ] =
+							\DateTimeRC::format_ts_from_ymd( $fieldValue, false, true );
+					}
+					elseif ( isset( $listOptionFields[ $fieldName ] ) )
+					{
+						$resultRow[ $columnName ] = $listOptionFields[ $fieldName ][ $fieldValue ] .
+						                            ' (' . $fieldValue . ')';
+					}
+					else
+					{
+						$resultRow[ $columnName ] = $fieldValue;
+					}
 				}
 			}
 		}
