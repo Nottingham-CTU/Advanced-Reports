@@ -37,6 +37,7 @@ The following report types are currently available:
 
 * **Gantt**
 * **Instrument Query**
+* **Record Table**
 * **SQL** (direct database query) \*
 
 \* only administrators can edit
@@ -82,6 +83,10 @@ as a Unix timestamp representing a UTC date/time.
 
 ### Instrument Query report options
 
+Instrument Query reports treat each instrument in the project like a database table which can be
+joined and filtered as required. Instrument Query reports support REDCap calculation logic and some
+smart variables.
+
 * **Description** brief descriptive text to appear above the report
   * HTML &lt;a&gt; &lt;b&gt; and &lt;i&gt; tags as well as the placeholders `$$PROJECT$$`
     (project ID) and `$$WEBROOT$$` (REDCap version directory web path) can be used in the
@@ -94,9 +99,26 @@ as a Unix timestamp representing a UTC date/time.
   * Append ` DESC` to sort in descending order.
 * **Fields to display** specify each field or calculation logic for display in the report, with
   optional alias for the field heading
+* **Hide missing data codes** if selected will show blank values instead of missing data codes
 
 Please refer to the [Instrument Query report instructions](README-InstrumentQ.md) for more
 information.
+
+### Record Table report options
+
+Record table reports will display all the fields in the selected instruments and events, including
+all repeating instances, in a single row for each record.
+
+The data returned in a Record Table will be automatically filtered according to the user's DAG and
+data export rights.
+
+* **Description** brief descriptive text to appear above the report
+  * HTML &lt;a&gt; &lt;b&gt; and &lt;i&gt; tags as well as the placeholders `$$PROJECT$$`
+    (project ID) and `$$WEBROOT$$` (REDCap version directory web path) can be used in the
+    description.
+* **Instruments** choose the instruments/forms to include
+* **Events** choose the events to include
+* **Hide missing data codes** if selected will show blank values instead of missing data codes
 
 ### SQL report options
 
