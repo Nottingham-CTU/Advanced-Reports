@@ -1,0 +1,334 @@
+<?php
+/**
+ *	Record Table Reports view page.
+ */
+
+namespace Nottingham\AdvancedReports;
+const TVALIDSTR = 'text_validation_type_or_show_slider_number';
+
+
+
+// Verify the report exists, is a project query, and is visible.
+// Redirect to main reports page if not.
+$reportID = $_GET['report_id'];
+$listReports = $module->getReportList();
+if ( ! isset( $listReports[$reportID] ) || $listReports[$reportID]['type'] != 'recordtbl' )
+{
+	header( 'Location: ' . $module->getUrl( 'reports.php' ) );
+	exit;
+}
+
+
+// Check user can view this report, redirect to main reports page if not.
+if ( ! $module->isReportAccessible( $reportID ) )
+{
+	header( 'Location: ' . $module->getUrl( 'reports.php' ) );
+	exit;
+}
+
+$isCsvDownload = ( isset( $_GET['download'] ) && $module->isReportDownloadable( $reportID ) );
+
+// Get the report data.
+$reportConfig = $listReports[$reportID];
+$reportData = $module->getReportData( $reportID );
+
+$userRights = $module->getUser()->getRights();
+//var_dump( $userRights ); exit;
+
+$listEvents = \REDCap::getEventNames( true );
+
+$recordIDField = \REDCap::getRecordIdField();
+
+$displayFields = [ $recordIDField, 'redcap_data_access_group' ];
+if ( empty( $reportData['forms'] ) )
+{
+	$displayFields = null;
+}
+else
+{
+	foreach ( $reportData['forms'] as $displayForm )
+	{
+		$displayFields = array_merge( $displayFields, \REDCap::getFieldNames( $displayForm ) );
+	}
+}
+
+$displayEvents = empty( $reportData['events'] ) ? null : $reportData['events'];
+
+$displayGroup = $userRights['group_id'] == '' ? null : $userRights['group_id'];
+
+$listData = \REDCap::getData( [ 'return_format' => 'array', 'combine_checkbox_values' => false,
+                                'exportDataAccessGroups' => true, 'exportSurveyFields' => true,
+                                'fields' => $displayFields, 'events' => $displayEvents,
+                                'groups' => $displayGroup, 'returnBlankForGrayFormStatus' => true,
+                                'removeMissingDataCodes' => $reportData['nomissingdatacodes'] ] );
+
+$listColumns = [];
+$resultTable = [];
+
+foreach ( $listData as $infoRecord )
+{
+	$resultRow = [];
+	foreach ( $infoRecord as $eventID => $listFields )
+	{
+		if ( $eventID == 'repeat_instances' )
+		{
+			$listRepeat = $listFields;
+			foreach ( $listRepeat as $eventID => $listRepeatForm )
+			{
+				foreach ( $listRepeatForm as $listRepeatInstance )
+				{
+					foreach ( $listRepeatInstance as $instanceID => $listFields )
+					{
+						foreach ( $listFields as $fieldName => $fieldValue )
+						{
+							if ( $fieldName == $recordIDField ||
+							     $fieldName == 'redcap_data_access_group' )
+							{
+								$columnName = $fieldName;
+								$listColumns[ $columnName ] = true;
+								$resultRow[ $columnName ] = $fieldValue;
+							}
+							elseif ( is_array( $fieldValue ) )
+							{
+								$fieldOptions = $fieldValue;
+								foreach ( $fieldOptions as $fieldOption => $fieldValue )
+								{
+									$columnName = $eventName . '__' . $fieldName . '__' .
+									              $instanceID . '___' . $fieldOption;
+									$listColumns[ $columnName ] = true;
+									$resultRow[ $columnName ] = $fieldValue;
+								}
+							}
+							else
+							{
+								$columnName = $eventName . '__' . $fieldName . '__' . $instanceID;
+								$listColumns[ $columnName ] = true;
+								if ( $fieldValue != '' )
+								{
+									$resultRow[ $columnName ] = $fieldValue;
+								}
+							}
+						}
+					}
+				}
+			}
+			continue;
+		}
+		$eventName = $listEvents[ $eventID ];
+		foreach ( $listFields as $fieldName => $fieldValue )
+		{
+			if ( $fieldName == $recordIDField || $fieldName == 'redcap_data_access_group' )
+			{
+				$columnName = $fieldName;
+				$listColumns[ $columnName ] = true;
+				$resultRow[ $columnName ] = $fieldValue;
+			}
+			elseif ( is_array( $fieldValue ) )
+			{
+				$fieldOptions = $fieldValue;
+				foreach ( $fieldOptions as $fieldOption => $fieldValue )
+				{
+					$columnName = $eventName . '__' . $fieldName . '__1___' . $fieldOption;
+					$listColumns[ $columnName ] = true;
+					$resultRow[ $columnName ] = $fieldValue;
+				}
+			}
+			else
+			{
+				$columnName = $eventName . '__' . $fieldName . '__1';
+				$listColumns[ $columnName ] = true;
+				if ( $fieldValue != '' )
+				{
+					$resultRow[ $columnName ] = $fieldValue;
+				}
+			}
+		}
+	}
+	$resultTable[] = $resultRow;
+}
+$listColumns = array_keys( $listColumns );
+
+
+
+// Handle report download.
+if ( $isCsvDownload )
+{
+	$module->writeCSVDownloadHeaders( $reportID );
+	$firstField = true;
+	foreach ( $listColumns as $fieldName )
+	{
+		echo $firstField ? '' : ',';
+		$firstField = false;
+		echo '"';
+		$module->echoText( str_replace( '"', '""', $fieldName ) );
+		echo '"';
+	}
+	foreach ( $resultTable as $resultRow )
+	{
+		echo "\n";
+		$firstField = true;
+		foreach ( $listColumns as $fieldName )
+		{
+			echo $firstField ? '' : ',';
+			$firstField = false;
+			echo '"', str_replace( '"', '""',
+			                       $module->escapeHTML( $resultRow[ $fieldName ] ?? '' ) ), '"';
+		}
+	}
+	exit;
+}
+
+
+
+// Handle retrieve report as image.
+if ( isset( $_GET['as_image']) && $reportConfig['as_image'] )
+{
+	header( 'Content-Type: image/png' );
+	// Determine the fonts and character sizes for the report.
+	$imgHeaderFont = 5;
+	$imgDataFont = 4;
+	$imgHeaderCharW = imagefontwidth( $imgHeaderFont );
+	$imgHeaderCharH = imagefontheight( $imgHeaderFont );
+	$imgDataCharW = imagefontwidth( $imgDataFont );
+	$imgDataCharH = imagefontheight( $imgDataFont );
+	$imgHeaderH = $imgHeaderCharH + 2;
+	$imgDataH = $imgDataCharH + 2;
+	// Get all the column names.
+	// Calculate column widths based on column name string lengths.
+	$imgColumnWidths = [];
+	foreach ( $listColumns as $columnName )
+	{
+		$imgColumnWidths[ $columnName ] = ( strlen( $columnName ) * $imgHeaderCharW ) + 5;
+	}
+	// Check the data in each column for each record, increase the column widths if necessary.
+	foreach ( $resultTable as $resultRow )
+	{
+		foreach ( $columns as $columnName )
+		{
+			$imgParsedData = isset( $resultRow[$columnName] )
+			                    ? $module->parseHTML( $resultRow[$columnName], true ) : '';
+			$thisWidth = ( strlen( $imgParsedData ) * $imgDataCharW ) + 5;
+			if ( $imgColumnWidths[$columnName] < $thisWidth )
+			{
+				$imgColumnWidths[$columnName] = $thisWidth;
+			}
+		}
+	}
+	// Calculate the image dimensions, create the image, and set the colours (black/white).
+	$imgWidth = array_sum( $imgColumnWidths ) + 1;
+	$imgHeight = $imgHeaderH + ( count( $resultTable ) * ( $imgDataH ) ) + 1;
+	$img = imagecreate( $imgWidth, $imgHeight );
+	imagecolorallocate( $img, 255, 255, 255 );
+	$imgBlack = imagecolorallocate( $img, 0, 0, 0 );
+	// Draw the column headers.
+	$posW = 0;
+	$posH = 0;
+	foreach ( $listColumns as $columnName )
+	{
+		$thisWidth = $imgColumnWidths[$columnName];
+		imagerectangle( $img, $posW, $posH, $posW + $thisWidth, $posH + $imgHeaderH, $imgBlack );
+		imagestring( $img, $imgHeaderFont, $posW + 2, $posH + 1, $columnName, $imgBlack );
+		$posW += $thisWidth;
+	}
+	// Draw each row of data.
+	$posW = 0;
+	$posH += $imgHeaderH;
+	foreach ( $resultTable as $resultRow )
+	{
+		foreach ( $listColumns as $columnName )
+		{
+			$imgParsedData = isset( $resultRow[$columnName] )
+			                    ? $module->escapeHTML( $resultRow[$columnName] ) : '';
+			$thisWidth = $imgColumnWidths[$columnName];
+			imagerectangle( $img, $posW, $posH, $posW + $thisWidth, $posH + $imgDataH, $imgBlack );
+			imagestring( $img, $imgDataFont, $posW + 2, $posH + 1, $imgParsedData, $imgBlack );
+			$posW += $thisWidth;
+		}
+		$posW = 0;
+		$posH += $imgDataH;
+	}
+	// Output the image as a PNG and exit.
+	imagepng( $img );
+	exit;
+}
+
+
+
+// Display the project header and report navigation links.
+
+require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
+$module->outputViewReportHeader( $reportConfig['label'], 'instrument', true );
+
+// Initialise the row counter.
+$rowCount = 0;
+
+
+// If a description is provided, output it here.
+if ( isset( $reportData['desc'] ) && $reportData['desc'] != '' )
+{
+?>
+<p class="mod-advrep-description"><?php
+	echo $module->parseDescription( $reportData['desc'] ); ?></p>
+<?php
+}
+
+
+?>
+<table id="mod-advrep-table" class="mod-advrep-datatable dataTable">
+ <thead>
+  <tr>
+<?php
+if ( count( $resultTable ) > 0 )
+{
+	foreach ( $listColumns as $fieldName )
+	{
+?>
+   <th class="sorting"><?php echo $module->escapeHTML( $fieldName ); ?></th>
+<?php
+	}
+}
+?>
+  </tr>
+ </thead>
+ <tbody>
+<?php
+foreach ( $resultTable as $resultRow )
+{
+	$rowCount++;
+?>
+  <tr>
+<?php
+	foreach ( $listColumns as $fieldName )
+	{
+?>
+   <td><?php echo $module->escapeHTML( $resultRow[ $fieldName ] ); ?></td>
+<?php
+	}
+	if ( $rowCount == 0 )
+	{
+?>
+  <tr><td>No rows returned</td></tr>
+<?php
+	}
+?>
+  </tr>
+<?php
+}
+?>
+ </tbody>
+</table>
+<?php
+
+if ( $rowCount > 0 )
+{
+?>
+<p>Total rows returned: <span id="filtercount"></span><?php echo $rowCount; ?></p>
+<?php
+}
+
+
+$module->outputViewReportJS();
+
+
+// Display the project footer
+require_once APP_PATH_DOCROOT . 'ProjectGeneral/footer.php';

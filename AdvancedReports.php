@@ -499,6 +499,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	{
 		return [ 'gantt' => 'Gantt',
 		         'instrument' => 'Instrument Query',
+		         'recordtbl' => 'Record Table',
 		         'sql' => 'SQL' ];
 	}
 
