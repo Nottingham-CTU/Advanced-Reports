@@ -151,6 +151,41 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 							$options .= 'Hide missing data codes';
 						}
 					}
+					// For Record Tables...
+					elseif ( $reportConfig['type'] == 'recordtbl' )
+					{
+						$description = $reportData['desc'];
+						$definition = 'Instruments:';
+						if ( empty( $reportData['forms'] ) )
+						{
+							$definition .= ' ALL';
+						}
+						else
+						{
+							foreach ( $reportData['forms'] as $formName )
+							{
+								$definition .= "\n- ";
+								$definition .= $formName;
+							}
+						}
+						$definition .= "\nEvents:";
+						if ( empty( $reportData['events'] ) )
+						{
+							$definition .= ' ALL';
+						}
+						else
+						{
+							foreach ( $reportData['events'] as $eventName )
+							{
+								$definition .= "\n- ";
+								$definition .= $eventName;
+							}
+						}
+						if ( $reportData['nomissingdatacodes'] )
+						{
+							$options .= 'Hide missing data codes';
+						}
+					}
 					// For Gantt charts...
 					elseif ( $reportConfig['type'] == 'gantt' )
 					{
