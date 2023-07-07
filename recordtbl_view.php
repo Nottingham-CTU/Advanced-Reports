@@ -301,7 +301,7 @@ if ( isset( $_GET['as_image']) && $reportConfig['as_image'] )
 	// Check the data in each column for each record, increase the column widths if necessary.
 	foreach ( $resultTable as $resultRow )
 	{
-		foreach ( $columns as $columnName )
+		foreach ( $listColumns as $columnName )
 		{
 			$imgParsedData = isset( $resultRow[$columnName] )
 			                    ? $module->parseHTML( $resultRow[$columnName], true ) : '';
