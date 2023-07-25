@@ -1213,58 +1213,71 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 	// Takes logic and parses it, returning an array consisting of a function and information about
 	// the parameters to be passed to the function to evaluate the logic.
-	function parseLogic( $str, $isDownload = false, $createFunction = true )
+	function parseLogic( $str, $isDownload = false, $allowEditable = false, $createFunction = true )
 	{
-		// Convert [value] and [label] parameters after a field to numbers so they will be accepted
-		// by the REDCap logic lexer/parser. Also pipe in the values for any smart variables.
-		$listStr = preg_split('/([\'"])/', $str, -1, PREG_SPLIT_DELIM_CAPTURE );
-		$quote = '';
-		$str = '';
-		foreach ( $listStr as $strPart )
+		// If an editable value is requested...
+		if ( $allowEditable && preg_match( '/((\[[A-Za-z0-9_]+\]){2}):edit/', $str ) )
 		{
-			if ( $quote == '' && ( $strPart == "'" || $strPart == '"' ) )
+			$str = str_replace( ':edit', '[3]', $str );
+		}
+		// Otherwise...
+		else
+		{
+			$listStr = preg_split('/([\'"])/', $str, -1, PREG_SPLIT_DELIM_CAPTURE );
+			$quote = '';
+			$str = '';
+			foreach ( $listStr as $strPart )
 			{
-				$quote = $strPart;
-			}
-			elseif ( $quote != '' && $quote == $strPart )
-			{
-				$quote = '';
-			}
-			elseif ( $quote == '' )
-			{
-				$strPart = preg_replace( '/((\[[A-Za-z0-9_]+\]){2}):value/', '$1[1]', $strPart );
-				$strPart = preg_replace( '/((\[[A-Za-z0-9_]+\]){2}):label/', '$1[2]', $strPart );
-				$strPart = str_replace( '[is-download]', ( $isDownload ? '1' : '0' ), $strPart );
-				$strPart =
-					preg_replace_callback( '/\[q(int|str):([a-z0-9_]+)\]/', function ( $m )
-					{
-						if ( !isset( $_GET[ $m[2] ] ) )
+				if ( $quote == '' && ( $strPart == "'" || $strPart == '"' ) )
+				{
+					$quote = $strPart;
+				}
+				elseif ( $quote != '' && $quote == $strPart )
+				{
+					$quote = '';
+				}
+				elseif ( $quote == '' )
+				{
+					// Convert [value] and [label] parameters after a field to numbers so they will
+					// be accepted by the REDCap logic lexer/parser.
+					$strPart = preg_replace( '/((\[[A-Za-z0-9_]+\]){2}):value/',
+					                         '$1[1]', $strPart );
+					$strPart = preg_replace( '/((\[[A-Za-z0-9_]+\]){2}):label/',
+					                         '$1[2]', $strPart );
+					// Also pipe in the values for any smart variables.
+					$strPart = str_replace( '[is-download]',
+					                        ( $isDownload ? '1' : '0' ), $strPart );
+					$strPart =
+						preg_replace_callback( '/\[q(int|str):([a-z0-9_]+)\]/', function ( $m )
 						{
-							return "''";
-						}
-						if ( $m[1] == 'int' )
-						{
-							if ( preg_match( '/^(0|(-?[1-9][0-9]*))$/', $_GET[ $m[2] ] ) )
+							if ( !isset( $_GET[ $m[2] ] ) )
 							{
-								return $_GET[ $m[2] ];
+								return "''";
 							}
-							return "''";
-						}
-						return "'" . str_replace( "'", '', $_GET[ $m[2] ] ) . "'";
-					}, $strPart );
-				try
-				{
-					$strPart = \Piping::pipeSpecialTags( $strPart, $this->getProjectId(),
-					                                     wrapInQuotes: true,
-					                                     isUsedInCalcBranching: true );
+							if ( $m[1] == 'int' )
+							{
+								if ( preg_match( '/^(0|(-?[1-9][0-9]*))$/', $_GET[ $m[2] ] ) )
+								{
+									return $_GET[ $m[2] ];
+								}
+								return "''";
+							}
+							return "'" . str_replace( "'", '', $_GET[ $m[2] ] ) . "'";
+						}, $strPart );
+					try
+					{
+						$strPart = \Piping::pipeSpecialTags( $strPart, $this->getProjectId(),
+						                                     wrapInQuotes: true,
+						                                     isUsedInCalcBranching: true );
+					}
+					catch ( \Error $e )
+					{
+						$strPart = \Piping::pipeSpecialTags( $strPart, $this->getProjectId(),
+						                                     wrapInQuotes: true );
+					}
 				}
-				catch ( \Error $e )
-				{
-					$strPart = \Piping::pipeSpecialTags( $strPart, $this->getProjectId(),
-					                                     wrapInQuotes: true );
-				}
+				$str .= $strPart;
 			}
-			$str .= $strPart;
 		}
 
 		// Parse the logic.
@@ -1291,6 +1304,10 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			elseif ( $param[3] === '2' )
 			{
 				$dataType = 'label';
+			}
+			elseif ( $allowEditable && $param[3] === '3' )
+			{
+				$dataType = 'edit';
 			}
 			$logicParams[] = [ $param[0], $param[1], $dataType ];
 		}

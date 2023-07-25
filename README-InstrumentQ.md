@@ -11,6 +11,10 @@ When using fields in filter conditions and sorting, the raw field value will be 
 When displaying the field, the field value's label will be used by default. This can be overridden
 using `:value` and `:label`, for example: `[instrument_1][choice_field]:value`
 
+When specifying *fields to display*, `:edit` can be appended to the field name to allow a value to
+be edited directly from the report. This works only where the field is specified in isolation, not
+as part of calculation logic. New values will not be able to be saved if the record is locked.
+
 ## Using Calculation Logic
 
 In the options which support calculation logic, you can use any REDCap calculation logic/functions.

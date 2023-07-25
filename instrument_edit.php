@@ -58,7 +58,7 @@ if ( ! empty( $_POST ) )
 			foreach ( $_POST['query_form_on'] as $formCond )
 			{
 				if ( $formCond != '' )
-				$module->parseLogic( $formCond, false, false );
+				$module->parseLogic( $formCond, false, false, false );
 			}
 		}
 		catch ( \Exception $e )
@@ -71,7 +71,7 @@ if ( ! empty( $_POST ) )
 	{
 		try
 		{
-			$module->parseLogic( $_POST['query_where'], false, false );
+			$module->parseLogic( $_POST['query_where'], false, false, false );
 		}
 		catch ( \Exception $e )
 		{
@@ -88,7 +88,7 @@ if ( ! empty( $_POST ) )
 			{
 				$orderby = substr( rtrim( $orderby ), 0, -5 );
 			}
-			$module->parseLogic( $orderby, false, false );
+			$module->parseLogic( $orderby, false, false, false );
 		}
 		catch ( \Exception $e )
 		{
@@ -104,7 +104,7 @@ if ( ! empty( $_POST ) )
 			{
 				if ( $fieldName != '' )
 				{
-					$module->parseLogic( $fieldName, false, false );
+					$module->parseLogic( $fieldName, false, true, false );
 				}
 			}
 		}

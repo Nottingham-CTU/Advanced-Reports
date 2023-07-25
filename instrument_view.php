@@ -226,7 +226,7 @@ if ( ! empty( $reportData['select'] ) )
 		}
 		$selectFields[] = [ 'field' => $selectField['field'], 'alias' => $selectField['alias'],
 		                    'function' => $module->parseLogic( $selectField['field'],
-		                                                       $isCsvDownload ) ];
+		                                                       $isCsvDownload, true ) ];
 	}
 	foreach ( $resultTable as $resultRow )
 	{
