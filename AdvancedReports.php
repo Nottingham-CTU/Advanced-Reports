@@ -362,7 +362,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		}
 		else
 		{
-			$listIDs = json_decode( $listIDs, true );
+			$listIDs = array_values( json_decode( $listIDs, true ) );
 		}
 		$listIDs[] = $reportID;
 		$this->setSystemSetting( "p$projectID-report-list", json_encode( $listIDs ) );
@@ -392,6 +392,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		{
 			unset( $listIDs[$k] );
 		}
+		$listIDs = array_values( $listIDs );
 		$this->setSystemSetting( "p$projectID-report-list", json_encode( $listIDs ) );
 	}
 
