@@ -139,12 +139,16 @@ if ( isset( $_GET['gantt_end'] ) &&
 // provides better support for SQL field choice labels. It is also arguably more straighforward to
 // implement support for repeating events/instruments this way.
 $listProjectData = [];
+$condition = ( !isset( $reportData['condition'] ) || $reportData['condition'] == '' )
+             ? null : $reportData['condition'];
 foreach ( [ 'values' => false, 'labels' => true ] as $dataMode => $dataIsLabels )
 {
 	$listProjectData[ $dataMode ] =
 		json_decode( \REDCap::getData( [ 'return_format' => 'json',
 		                                 'combine_checkbox_values' => true,
-		                                 'exportAsLabels' => $dataIsLabels ] ), true );
+		                                 'exportAsLabels' => $dataIsLabels,
+		                                 'filterLogic' => $condition,
+		                                 'filterType' => 'RECORD' ] ), true );
 }
 
 

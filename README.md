@@ -77,6 +77,7 @@ report. Keep this in mind when setting the user roles which can access each repo
     starts on the chart
   * **End Date Field** is the event/field which contains the date which determines where the bar
     ends on the chart
+* **Filter Logic** is the (optional) conditional logic on which the records will be filtered
 
 Calculated fields can be used for the start and end dates, the Gantt report will interpret the value
 as a Unix timestamp representing a UTC date/time.
