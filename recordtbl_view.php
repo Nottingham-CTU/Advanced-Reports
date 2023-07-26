@@ -355,7 +355,7 @@ if ( isset( $_GET['as_image']) && $reportConfig['as_image'] )
 // Display the project header and report navigation links.
 
 require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
-$module->outputViewReportHeader( $reportConfig['label'], 'instrument', true );
+$module->outputViewReportHeader( $reportConfig['label'], 'recordtbl', true );
 
 // Initialise the row counter.
 $rowCount = 0;
