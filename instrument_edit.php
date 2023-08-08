@@ -425,7 +425,7 @@ echo $reportData['nomissingdatacodes'] ? ' checked' : '';
      $('#field-var-list-sort').html('')
      var vFormElems = $('[name="query_form[]"]')
      var vAliasElems = $('[name="query_form_alias[]"]')
-     for ( vIndex = 0; vIndex < vFormElems.length; vIndex++ )
+     for ( var vIndex = 0; vIndex < vFormElems.length; vIndex++ )
      {
        var vFormName = vFormElems[ vIndex ].value
        if ( vFormName == '' )

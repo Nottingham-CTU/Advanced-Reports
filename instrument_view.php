@@ -426,14 +426,14 @@ foreach ( $resultTable as $resultRow )
    <td><?php echo $module->parseHTML( $value ); ?></td>
 <?php
 	}
-	if ( $rowCount == 0 )
-	{
-?>
-  <tr><td>No rows returned</td></tr>
-<?php
-	}
 ?>
   </tr>
+<?php
+}
+if ( $rowCount == 0 )
+{
+?>
+  <tr><td>No rows returned</td></tr>
 <?php
 }
 ?>
