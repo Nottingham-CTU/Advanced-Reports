@@ -52,7 +52,7 @@ quotes, with the exception of the `$$DATATABLE$$` and `$$LOGTABLE$$` placeholder
 
 #### Query String Placeholders
 
-:warning: **Important security note:**
+&#9888;&#65039; **Important security note:**
 Query string placeholders allow the user to supply *any value* via the URL. The module will handle
 validating and escaping the values so they are safe to use in a query, but care must be taken to
 ensure that the user is not able to access data they shouldn't have access to via their choice of

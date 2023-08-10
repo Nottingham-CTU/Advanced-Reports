@@ -29,7 +29,7 @@ Query string smart variables are also supported.
 
 #### Query String Smart Variables
 
-:warning: **Important security note:**
+&#9888;&#65039; **Important security note:**
 Query string smart variables allow the user to supply *any value* via the URL. The module will
 handle validating and escaping the values so they are safe to use in calculation logic, but care
 must be taken to ensure that the user is not able to access data they shouldn't have access to via

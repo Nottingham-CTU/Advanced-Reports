@@ -44,7 +44,7 @@ The following report types are currently available:
 
 ### Common report options
 
-:warning: Unless otherwise specified, advanced reports do not apply a user's data viewing rights or
+&#9888;&#65039; Unless otherwise specified, advanced reports do not apply a user's data viewing rights or
 data export rights to the data returned and the user will be able to see all data returned by the
 report. Keep this in mind when setting the user roles which can access each report.
 
