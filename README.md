@@ -37,6 +37,7 @@ The following report types are currently available:
 
 * **Gantt**
 * **Instrument Query**
+* **PDF**
 * **Record Table**
 * **SQL** (direct database query) \*
 
