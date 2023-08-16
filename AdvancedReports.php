@@ -1328,7 +1328,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 	// Replace placeholders in SQL with values.
-	/** @psalm-taint-escape sql */
+	/** @psalm-taint-specialize */
 	function sqlPlaceholderReplace( $sql, $test = false )
 	{
 		global $conn;
