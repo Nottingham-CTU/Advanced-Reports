@@ -28,9 +28,20 @@ if ( ! empty( $_POST ) && isset( $_POST['action'] ) )
 			echo 'Error: Required field missing.';
 			exit;
 		}
+		if ( preg_match( '/[^a-z0-9_-]/', $_POST['report_id'] ) )
+		{
+			echo 'Error: Invalid unique report name.';
+			exit;
+		}
 		if ( ! $module->isReportEditable( $_POST['report_type'] ) )
 		{
 			echo 'Error: Cannot create selected report type.';
+			exit;
+		}
+		$listReports = $module->getReportList();
+		if ( isset( $listReports[ $_POST['report_id'] ] ) )
+		{
+			echo 'Error: Unique report name already in use.';
 			exit;
 		}
 		$module->addReport( $_POST['report_id'], $_POST['report_type'], $_POST['report_label'] );

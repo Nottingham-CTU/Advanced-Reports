@@ -72,8 +72,11 @@ $module->writeStyle();
  Edit SQL Report: <?php echo $module->escapeHTML( $reportID ), "\n"; ?>
 </div>
 <p style="font-size:11px">
- <a href="<?php echo $module->getUrl( 'reports_edit.php' )
+ <a href="<?php echo $module->getUrl( 'reports_edit.php' );
 ?>"><i class="fas fa-arrow-circle-left fs11"></i> Back to edit reports</a>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ <a href="<?php echo $module->getUrl( 'README-SQL.md' );
+?>" target="_blank"><i class="fas fa-book fs11"></i> View Documentation</a>
 </p>
 <form method="post" id="sqlform">
  <table class="mod-advrep-formtable">
@@ -82,11 +85,12 @@ $module->writeStyle();
   <tr>
    <td>Description</td>
    <td>
-    <textarea name="sql_desc" style="height:50px;max-width:95%;white-space:pre"><?php
+    <textarea name="sql_desc" style="height:70px;max-width:95%;white-space:pre"><?php
 echo $reportData['sql_desc'] ?? ''; ?></textarea>
     <br>
     <span class="field-desc">
      Optional. If specified, displays this text above the report.
+     Supports &lt;a&gt;, &lt;b&gt; and &lt;i&gt; HTML tags.
     </span>
    </td>
   </tr>

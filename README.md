@@ -36,11 +36,17 @@ report list.
 The following report types are currently available:
 
 * **Gantt**
+* **Instrument Query**
+* **Record Table**
 * **SQL** (direct database query) \*
 
 \* only administrators can edit
 
 ### Common report options
+
+:warning: Unless otherwise specified, advanced reports do not apply a user's data viewing rights or
+data export rights to the data returned and the user will be able to see all data returned by the
+report. Keep this in mind when setting the user roles which can access each report.
 
 * **Unique Report Name** is the identifier used by the system for your report
 * **Report Label** is what the report is called in the list of reports
@@ -75,11 +81,51 @@ The following report types are currently available:
 Calculated fields can be used for the start and end dates, the Gantt report will interpret the value
 as a Unix timestamp representing a UTC date/time.
 
+### Instrument Query report options
+
+Instrument Query reports treat each instrument in the project like a database table which can be
+joined and filtered as required. Instrument Query reports support REDCap calculation logic and some
+smart variables.
+
+* **Description** brief descriptive text to appear above the report
+  * HTML &lt;a&gt; &lt;b&gt; and &lt;i&gt; tags as well as the placeholders `$$PROJECT$$`
+    (project ID) and `$$WEBROOT$$` (REDCap version directory web path) can be used in the
+    description.
+* **Instruments** choose the instruments/forms from which to retrieve data
+  * Each instrument is treated like a separate database table and can be joined together on any
+    custom logic condition.
+* **Condition** filter the dataset after all the instruments have been retrieved and joined
+* **Sorting** field or logic on which to sort data
+  * Append ` DESC` to sort in descending order.
+* **Fields to display** specify each field or calculation logic for display in the report, with
+  optional alias for the field heading
+* **Hide missing data codes** if selected will show blank values instead of missing data codes
+
+Please refer to the [Instrument Query report instructions](README-InstrumentQ.md) for more
+information.
+
+### Record Table report options
+
+Record table reports will display all the fields in the selected instruments and events, including
+all repeating instances, in a single row for each record.
+
+The data returned in a Record Table will be automatically filtered according to the user's DAG and
+data export rights.
+
+* **Description** brief descriptive text to appear above the report
+  * HTML &lt;a&gt; &lt;b&gt; and &lt;i&gt; tags as well as the placeholders `$$PROJECT$$`
+    (project ID) and `$$WEBROOT$$` (REDCap version directory web path) can be used in the
+    description.
+* **Instruments** choose the instruments/forms to include
+* **Events** choose the events to include
+* **Hide missing data codes** if selected will show blank values instead of missing data codes
+
 ### SQL report options
 
 * **Description** brief descriptive text to appear above the report
-  * HTML links (&lt;a&gt; tags) as well as the placeholders `$$PROJECT$$` (project ID) and
-    `$$WEBROOT$$` (REDCap version directory web path) can be used in the description.
+  * HTML &lt;a&gt; &lt;b&gt; and &lt;i&gt; tags as well as the placeholders `$$PROJECT$$`
+    (project ID) and `$$WEBROOT$$` (REDCap version directory web path) can be used in the
+    description.
 * **SQL Query** enter SELECT query here
 * **Result Type** choose how the SQL result is to be interpreted (normal or EAV)
 * **Result Columns** pre-specify column names for EAV datasets

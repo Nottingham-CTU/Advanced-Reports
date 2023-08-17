@@ -104,6 +104,88 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 							}
 						}
 					}
+					// For Instrument Queries...
+					elseif ( $reportConfig['type'] == 'instrument' )
+					{
+						$description = $reportData['desc'];
+						$definition = 'Instruments:';
+						foreach ( $reportData['forms'] as $queryForm )
+						{
+							$definition .= "\n- ";
+							if ( $definition != "Instruments:\n- " )
+							{
+								$definition .= 'JOIN ';
+							}
+							$definition .= $queryForm['form'];
+							if ( $queryForm['alias'] != '' )
+							{
+								$definition .= ' AS `' . $queryForm['alias'] . '`';
+							}
+							if ( $queryForm['on'] != '' )
+							{
+								$definition .= ' ON ' . $queryForm['on'];
+							}
+						}
+						if ( $reportData['where'] != '' )
+						{
+							$definition .= "\nCondition: " . $reportData['where'];
+						}
+						if ( $reportData['orderby'] != '' )
+						{
+							$definition .= "\nSorting: " . $reportData['orderby'];
+						}
+						if ( ! empty( $reportData['select'] ) )
+						{
+							$definition .= "\nFields to display:";
+							foreach ( $reportData['select'] as $queryField )
+							{
+								$definition .= "\n- " . $queryField['field'];
+								if ( $queryField['alias'] != '' )
+								{
+									$definition .= ' AS `' . $queryField['alias'] . '`';
+								}
+							}
+						}
+						if ( $reportData['nomissingdatacodes'] )
+						{
+							$options .= 'Hide missing data codes';
+						}
+					}
+					// For Record Tables...
+					elseif ( $reportConfig['type'] == 'recordtbl' )
+					{
+						$description = $reportData['desc'];
+						$definition = 'Instruments:';
+						if ( empty( $reportData['forms'] ) )
+						{
+							$definition .= ' ALL';
+						}
+						else
+						{
+							foreach ( $reportData['forms'] as $formName )
+							{
+								$definition .= "\n- ";
+								$definition .= $formName;
+							}
+						}
+						$definition .= "\nEvents:";
+						if ( empty( $reportData['events'] ) )
+						{
+							$definition .= ' ALL';
+						}
+						else
+						{
+							foreach ( $reportData['events'] as $eventName )
+							{
+								$definition .= "\n- ";
+								$definition .= $eventName;
+							}
+						}
+						if ( $reportData['nomissingdatacodes'] )
+						{
+							$options .= 'Hide missing data codes';
+						}
+					}
 					// For Gantt charts...
 					elseif ( $reportConfig['type'] == 'gantt' )
 					{
@@ -368,6 +450,19 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Returns a list of instruments for the project.
+	function getInstrumentList()
+	{
+		$listInstruments = [];
+		foreach ( \REDCap::getInstrumentNames() as $instrumentID => $instrumentName )
+		{
+			$listInstruments[ $instrumentID ] = $instrumentID . ' - ' . $instrumentName;
+		}
+		return $listInstruments;
+	}
+
+
+
 	// Get the configuration for the specified report.
 	// Optionally specify the configuration option name, otherwise all options are returned.
 	function getReportConfig( $reportID, $configName = null )
@@ -438,6 +533,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	function getReportTypes()
 	{
 		return [ 'gantt' => 'Gantt',
+		         'instrument' => 'Instrument Query',
+		         'recordtbl' => 'Record Table',
 		         'sql' => 'SQL' ];
 	}
 
@@ -531,6 +628,22 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		echo '<select name="', htmlspecialchars( $dropDownName ), '">';
 		echo '<option value=""', ( $value == '' ? ' selected' : '' ), '></option>';
 		foreach ( $this->getFieldList( $fieldType ) as $optValue => $optLabel )
+		{
+			echo '<option value="', htmlspecialchars( $optValue ), '"',
+			     ( $value == $optValue ? ' selected' : '' ), '>',
+			     htmlspecialchars( $optLabel ), '</option>';
+		}
+		echo '</select>';
+	}
+
+
+
+	// Output a drop-down list of instruments for the project.
+	function outputInstrumentDropdown( $dropDownName, $value )
+	{
+		echo '<select name="', htmlspecialchars( $dropDownName ), '">';
+		echo '<option value=""', ( $value == '' ? ' selected' : '' ), '></option>';
+		foreach ( $this->getInstrumentList() as $optValue => $optLabel )
 		{
 			echo '<option value="', htmlspecialchars( $optValue ), '"',
 			     ( $value == $optValue ? ' selected' : '' ), '>',
@@ -689,12 +802,22 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		// If report can be downloaded, show the download link.
 		if ( $canDownload )
 		{
+			$extraVarsDL = '';
+			parse_str( $_SERVER['QUERY_STRING'], $getVars );
+			foreach ( $getVars as $getVar => $getVal )
+			{
+				if ( ! in_array( $getVar, [ 'as_image', 'download', 'page', 'pid', 'prefix',
+				                            'report_id', 'report_state' ] ) )
+				{
+					$extraVarsDL .= '&' . $getVar . '=' . rawurlencode( $getVal );
+				}
+			}
 
 ?>
  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
  <a href="<?php
 			echo $this->getUrl( $reportType . '_view.php?report_id=' . $_GET['report_id'] .
-			                    '&download=1' );
+			                    $extraVarsDL . '&download=1' );
 ?>"><i class="fas fa-file-download fs11"></i> Download report</a>
 <?php
 
@@ -728,6 +851,10 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 <?php
 
 		}
+
+?>
+</p>
+<?php
 
 	}
 
@@ -1042,7 +1169,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 	// Returns the supplied string with any HTML entity encoded, with the exception of hyperlinks,
-	// and placeholders replaced with the corresponding values.
+	// bold and italic tags (if not nested). Placeholders for the project ID and web root path are
+	// replaced with the corresponding values.
 	// This is used primarily for report descriptions.
 	function parseDescription( $str )
 	{
@@ -1053,18 +1181,116 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 
-	// Returns the supplied string with any HTML entity encoded, with the exception of hyperlinks.
-	// If the $forDownload parameter is true, hyperlink tags will be stripped instead.
+	// Returns the supplied string with any HTML entity encoded, with the exception of hyperlinks,
+	// bold and italic tags. Nested tags are not supported and will remain entity encoded.
+	// If the $forDownload parameter is true, supported HTML tags will be stripped instead.
 	/** @psalm-pure */
 	function parseHTML( $str, $forDownload = false )
 	{
 		if ( $forDownload )
 		{
-			return preg_replace( '/<a href="[^"]*"( target="_blank")?>(.*?)<\/a>/', '$2', $str );
+			return preg_replace( '/<((?<t1>a) href="[^"]*"( target="_blank")?|(?<t2>b|i))>(.*?)' .
+			                     '<\/((?P=t1)|(?P=t2))>/', '$5', $str );
 		}
-		return preg_replace( '/&lt;a href=&quot;((?(?=&quot;)|.)*)&quot;( ' .
-		                     'target=&quot;_blank&quot;)?&gt;(.*?)&lt;\/a&gt;/',
-		                     '<a href="$1"$2>$3</a>', htmlspecialchars( $str, ENT_QUOTES ) );
+		$fnParse = function( $m )
+		{
+			return '<' . $m[2] . $m[5] .
+			       ( $m[2] == '' ? '' : ( ' href="' . $m[3] . '"' .
+			                              ( $m[4] == '' ? '' : ' target="_blank"' ) ) ) .
+			       '>' . $m[6] . '</' . $m[7] . '>';
+		};
+		return preg_replace_callback( '/&lt;((?<t1>a) href=&quot;((?(?=&quot;)|.)*)&quot;( ' .
+		                              'target=&quot;_blank&quot;)?|(?<t2>b|i))&gt;(.*?)&lt;\/' .
+		                              '((?P=t1)|(?P=t2))&gt;/',
+		                              $fnParse, htmlspecialchars( $str, ENT_QUOTES ) );
+	}
+
+
+
+	// Takes logic and parses it, returning an array consisting of a function and information about
+	// the parameters to be passed to the function to evaluate the logic.
+	function parseLogic( $str, $isDownload = false, $createFunction = true )
+	{
+		// Convert [value] and [label] parameters after a field to numbers so they will be accepted
+		// by the REDCap logic lexer/parser. Also pipe in the values for any smart variables.
+		$listStr = preg_split('/([\'"])/', $str, -1, PREG_SPLIT_DELIM_CAPTURE );
+		$quote = '';
+		$str = '';
+		foreach ( $listStr as $strPart )
+		{
+			if ( $quote == '' && ( $strPart == "'" || $strPart == '"' ) )
+			{
+				$quote = $strPart;
+			}
+			elseif ( $quote != '' && $quote == $strPart )
+			{
+				$quote = '';
+			}
+			elseif ( $quote == '' )
+			{
+				$strPart = preg_replace( '/((\[[A-Za-z0-9_]+\]){2}):value/', '$1[1]', $strPart );
+				$strPart = preg_replace( '/((\[[A-Za-z0-9_]+\]){2}):label/', '$1[2]', $strPart );
+				$strPart = str_replace( '[is-download]', ( $isDownload ? '1' : '0' ), $strPart );
+				$strPart =
+					preg_replace_callback( '/\[q(int|str):([a-z0-9_]+)\]/', function ( $m )
+					{
+						if ( !isset( $_GET[ $m[2] ] ) )
+						{
+							return "''";
+						}
+						if ( $m[1] == 'int' )
+						{
+							if ( preg_match( '/^(0|(-?[1-9][0-9]*))$/', $_GET[ $m[2] ] ) )
+							{
+								return $_GET[ $m[2] ];
+							}
+							return "''";
+						}
+						return "'" . str_replace( "'", '', $_GET[ $m[2] ] ) . "'";
+					}, $strPart );
+				try
+				{
+					$strPart = \Piping::pipeSpecialTags( $strPart, $this->getProjectId(),
+					                                     wrapInQuotes: true,
+					                                     isUsedInCalcBranching: true );
+				}
+				catch ( \Error $e )
+				{
+					$strPart = \Piping::pipeSpecialTags( $strPart, $this->getProjectId(),
+					                                     wrapInQuotes: true );
+				}
+			}
+			$str .= $strPart;
+		}
+
+		// Parse the logic.
+		$lp = new \LogicParser();
+		$logic = $lp->parse( $str, null, $createFunction );
+		// If a function has not been created, just return the value from the REDCap logic parser.
+		if ( ! $createFunction || ! is_array( $logic ) )
+		{
+			return $logic;
+		}
+		// Reformat the REDCap parser parameter details output.
+		$logicParams = [];
+		foreach ( $logic[1] as $param )
+		{
+			if ( $param[0] == '' || $param[1] == '' )
+			{
+				throw new \Exception( 'Invalid field identifier.' );
+			}
+			$dataType = null;
+			if ( $param[3] === '1' )
+			{
+				$dataType = 'value';
+			}
+			elseif ( $param[3] === '2' )
+			{
+				$dataType = 'label';
+			}
+			$logicParams[] = [ $param[0], $param[1], $dataType ];
+		}
+		return [ $logic[0], $logicParams ];
 	}
 
 
@@ -1102,7 +1328,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 	// Replace placeholders in SQL with values.
-	/** @psalm-taint-escape sql */
+	/** @psalm-taint-specialize */
 	function sqlPlaceholderReplace( $sql, $test = false )
 	{
 		global $conn;
