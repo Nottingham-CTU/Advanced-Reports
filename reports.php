@@ -13,7 +13,8 @@ if ( $module->getProjectSetting( 'report-list' ) !== null )
 	$settings = $module->getProjectSettings( $projectID );
 	foreach ( $settings as $settingKey => $settingValue )
 	{
-		if ( in_array( $settingKey, ['enabled', 'edit-if-design', 'edit-if-reports'] ) )
+		if ( in_array( $settingKey, ['enabled', 'edit-if-design', 'edit-if-reports'] ) ||
+		     substr( $settingKey, 0, 9 ) == 'reserved-' )
 		{
 			continue;
 		}
