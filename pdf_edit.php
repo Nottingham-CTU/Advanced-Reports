@@ -91,7 +91,8 @@ if ( ! empty( $_POST ) )
 
 	// Save data
 	$module->submitReportConfig( $reportID, true, 'image' );
-	$reportData = [ 'forms' => [], 'pdf' => $_POST['pdf'] ];
+	$reportData = [ 'forms' => [], 'pdf' => $_POST['pdf'], 'pdf_size' => $_POST['pdf_size'],
+	                'pdf_orientation' => $_POST['pdf_orientation'] ];
 	foreach ( $_POST['query_form'] as $i => $formName )
 	{
 		if ( $formName == '' )
@@ -105,6 +106,28 @@ if ( ! empty( $_POST ) )
 	$module->setReportData( $reportID, $reportData );
 	header( 'Location: ' . $module->getUrl( 'reports_edit.php' ) );
 	exit;
+}
+
+
+
+// Load dependencies.
+require __DIR__ . '/vendor/autoload.php';
+$listPaperSizes = [];
+foreach ( \Dompdf\Adapter\CPDF::$PAPER_SIZES as $paperSize => $paperParams )
+{
+	if ( ! preg_match( '/^[a-z]/', $paperSize ) || preg_match( '/^[a-c][0189]0?$/', $paperSize ) ||
+	     preg_match( '/ra[0-5]$/', $paperSize ) )
+	{
+		continue;
+	}
+	if ( preg_match( '/^[a-c][0-9]$/', $paperSize ) )
+	{
+		$listPaperSizes[ $paperSize ] = strtoupper( $paperSize );
+	}
+	else
+	{
+		$listPaperSizes[ $paperSize ] = ucfirst( $paperSize );
+	}
 }
 
 
@@ -212,6 +235,31 @@ $module->outputInstrumentDropdown( 'query_form[]', '' );
    </td>
   </tr>
   <tr><th colspan="2">Report Definition - PDF Template</th></tr>
+  <tr>
+   <td>Paper Size</td>
+   <td>
+    <select name="pdf_size">
+<?php
+foreach ( $listPaperSizes as $paperSizeID => $paperSize )
+{
+	echo '     <option value="', $module->escapeHTML( $paperSizeID ), '"',
+	     ( ( $reportData['pdf_size'] ?? 'a4' ) == $paperSizeID ? ' selected' : '' ),
+	     '>', $module->escapeHTML( $paperSize ), '</option>', "\n";
+}
+?>
+    </select>
+    <select name="pdf_orientation">
+<?php
+foreach ( [ 'portrait', 'landscape' ] as $paperOrientation )
+{
+	echo '     <option value="', $module->escapeHTML( $paperOrientation ), '"',
+	     ( ( $reportData['pdf_orientation'] ?? '' ) == $paperOrientation ? ' selected' : '' ),
+	     '>', $module->escapeHTML( ucfirst( $paperOrientation ) ), '</option>', "\n";
+}
+?>
+    </select>
+   </td>
+  </tr>
   <tr>
    <td>HTML Source</td>
    <td>
