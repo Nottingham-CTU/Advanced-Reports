@@ -384,6 +384,10 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			return;
 		}
 		$listIDs = json_decode( $listIDs, true );
+		if ( $listIDs === null )
+		{
+			return;
+		}
 		if ( ( $k = array_search( $reportID, $listIDs ) ) !== false )
 		{
 			unset( $listIDs[$k] );
@@ -472,7 +476,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		if ( $config !== null )
 		{
 			$config = json_decode( $config, true );
-			if ( $configName !== null )
+			if ( $config !== null && $configName !== null )
 			{
 				if ( array_key_exists( $configName, $config ) )
 				{
