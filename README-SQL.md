@@ -35,7 +35,12 @@ appropriate values before the query is run.
 
 * `$$DAG$$` &ndash; the REDCap unique DAG ID of the user viewing the report
   * if the user is not in a DAG, *NULL* is used
+* `$$DATATABLE$$` &ndash; the redcap_data table used by the current project
+  * use `$$DATATABLE:pid$$`, where `pid` is a project ID, to get the redcap_data table used by
+    that project
 * `$$LOGTABLE$$` &ndash; the redcap_log_event table used by the current project
+  * use `$$LOGTABLE:pid$$`, where `pid` is a project ID, to get the redcap_log_event table used by
+    that project
 * `$$PROJECT$$` &ndash; the current project ID
 * `$$ROLE$$` &ndash; the REDCap unique role ID of the user viewing the report
   * if the user is not in a role, *NULL* is used
@@ -43,7 +48,7 @@ appropriate values before the query is run.
 * `$$WEBROOT$$` &ndash; the REDCap version directory web path for use in URLs
 
 Placeholders which return strings will return the string appropriately escaped and encased in
-quotes, with the exception of the `$$LOGTABLE$$` placeholder.
+quotes, with the exception of the `$$DATATABLE$$` and `$$LOGTABLE$$` placeholders.
 
 #### Query String Placeholders
 

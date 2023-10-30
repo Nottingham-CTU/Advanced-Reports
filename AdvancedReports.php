@@ -1335,22 +1335,62 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		if ( $test )
 		{
 			$sql = str_replace( [ '$$DAG$$', '$$PROJECT$$', '$$ROLE$$' ], '0', $sql );
-			$sql = str_replace( '$$LOGTABLE$$', 'redcap_log_event', $sql );
+			$sql = preg_replace( '/\$\$DATATABLE(\:[1-9][0-9]*)?\$\$/', 'redcap_data', $sql );
+			$sql = preg_replace( '/\$\$LOGTABLE(\:[1-9][0-9]*)?\$\$/', 'redcap_log_event', $sql );
 			$sql = str_replace( [ '$$USER$$', '$$WEBROOT$$' ], "'text'", $sql );
 			$sql = preg_replace( '/\$\$QINT\:[a-z0-9_]+\$\$/', '0', $sql );
 			$sql = preg_replace( '/\$\$QSTR\:[a-z0-9_]+\$\$/', "'text'", $sql );
 		}
 		else
 		{
-			list( $logTable ) = $this->query( 'SELECT log_event_table FROM redcap_projects ' .
-			                                  'WHERE project_id = ?',
-			                                  [ $this->getProjectId() ] )->fetch_row();
+			$listLogTables = [];
 			$userRole = $this->getUser()->getRights()['role_id'];
 			$userRole = $userRole == null ? 'NULL' : intval( $userRole );
 			$userDAG = $this->getUser()->getRights()['group_id'];
 			$userDAG = $userDAG == null ? 'NULL' : intval( $userDAG );
 			$sql = str_replace( '$$DAG$$', $userDAG, $sql );
-			$sql = str_replace( '$$LOGTABLE$$', $logTable, $sql );
+			$sql = preg_replace_callback( '/\$\$DATATABLE(\:([1-9][0-9]*))?\$\$/',
+			                              function( $m )
+			                              {
+			                                if ( $m[2] == '' )
+			                                {
+			                                  $pid = intval( $this->getProjectId() );
+			                                }
+			                                else
+			                                {
+			                                  $pid = intval( $m[2] );
+			                                }
+			                                return method_exists( '\REDCap', 'getDataTable' )
+			                                       ? \REDCap::getDataTable( $pid ) : 'redcap_data';
+			                              },
+			                              $sql );
+			$sql = preg_replace_callback( '/\$\$LOGTABLE(\:([1-9][0-9]*))?\$\$/',
+			                              function( $m ) use ( $listLogTables )
+			                              {
+			                                if ( $m[2] == '' )
+			                                {
+			                                  $pid = intval( $this->getProjectId() );
+			                                }
+			                                else
+			                                {
+			                                  $pid = intval( $m[2] );
+			                                }
+			                                if ( isset( $listLogTables[ $pid ] ) )
+			                                {
+			                                  return $listLogTables[ $pid ];
+			                                }
+			                                list( $logTable ) =
+			                                  $this->query( 'SELECT log_event_table FROM ' .
+			                                                'redcap_projects WHERE project_id = ?',
+			                                                [ $pid ] )->fetch_row();
+			                                if ( $logTable == '' )
+			                                {
+			                                  $logTable = 'redcap_log_event';
+			                                }
+			                                $listLogTables[ $pid ] = $logTable;
+			                                return $logTable;
+			                              },
+			                              $sql );
 			$sql = str_replace( '$$PROJECT$$', intval( $this->getProjectId() ), $sql );
 			$sql = str_replace( '$$ROLE$$', $userRole, $sql );
 			$sql = str_replace( '$$USER$$',
