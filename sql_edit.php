@@ -111,7 +111,10 @@ echo $reportData['sql_query'] ?? ''; ?></textarea>
      You can use the following placeholder values in SQL queries:<br>
      <tt>$$DAG$$</tt> &#8212; the REDCap unique DAG ID of the user viewing the report
      (<i>NULL</i> if the user is not in a DAG)<br>
+     <tt>$$DATATABLE$$</tt> &#8212; the redcap_data table used by the current project<br>
+     <tt>$$DATATABLE:pid$$</tt> &#8212; the redcap_data table used by project <i>pid</i><br>
      <tt>$$LOGTABLE$$</tt> &#8212; the redcap_log_event table used by the current project<br>
+     <tt>$$LOGTABLE:pid$$</tt> &#8212; the redcap_log_event table used by project <i>pid</i><br>
      <tt>$$PROJECT$$</tt> &#8212; the current project ID<br>
      <tt>$$QINT:<i>name</i>$$</tt> &#8212; the value of the named query string parameter, as an
      integer (<i>NULL</i> if the value is missing or not an integer)<br>
