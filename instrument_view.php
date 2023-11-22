@@ -79,6 +79,8 @@ foreach ( $reportData['forms'] as $queryForm )
 	$newResultTable = [];
 	foreach ( $resultTable as $resultRow )
 	{
+		$joinCount = 0;
+		$formHasRedcapFields = [];
 		foreach ( $formValues as $i => $formValuesRow )
 		{
 			if ( $formValuesRow[ $form . '_complete' ] === '' )
@@ -139,16 +141,79 @@ foreach ( $reportData['forms'] as $queryForm )
 						{
 							if ( isset( $formValuesRow[$field] ) )
 							{
+								$formHasRedcapFields[ $field ] = true;
 								$newResultRow[ '[' . $alias . '][' . $field . ']' ] =
 										[ 'value' => $formValuesRow[$field],
 										  'label' => $formLabelsRow[$field] ];
 							}
 						}
+						if ( ! empty( $reportData['select'] ) )
+						{
+							$newResultRow[ '[' . $alias . '][redcap_form_url]' ] =
+								[ 'value' => APP_PATH_WEBROOT_FULL . 'redcap_v' . REDCAP_VERSION .
+								             '/DataEntry/index.php?pid=' . $module->getProjectId() .
+								             '&page=' . $form . '&id=' .
+								             $formValuesRow[ \REDCap::getRecordIdField() ] .
+								             ( isset( $formValuesRow['redcap_event_name'] )
+								               ? '&event_id=' .
+								                 \REDCap::getEventIdFromUniqueEvent(
+								                      $formValuesRow['redcap_event_name'] ) : '' ) .
+								             ( isset( $formValuesRow['redcap_repeat_instance'] )
+								               ? '&instance=' .
+								                 $formValuesRow['redcap_repeat_instance'] : '' ) ];
+							$newResultRow[ '[' . $alias . '][redcap_form_url]' ]['label'] =
+								$newResultRow[ '[' . $alias . '][redcap_form_url]' ]['value'];
+							$newResultRow[ '[' . $alias . '][redcap_survey_url]' ] =
+								[ 'value' => \REDCap::getSurveyLink(
+								                $formValuesRow[ \REDCap::getRecordIdField() ],
+								                $form,
+								                ( isset( $formValuesRow['redcap_event_name'] )
+								                  ? \REDCap::getEventIdFromUniqueEvent(
+								                     $formValuesRow['redcap_event_name'] ) : null ),
+								                $formValuesRow['redcap_repeat_instance'] ?? 1 ) ];
+							$newResultRow[ '[' . $alias . '][redcap_survey_url]' ]['label'] =
+								$newResultRow[ '[' . $alias . '][redcap_survey_url]' ]['value'];
+							$formHasRedcapFields['redcap_form_url'] = true;
+							$formHasRedcapFields['redcap_survey_url'] = true;
+						}
 						$insertedRedcapFields = true;
 					}
 				}
 				$newResultTable[] = $newResultRow;
+				$joinCount++;
 			}
+		}
+		// For left joins, always include the row from the left side of the join.
+		if ( $joinCount == 0 && isset( $queryForm['join'] ) && $queryForm['join'] == 'left' )
+		{
+			$newResultRow = $resultRow;
+			$insertedRedcapFields = false;
+			foreach ( $fields as $field )
+			{
+				$newResultRow[ '[' . $alias . '][' . $field . ']' ] =
+						[ 'value' => '', 'label' => '' ];
+				if ( ! $insertedRedcapFields )
+				{
+					foreach ( $redcapFields as $field )
+					{
+						if ( isset( $formHasRedcapFields[ $field ] ) )
+						{
+							$newResultRow[ '[' . $alias . '][' . $field . ']' ] =
+									[ 'value' => '', 'label' => '' ];
+						}
+					}
+					foreach ( [ 'redcap_form_url', 'redcap_survey_url' ] as $field )
+					{
+						if ( isset( $formHasRedcapFields[ $field ] ) )
+						{
+							$newResultRow[ '[' . $alias . '][' . $field . ']' ] =
+									[ 'value' => '', 'label' => '' ];
+						}
+					}
+					$insertedRedcapFields = true;
+				}
+			}
+			$newResultTable[] = $newResultRow;
 		}
 	}
 	$resultTable = &$newResultTable;
@@ -214,6 +279,8 @@ if ( $reportData['orderby'] != '' )
 }
 
 // If fields to select specified, select them.
+$hasGrouping = false;
+$groupingFields = [];
 if ( ! empty( $reportData['select'] ) )
 {
 	$newResultTable = [];
@@ -223,6 +290,14 @@ if ( ! empty( $reportData['select'] ) )
 		if ( $selectField['alias'] == '' )
 		{
 			$selectField['alias'] = $selectField['field'];
+		}
+		if ( isset( $selectField['grouping'] ) && $selectField['grouping'] != '' )
+		{
+			$hasGrouping = true;
+			if ( $selectField['grouping'] == 'this' )
+			{
+				$groupingFields[] = $selectField['alias'];
+			}
 		}
 		$selectFields[] = [ 'field' => $selectField['field'], 'alias' => $selectField['alias'],
 		                    'function' => $module->parseLogic( $selectField['field'],
@@ -236,10 +311,15 @@ if ( ! empty( $reportData['select'] ) )
 			$selectParams = [];
 			foreach ( $selectField['function'][1] as $selectParamItem )
 			{
+				$defaultValOrLbl = [ 'value', 'label' ];
+				if ( preg_match( '/^\\[[a-z0-9_]+\\]\\[[a-z0-9_]+\\]$/i', $selectField['field'] ) )
+				{
+					$defaultValOrLbl = [ 'label', 'value' ];
+				}
 				$selectParams[] = $resultRow[ '[' . $selectParamItem[0] . '][' .
 			                                  $selectParamItem[1] . ']' ][
-			                                    $selectParamItem[2] == 'value'
-			                                    ? 'value' : 'label' ];
+			                                    $selectParamItem[2] == $defaultValOrLbl[1]
+			                                    ? $defaultValOrLbl[1] : $defaultValOrLbl[0] ];
 			}
 			$newResultRow[ $selectField['alias'] ] =
 					$selectField['function'][0]( ...$selectParams );
@@ -248,6 +328,14 @@ if ( ! empty( $reportData['select'] ) )
 	}
 	$resultTable = &$newResultTable;
 	unset( $newResultTable );
+}
+
+
+
+// Perform any grouping.
+if ( $hasGrouping )
+{
+
 }
 
 

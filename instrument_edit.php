@@ -96,15 +96,25 @@ if ( ! empty( $_POST ) )
 		}
 	}
 	// - Check the validity of field name/logic.
+	$hasGroupingUnselected = false;
+	$hasGroupingSelected = false;
 	if ( $validationMsg == '' )
 	{
 		try
 		{
-			foreach ( $_POST['query_select_field'] as $fieldName )
+			foreach ( $_POST['query_select_field'] as $index => $fieldName )
 			{
 				if ( $fieldName != '' )
 				{
 					$module->parseLogic( $fieldName, false, true, false );
+					if ( $_POST['query_grouping'][ $index ] == '' )
+					{
+						$hasGroupingUnselected = true;
+					}
+					if ( $_POST['query_grouping'][ $index ] != '' )
+					{
+						$hasGroupingSelected = true;
+					}
 				}
 			}
 		}
@@ -112,6 +122,11 @@ if ( ! empty( $_POST ) )
 		{
 			$validationMsg = 'Error in field name/logic - ' . $e->getMessage();
 		}
+	}
+	// - Check the validity of field name/logic.
+	if ( $validationMsg == '' && $hasGroupingUnselected && $hasGroupingSelected )
+	{
+		$validationMsg = 'If grouping is selected, it must be selected for all fields';
 	}
 	if ( isset( $_SERVER['HTTP_X_RC_ADVREP_INSTQUERYCHK'] ) )
 	{
@@ -143,6 +158,8 @@ if ( ! empty( $_POST ) )
 			continue;
 		}
 		$reportData['forms'][] = [ 'form' => $formName, 'alias' => $_POST['query_form_alias'][$i],
+		                           'join' => ( ( $i == 0 ) ? ''
+		                                                 : $_POST['query_form_join'][ $i - 1 ] ),
 		                           'on' => ( ( $i == 0 ) ? ''
 		                                                 : $_POST['query_form_on'][ $i - 1 ] ) ];
 	}
@@ -153,7 +170,8 @@ if ( ! empty( $_POST ) )
 			continue;
 		}
 		$reportData['select'][] = [ 'field' => $fieldName,
-		                            'alias' => $_POST['query_select_alias'][$i] ];
+		                            'alias' => $_POST['query_select_alias'][$i],
+		                            'grouping' => $_POST['query_grouping'][$i] ];
 	}
 	$module->setReportData( $reportID, $reportData );
 	header( 'Location: ' . $module->getUrl( 'reports_edit.php' ) );
@@ -162,7 +180,113 @@ if ( ! empty( $_POST ) )
 
 
 
+function writeInstrumentRow1( $setWidths, $formVal, $aliasVal ) // TODO: join option
+{
+	global $module;
+?>
+
+      <td style="text-align:left;width:<?php echo $setWidths ? '60px' : 'unset'; ?>">
+<?php
+	if ( ! $setWidths )
+	{
+?>
+       <select name="query_form_join[]">
+        <option value="inner">Inner Join</option>
+        <option value="left">Left Join</option>
+       </select>
+<?php
+	}
+?>
+      </td>
+      <td style="text-align:left;width:<?php echo $setWidths ? '60px' : 'unset'; ?>"><?php
+$module->outputInstrumentDropdown( 'query_form[]', $formVal ?? '' );
+?></td>
+      <td style="text-align:left;width:unset">
+       <input type="text" name="query_form_alias[]" placeholder="alias (optional)"
+              value="<?php echo $module->escapeHTML( $aliasVal ?? '' ); ?>"
+              style="width:100%<?php echo $setWidths ? ';min-width:80px' : ''; ?>">
+      </td>
+<?php
+}
+
+
+
+function writeInstrumentRow2( $onCondVal, $formVal, $firstFormVal, $aliasVal, $firstAliasVal )
+{
+	global $module, $recordIDField;
+	$formVal = ( $aliasVal == '' ) ? $formVal : $aliasVal;
+	$firstFormVal = ( $firstAliasVal == '' ) ? $firstFormVal : $firstAliasVal;
+?>
+
+      <td style="text-align:left;width:unset">On Condition</td>
+      <td colspan="2" style="text-align:left;width:unset">
+       <input type="text" name="query_form_on[]" placeholder="condition logic"
+              style="width:100%;max-width:unset"
+              data-default="<?php echo $formVal == '' || $firstFormVal == '' ? ''
+                                       : ( '[' . $formVal . '][' . $recordIDField . '] = [' .
+                                           $firstFormVal . '][' . $recordIDField . ']' ); ?>"
+              value="<?php echo $module->escapeHTML( $onCondVal ?? '' ); ?>">
+      </td>
+<?php
+}
+
+
+
+function writeSelectRow( $setWidths, $fieldVal, $aliasVal, $groupVal )
+{
+	global $module;
+?>
+
+      <td style="text-align:center;width:15px;padding-right:0px">
+       <div style="margin-bottom:-8px;cursor:pointer"
+            onclick="$(this).closest('tr').insertBefore($(this).closest('tr').prev('tr:visible'))">
+        <i class="fas fa-caret-up fs11"></i>
+       </div>
+       <div style="cursor:pointer"
+            onclick="$(this).closest('tr').insertAfter($(this).closest('tr').next('tr:visible'))">
+        <i class="fas fa-caret-down fs11"></i>
+       </div>
+      </td>
+      <td style="text-align:left;width:<?php echo $setWidths ? '50%;max-width:425px' : 'unset'; ?>">
+       <input type="text" name="query_select_field[]" placeholder="field name/logic"
+              value="<?php echo $module->escapeHTML( $fieldVal ?? '' ); ?>"
+              data-list="field-var-list" style="width:100%">
+      </td>
+      <td style="text-align:left;width:unset">
+       <input type="text" name="query_select_alias[]" placeholder="alias (optional)"
+              value="<?php echo $module->escapeHTML( $aliasVal ?? '' ); ?>"
+              style="width:100%<?php echo $setWidths ? ';min-width:60px' : ''; ?>">
+      </td>
+      <td style="text-align:left;width:unset">
+       <select name="query_grouping[]" style="font-style:italic"
+               onchange="$(this).val()==''?$(this).css('font-style','italic')
+                                          :$(this).css('font-style','')">
+        <option value="" style="font-style:italic">grouping (optional)</option>
+<?php
+	foreach ( [ 'this' => 'group by this field',
+	            'max' => 'maximum value',
+	            'mean' => 'mean average',
+	            'median' => 'median average',
+	            'min' => 'minimum value',
+	            'percent' => 'percentage',
+	            'sum' => 'sum of all values' ]
+	          as $optVal => $optLbl )
+	{
+?>
+        <option <?php echo $groupVal == $optVal ? 'selected ' : ''; ?>value="<?php echo $optVal; ?>"
+                style="font-style:normal"><?php echo $optLbl; ?></option>
+<?php
+	}
+?>
+       </select>
+      </td>
+<?php
+}
+
+
+
 // Get fields and smart variables for field suggestions.
+$recordIDField = \REDCap::getRecordIdField();
 $smartVarsInfo = \Piping::getSpecialTagsInfo();
 $listSmartVars = array_merge( array_keys( $smartVarsInfo[ $GLOBALS['lang']['global_17'] ] ),
                               array_keys( $smartVarsInfo[ $GLOBALS['lang']['global_156'] ] ),
@@ -172,7 +296,7 @@ $listFormVars = [];
 foreach ( array_keys( $module->getInstrumentList() ) as $instrument )
 {
 	$listFormVars[ $instrument ] = array_values(
-	                                array_unique( array_merge( [ \REDCap::getRecordIdField() ],
+	                                array_unique( array_merge( [ $recordIDField ],
 	                                                    \REDCap::getFieldNames( $instrument ) ) ) );
 }
 
@@ -223,18 +347,10 @@ echo $reportData['desc'] ?? ''; ?></textarea>
   <tr>
    <td>Instruments</td>
    <td>
-    <table id="inst-entries-tbl" style="width:95%;max-width:550px">
-     <tr>
-      <td style="text-align:left;width:60px"></td>
-      <td style="text-align:left;width:60px"><?php
-$module->outputInstrumentDropdown( 'query_form[]', $reportData['forms'][0]['form'] ?? '' );
-?></td>
-      <td style="text-align:left;width:unset">
-       <input type="text" name="query_form_alias[]" placeholder="alias (optional)"
-              value="<?php echo $module->escapeHTML( $reportData['forms'][0]['alias'] ?? '' ); ?>"
-              style="width:100%">
-      </td>
-     </tr>
+    <table id="inst-entries-tbl" style="width:95%;max-width:750px">
+     <tr><?php
+writeInstrumentRow1( true, $reportData['forms'][0]['form'], $reportData['forms'][0]['alias'] );
+?></tr>
 <?php
 $firstForm = true;
 foreach ( $reportData['forms'] as $formData )
@@ -245,81 +361,57 @@ foreach ( $reportData['forms'] as $formData )
 		continue;
 	}
 ?>
-     <tr>
-      <td style="text-align:left;width:unset">JOIN</td>
-      <td style="text-align:left;width:unset"><?php
-	$module->outputInstrumentDropdown( 'query_form[]', $formData['form'] );
-?></td>
-      <td style="text-align:left;width:unset">
-       <input type="text" name="query_form_alias[]" placeholder="alias (optional)"
-              value="<?php echo $module->escapeHTML( $formData['alias'] ); ?>" style="width:100%">
-      </td>
-     </tr>
-     <tr>
-      <td style="text-align:left;width:unset">ON</td>
-      <td colspan="2" style="text-align:left;width:unset">
-       <input type="text" name="query_form_on[]" placeholder="condition logic" style="width:100%"
-              value="<?php echo $module->escapeHTML( $formData['on'] ); ?>">
-      </td>
-     </tr>
+     <tr><?php writeInstrumentRow1( false, $formData['form'], $formData['alias'] ); ?></tr>
+     <tr><?php
+writeInstrumentRow2( $formData['on'], $formData['form'], $reportData['forms'][0]['form'],
+                     $formData['alias'], $reportData['forms'][0]['alias'] );
+?></tr>
 <?php
 }
 ?>
-     <tr style="display:none">
-      <td style="text-align:left;width:unset">JOIN</td>
-      <td style="text-align:left;width:unset"><?php
-$module->outputInstrumentDropdown( 'query_form[]', '' );
-?></td>
-      <td style="text-align:left;width:unset">
-       <input type="text" name="query_form_alias[]" placeholder="alias (optional)"
-              style="width:100%">
-      </td>
-     </tr>
-     <tr style="display:none">
-      <td style="text-align:left;width:unset">ON</td>
-      <td colspan="2" style="text-align:left;width:unset">
-       <input type="text" name="query_form_on[]" placeholder="condition logic" style="width:100%">
-      </td>
-     </tr>
+     <tr style="display:none"><?php writeInstrumentRow1( false, '', '' ); ?></tr>
+     <tr style="display:none"><?php
+writeInstrumentRow2( '', '', $reportData['forms'][0]['form'],
+                     '', $reportData['forms'][0]['alias'] );
+?></tr>
     </table>
     <span id="inst-entries-link" style="display:none">
      <a onclick="$('#inst-entries-tbl tr').slice(-2).clone(true).css('display',''
                     ).insertBefore($('#inst-entries-tbl tr').slice(-2,-1));return false"
         href="#" class=""><i class="fas fa-plus-circle fs12"></i> Add instrument</a>
+     <br>
+     <span style="font-size:0.8em">
+      Inner Join will only include rows where there is data on both sides of the join.<br>
+      Left Join will include rows where there is data before the join, even if there is no data
+      after the join.
+     </span>
     </span>
    </td>
   </tr>
   <tr>
    <td>Condition</td>
    <td>
-    <input type="text" name="query_where" style="width:100%" placeholder="condition logic"
+    <input type="text" name="query_where" style="width:95%;max-width:750px"
+           placeholder="condition logic"
            value="<?php echo $module->escapeHTML( $reportData['where'] ?? '' ); ?>">
    </td>
   </tr>
   <tr>
    <td>Sorting</td>
    <td>
-    <input type="text" name="query_orderby" style="width:100%" placeholder="sorting logic"
-           list="field-var-list-sort"
+    <input type="text" name="query_orderby" style="width:95%;max-width:750px"
+           placeholder="sorting logic" list="field-var-list-sort"
            value="<?php echo $module->escapeHTML( $reportData['orderby'] ?? '' ); ?>">
    </td>
   </tr>
   <tr>
    <td>Fields to display</td>
    <td style="padding:0px">
-    <table id="field-entries-tbl" style="width:95%;max-width:550px">
-     <tr>
-      <td style="text-align:left;width:60%">
-       <input type="text" name="query_select_field[]" placeholder="field name/logic"
-              value="<?php echo $module->escapeHTML( $reportData['select'][0]['field'] ?? '' ); ?>"
-              list="field-var-list" style="width:100%">
-      </td>
-      <td style="text-align:left;width:unset">
-       <input type="text" name="query_select_alias[]" placeholder="alias (optional)"
-              value="<?php echo $module->escapeHTML( $reportData['select'][0]['alias'] ?? '' ); ?>"
-              style="width:100%">
-      </td>
-     </tr>
+    <table id="field-entries-tbl" style="width:95%;max-width:750px">
+     <tr><?php
+writeSelectRow( true, $reportData['select'][0]['field'], $reportData['select'][0]['alias'],
+                $reportData['select'][0]['grouping'] );
+?></tr>
 <?php
 $firstField = true;
 foreach ( $reportData['select'] as $fieldData )
@@ -330,36 +422,21 @@ foreach ( $reportData['select'] as $fieldData )
 		continue;
 	}
 ?>
-     <tr>
-      <td style="text-align:left;width:unset">
-       <input type="text" name="query_select_field[]" placeholder="field name/logic"
-              value="<?php echo $module->escapeHTML( $fieldData['field'] ); ?>"
-              list="field-var-list" style="width:100%">
-      </td>
-      <td style="text-align:left;width:unset">
-       <input type="text" name="query_select_alias[]" placeholder="alias (optional)"
-              value="<?php echo $module->escapeHTML( $fieldData['alias'] ); ?>"
-              style="width:100%">
-      </td>
-     </tr>
+     <tr><?php
+writeSelectRow( false, $fieldData['field'], $fieldData['alias'], $fieldData['grouping'] );
+?></tr>
 <?php
 }
 ?>
-     <tr style="display:none">
-      <td style="text-align:left;width:unset">
-       <input type="text" name="query_select_field[]" placeholder="field name/logic"
-              list="field-var-list" style="width:100%">
-      </td>
-      <td style="text-align:left;width:unset">
-       <input type="text" name="query_select_alias[]" placeholder="alias (optional)"
-              style="width:100%">
-      </td>
-     </tr>
+     <tr style="display:none"><?php
+writeSelectRow( false, '', '', '' );
+?></tr>
     </table>
     <span id="field-entries-link" style="display:none">
      &nbsp;
      <a onclick="$('#field-entries-tbl tr').last().clone().css('display',''
-                    ).insertBefore($('#field-entries-tbl tr').last());return false"
+                    ).insertBefore($('#field-entries-tbl tr').last());$('#field-entries-tbl tr')
+                    .eq(-2).find('[name=&quot;query_select_field[]&quot;]').combobox();return false"
         href="#" class=""><i class="fas fa-plus-circle fs12"></i> Add field</a>
     </span>
    </td>
@@ -383,6 +460,7 @@ echo $reportData['nomissingdatacodes'] ? ' checked' : '';
 </form>
 <datalist id="field-var-list"></datalist>
 <datalist id="field-var-list-sort"></datalist>
+<?php $module->outputComboboxJS(); ?>
 <script type="text/javascript">
  (function ()
  {
@@ -425,14 +503,31 @@ echo $reportData['nomissingdatacodes'] ? ' checked' : '';
      $('#field-var-list-sort').html('')
      var vFormElems = $('[name="query_form[]"]')
      var vAliasElems = $('[name="query_form_alias[]"]')
+     var vOnCondElems = $('[name="query_form_on[]"]')
+     var vFirstAlias = vAliasElems[0].value == '' ? vFormElems[0].value : vAliasElems[0].value
      for ( var vIndex = 0; vIndex < vFormElems.length; vIndex++ )
      {
        var vFormName = vFormElems[ vIndex ].value
+       var vAlias = vAliasElems[ vIndex ].value == '' ? vFormName : vAliasElems[ vIndex ].value
+       if ( vIndex > 0 )
+       {
+         var vOnCondElem = vOnCondElems.eq( vIndex - 1 )
+         var vNewOnCond = ''
+         if ( vAlias != '' && vFirstAlias != '' )
+         {
+           vNewOnCond = '[' + vAlias + '][<?php echo $recordIDField; ?>] = ' +
+                        '[' + vFirstAlias + '][<?php echo $recordIDField; ?>]'
+         }
+         if ( vOnCondElem.data('default') == vOnCondElem.val() )
+         {
+           vOnCondElem.val(vNewOnCond)
+         }
+         vOnCondElem.data('default',vNewOnCond)
+       }
        if ( vFormName == '' )
        {
          continue
        }
-       var vAlias = vAliasElems[ vIndex ].value == '' ? vFormName : vAliasElems[ vIndex ].value
        vFormVars[ vFormName ].forEach( function( vItem )
        {
          $('<option></option>').text( '[' + vAlias + '][' + vItem + ']'
@@ -451,6 +546,11 @@ echo $reportData['nomissingdatacodes'] ? ' checked' : '';
    vFuncUpdateVars()
    $('[name="query_form[]"]').change( vFuncUpdateVars )
    $('[name="query_form_alias[]"]').keyup( vFuncUpdateVars )
+   setTimeout( function()
+   {
+     $('[name="query_select_field[]"]:visible').combobox()
+   }, 2000 )
+   $('[name="query_form[]"]').css( 'max-width', '450px' )
  })()
 </script>
 <?php

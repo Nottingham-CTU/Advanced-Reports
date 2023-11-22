@@ -612,6 +612,75 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Outputs JavaScript to create text/combo-boxes.
+	function outputComboboxJS()
+	{
+
+?>
+  <script type="text/javascript">
+  $( function() {
+    $.widget( "advrep.combobox",
+    {
+      _create: function()
+      {
+        this.wrapper = $( '<span style="display:flex">' )
+        this.wrapper.addClass( 'advrep-combobox' ).insertAfter( this.element )
+        this.element.appendTo( this.wrapper )
+        this.element
+          .addClass( 'advrep-combobox-input ui-widget ui-widget-content ' +
+                     'ui-state-default ui-corner-left' )
+          .autocomplete( { delay: 0, minLength: 0, source: this._source.bind( this ) } )
+          .tooltip( { classes: { 'ui-tooltip': 'ui-state-highlight' } } )
+        this._createShowAllButton()
+      },
+      _createShowAllButton: function()
+      {
+        var input = this.element, wasOpen = false;
+        $( '<a>' )
+          .attr( 'tabIndex', -1 )
+          .appendTo( this.wrapper )
+          .button( { icons: { primary: 'ui-icon-triangle-1-s' }, text: false } )
+          .removeClass( 'ui-corner-all' )
+          .addClass( 'advrep-combobox-toggle ui-corner-right' )
+          .on( 'mousedown', function()
+          {
+            wasOpen = input.autocomplete( "widget" ).is( ":visible" )
+          } )
+          .on( 'click', function()
+          {
+            input.trigger( 'focus' )
+            if ( wasOpen ) { return }
+            input.autocomplete( 'search', '' );
+          })
+      },
+      _source: function( request, response )
+      {
+        var input = this.element
+        var matcher = new RegExp( $.ui.autocomplete.escapeRegex(request.term), "i" );
+        response( $('#'+$(input).data('list')).children( "option" ).map(function() {
+          var text = $( this ).text();
+          if ( this.value && ( !request.term || matcher.test(text) ) )
+            return {
+              label: text,
+              value: text,
+              option: this
+            };
+        }) );
+      },
+      _destroy: function()
+      {
+        this.element.insertBefore( this.wrapper )
+        this.wrapper.remove();
+      }
+    } )
+  } )
+  </script>
+<?php
+
+	}
+
+
+
 	// Output a drop-down list of events for the project.
 	function outputEventDropdown( $dropDownName, $value )
 	{
