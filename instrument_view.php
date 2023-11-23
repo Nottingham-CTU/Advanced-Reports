@@ -279,12 +279,12 @@ if ( $reportData['orderby'] != '' )
 }
 
 // If fields to select specified, select them.
+$selectFields = [];
 $hasGrouping = false;
 $groupingFields = [];
 if ( ! empty( $reportData['select'] ) )
 {
 	$newResultTable = [];
-	$selectFields = [];
 	foreach ( $reportData['select'] as $selectField )
 	{
 		if ( $selectField['alias'] == '' )
@@ -335,7 +335,51 @@ if ( ! empty( $reportData['select'] ) )
 // Perform any grouping.
 if ( $hasGrouping )
 {
-
+	$newResultTable = [];
+	foreach ( $resultTable as $resultRow )
+	{
+		$groupKey = json_encode( array_reduce( $groupingFields,
+		                                       function ( $c, $i ) use ( $resultRow )
+		                                       {
+		                                           return $c[] = $resultRow[ $i ];
+		                                       }, [] ) );
+		$newResultRow = isset( $newResultTable[ $groupKey ] ) ? $newResultTable[ $groupKey ] : [];
+		foreach ( $selectFields as $selectField )
+		{
+			if ( ! isset( $newResultRow[ $selectField['alias'] ] ) )
+			{
+				if ( $selectField['grouping'] == 'this' )
+				{
+					$newResultRow[ $selectField['alias'] ] = $resultRow[ $selectField['alias'] ];
+				}
+				else
+				{
+					$newResultRow[ $selectField['alias'] ] = [];
+				}
+			}
+			if ( $selectField['grouping'] != 'this' )
+			{
+				$newResultRow[ $selectField['alias'] ][] = $resultRow[ $selectField['alias'] ];
+			}
+		}
+		$newResultTable[ $groupKey ] = $newResultRow;
+	}
+	foreach ( $newResultTable as $groupKey => $newResultRow )
+	{
+		foreach ( $selectFields as $selectField )
+		{
+			if ( is_array( $newResultRow[ $selectField['alias'] ] ) )
+			{
+				$newResultRow[ $selectField['alias'] ] =
+						$module->performGrouping( $newResultRow[ $selectField['alias'] ],
+						                          $selectField['grouping'] );
+			}
+		}
+		$newResultTable[ $groupKey ] = $newResultRow;
+	}
+	$newResultTable = array_values( $newResultTable );
+	$resultTable = &$newResultTable;
+	unset( $newResultTable );
 }
 
 

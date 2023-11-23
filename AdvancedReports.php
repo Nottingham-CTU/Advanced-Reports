@@ -1387,6 +1387,94 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Perform grouping on an array of values.
+	function performGrouping( $listValues, $funcName )
+	{
+		if ( $funcName == 'max' )
+		{
+			return array_reduce( $listValues,
+			                     function ( $c, $i )
+			                     {
+			                         if ( $i != '' && ( $c == '' || $c < $i ) ) return $i;
+			                         else return $c;
+			                     }, '' );
+		}
+		if ( $funcName == 'min' )
+		{
+			return array_reduce( $listValues,
+			                     function ( $c, $i )
+			                     {
+			                         if ( $i != '' && ( $c == '' || $c > $i ) ) return $i;
+			                         else return $c;
+			                     }, '' );
+		}
+		if ( $funcName == 'mean' || $funcName == 'sum' )
+		{
+			$count = 0;
+			$result = array_reduce( $listValues,
+			                        function ( $c, $i ) use ( $count )
+			                        {
+			                            if ( $i != '' )
+			                            {
+			                                $count++;
+			                                return $c + $i;
+			                            }
+			                            else return $c;
+			                        }, 0 );
+			if ( $count == 0 )
+			{
+				return 0;
+			}
+			return ( $funcName == 'sum' ? $result : ( $result / $count ) );
+		}
+		if ( $funcName == 'median' )
+		{
+			$listValues = array_reduce( $listValues,
+			                            function( $c, $i )
+			                            {
+			                                if ( $i != '' ) $c[] = $i;
+			                                return $c;
+			                            }, [] );
+			if ( empty( $listValues ) )
+			{
+				return 0;
+			}
+			sort( $listValues );
+			$count = count( $listValues );
+			if ( $count % 2 == 0 )
+			{
+				return ( $listValues[ ( $count / 2 ) - 1 ] + $listValues[ $count / 2 ] ) / 2;
+			}
+			return $listValues[ floor( $count / 2 ) ];
+		}
+		if ( $funcName == 'percent' )
+		{
+			$sum = 0;
+			$count = 0;
+			foreach ( $listValues as $value )
+			{
+				if ( preg_match( '/^[0-9]+(\.[0-9]+)?$/', $value ) )
+				{
+					$sum += $value;
+					$count++;
+				}
+				elseif ( preg_match( '^[0-9]+(\.[0-9]+)?\/[1-9][0-9]*$', $value ) )
+				{
+					$value = explode( '/', $value );
+					$sum += $value[0];
+					$count += $value[1];
+				}
+			}
+			if ( $count == 0 )
+			{
+				return '0%';
+			}
+			return ( ( $sum / $count ) * 100 ) . '%';
+		}
+	}
+
+
+
 	// Sets the specified configuration option for a report to the specified value.
 	function setReportConfig( $reportID, $configName, $configValue )
 	{
