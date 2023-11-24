@@ -258,7 +258,8 @@ function writeSelectRow( $setWidths, $fieldVal, $aliasVal, $groupVal )
               style="width:100%<?php echo $setWidths ? ';min-width:60px' : ''; ?>">
       </td>
       <td style="text-align:left;width:unset">
-       <select name="query_grouping[]" style="font-style:italic"
+       <select name="query_grouping[]"<?php echo $groupVal == ''
+                                                 ? ' style="font-style:italic"' : '', "\n"; ?>
                onchange="$(this).val()==''?$(this).css('font-style','italic')
                                           :$(this).css('font-style','')">
         <option value="" style="font-style:italic">grouping (optional)</option>
