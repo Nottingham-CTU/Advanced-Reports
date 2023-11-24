@@ -292,11 +292,21 @@ $listSmartVars = array_merge( array_keys( $smartVarsInfo[ $GLOBALS['lang']['glob
                               array_keys( $smartVarsInfo[ $GLOBALS['lang']['global_156'] ] ),
                               [ 'is-download', 'is-api' ] );
 array_walk( $listSmartVars, function( &$i ) { $i = '[' . $i . ']'; } );
+$listCommonFormVars = [ $recordIDField ];
+if ( \REDCap::isLongitudinal() )
+{
+	$listCommonFormVars[] = 'redcap_event_name';
+}
+$listCommonFormVars[] = 'redcap_repeat_instance';
+if ( ! empty( \REDCap::getGroupNames() ) )
+{
+	$listCommonFormVars[] = 'redcap_data_access_group';
+}
 $listFormVars = [];
 foreach ( array_keys( $module->getInstrumentList() ) as $instrument )
 {
 	$listFormVars[ $instrument ] = array_values(
-	                                array_unique( array_merge( [ $recordIDField ],
+	                                array_unique( array_merge( $listCommonFormVars,
 	                                                    \REDCap::getFieldNames( $instrument ) ) ) );
 }
 
