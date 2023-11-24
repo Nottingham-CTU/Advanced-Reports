@@ -34,5 +34,7 @@
 			"type" : "checkbox",
 			"super-users-only" : true
 		}
-	]
+	],
+	"no-auth-pages" : [ "api" ],
+	"no-csrf-pages" : [ "api" ]
 }

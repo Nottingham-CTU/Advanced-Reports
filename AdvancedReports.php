@@ -512,6 +512,10 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	function getReportList()
 	{
 		$projectID = $this->getProjectID();
+		if ( $projectID === null )
+		{
+			return [];
+		}
 		$listIDs = $this->getSystemSetting( "p$projectID-report-list" );
 		if ( $listIDs === null )
 		{
@@ -851,6 +855,40 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
     <span class="field-desc">
      If enabled, the report can be retrieved as an image by all users with access.
     </span>
+   </td>
+  </tr>
+<?php
+		}
+
+		if ( in_array( 'api', $includeAdditional ) )
+		{
+?>
+  <tr>
+   <td>Allow API access</td>
+   <td>
+    <label>
+     <input type="radio" name="report_as_api" value="Y" required<?php
+		echo $reportConfig['as_api'] ? ' checked' : ''; ?>> Yes
+    </label>
+    <br>
+    <label>
+     <input type="radio" name="report_as_api" value="N" required<?php
+		echo $reportConfig['as_api'] ? '' : ' checked'; ?>> No
+    </label>
+    <br>
+    <span class="field-desc">
+     If enabled, the report can be accessed using the API at the following URL:<br>
+     <?php echo $this->getUrl( 'api.php?report_id=' . $_GET['report_id'], true, true ), "\n"; ?>
+    </span>
+    <br>
+    API Key: <input type="password" name="report_api_key" style="width:320px;font-size:0.9em"
+                    onmouseover="$(this).attr('type','text')"
+                    onmouseout="$(this).attr('type','password')"
+                    value="<?php echo $reportConfig['api_key'] ?? ''; ?>" readonly>
+    <a href="#" style="margin:left:10px;font-size:0.9em"
+       onclick="if(confirm('Generate new API key?\nThis will replace the current API key.'))
+                {$('[name=report_api_key]').val('<?php echo sha1( random_bytes(100) ) ?>');
+                $(this).css('display','none')};return false">Generate new API key</a>
    </td>
   </tr>
 <?php
@@ -1284,7 +1322,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 	// Takes logic and parses it, returning an array consisting of a function and information about
 	// the parameters to be passed to the function to evaluate the logic.
-	function parseLogic( $str, $isDownload = false, $allowEditable = false, $createFunction = true )
+	function parseLogic( $str, $requestType = false,
+	                     $allowEditable = false, $createFunction = true )
 	{
 		// If an editable value is requested...
 		if ( $allowEditable && preg_match( '/((\[[A-Za-z0-9_]+\]){2}):edit/', $str ) )
@@ -1317,7 +1356,9 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 					                         '$1[2]', $strPart );
 					// Also pipe in the values for any smart variables.
 					$strPart = str_replace( '[is-download]',
-					                        ( $isDownload ? '1' : '0' ), $strPart );
+					                        ( $requestType == 'download' ? '1' : '0' ), $strPart );
+					$strPart = str_replace( '[is-api]',
+					                        ( $requestType == 'api' ? '1' : '0' ), $strPart );
 					$strPart =
 						preg_replace_callback( '/\[q(int|str):([a-z0-9_]+)\]/', function ( $m )
 						{
@@ -1636,6 +1677,10 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		foreach ( $includeAdditional as $additionalItem )
 		{
 			$listConfig[] = "as_$additionalItem";
+			if ( $additionalItem == 'api' )
+			{
+				$listConfig[] = 'api_key';
+			}
 		}
 		foreach ( $listConfig as $configSetting )
 		{

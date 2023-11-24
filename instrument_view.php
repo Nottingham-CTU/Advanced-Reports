@@ -1,6 +1,6 @@
 <?php
 /**
- *	Project Query Reports view page.
+ *	Instrument Query Reports view page.
  */
 
 namespace Nottingham\AdvancedReports;
@@ -8,7 +8,7 @@ const TVALIDSTR = 'text_validation_type_or_show_slider_number';
 
 
 
-// Verify the report exists, is a project query, and is visible.
+// Verify the report exists, and is an instrument query, is visible.
 // Redirect to main reports page if not.
 $reportID = $_GET['report_id'];
 $listReports = $module->getReportList();
@@ -19,14 +19,22 @@ if ( ! isset( $listReports[$reportID] ) || $listReports[$reportID]['type'] != 'i
 }
 
 
+// Determine the request type (normal/csv/api).
+$isApiRequest = isset( $isApiRequest ) ? $isApiRequest : false;
+$isInternalRequest = isset( $isInternalRequest ) ? $isInternalRequest : false;
+$isCsvDownload = ( ! $isApiRequest && isset( $_GET['download'] ) &&
+                   $module->isReportDownloadable( $reportID ) );
+$requestType = ( ( $isApiRequest && ! $isInternalRequest )
+                 ? 'api' : ( $isCsvDownload ? 'download' : false ) );
+
+
 // Check user can view this report, redirect to main reports page if not.
-if ( ! $module->isReportAccessible( $reportID ) )
+if ( ! $isApiRequest && ! $module->isReportAccessible( $reportID ) )
 {
 	header( 'Location: ' . $module->getUrl( 'reports.php' ) );
 	exit;
 }
 
-$isCsvDownload = ( isset( $_GET['download'] ) && $module->isReportDownloadable( $reportID ) );
 
 // Get the report data.
 $reportConfig = $listReports[$reportID];
@@ -101,7 +109,7 @@ foreach ( $reportData['forms'] as $queryForm )
 			if ( $queryForm['on'] != '' )
 			{
 				list( $joinFunction, $joinParamData ) =
-					$module->parseLogic( $queryForm['on'], $isCsvDownload );
+					$module->parseLogic( $queryForm['on'], $requestType );
 				$joinParams = [];
 				foreach ( $joinParamData as $joinParamItem )
 				{
@@ -225,7 +233,7 @@ if ( $reportData['where'] != '' )
 {
 	$newResultTable = [];
 	list( $whereFunction, $whereParamData ) =
-		$module->parseLogic( $reportData['where'], $isCsvDownload );
+		$module->parseLogic( $reportData['where'], $requestType );
 	foreach ( $resultTable as $resultRow )
 	{
 		$whereParams = [];
@@ -255,7 +263,7 @@ if ( $reportData['orderby'] != '' )
 		$reportData['orderby'] = substr( rtrim( $reportData['orderby'] ), 0, -5 );
 	}
 	list( $sortFunction, $sortParamData ) =
-		$module->parseLogic( $reportData['orderby'], $isCsvDownload );
+		$module->parseLogic( $reportData['orderby'], $requestType );
 	usort( $resultTable, function ( $resultRow1, $resultRow2 )
 	                     use ( $sortFunction, $sortParamData, $sortDirection )
 	{
@@ -300,8 +308,9 @@ if ( ! empty( $reportData['select'] ) )
 			}
 		}
 		$selectFields[] = [ 'field' => $selectField['field'], 'alias' => $selectField['alias'],
+		                    'grouping' => $selectField['grouping'] ?? '',
 		                    'function' => $module->parseLogic( $selectField['field'],
-		                                                       $isCsvDownload, true ) ];
+		                                                       $requestType, true ) ];
 	}
 	foreach ( $resultTable as $resultRow )
 	{
@@ -384,6 +393,24 @@ if ( $hasGrouping )
 
 
 
+// Return the result table for API requests.
+if ( $isApiRequest )
+{
+	if ( $selectFields == [] )
+	{
+		foreach ( $resultTable as $resultIndex => $resultRow )
+		{
+			foreach ( $resultRow as $fieldName => $value )
+			{
+				$resultTable[ $resultIndex ][ $fieldName ] = $value['value'];
+			}
+		}
+	}
+	return $resultTable;
+}
+
+
+
 // Handle report download.
 if ( $isCsvDownload )
 {
@@ -410,7 +437,7 @@ if ( $isCsvDownload )
 		{
 			if ( is_array( $value ) )
 			{
-				$value = $value['label'];
+				$value = $value['value'];
 			}
 			echo $firstField ? '' : ',';
 			$firstField = false;
@@ -455,6 +482,10 @@ if ( isset( $_GET['as_image']) && $reportConfig['as_image'] )
 	{
 		foreach ( $columns as $columnName )
 		{
+			if ( is_array( $resultRow[$columnName] ) )
+			{
+				$resultRow[$columnName] = $resultRow[$columnName]['label'];
+			}
 			$imgParsedData = isset( $resultRow[$columnName] )
 			                    ? $module->parseHTML( $resultRow[$columnName], true ) : '';
 			$thisWidth = ( strlen( $imgParsedData ) * $imgDataCharW ) + 5;
@@ -487,6 +518,10 @@ if ( isset( $_GET['as_image']) && $reportConfig['as_image'] )
 	{
 		foreach ( $columns as $columnName )
 		{
+			if ( is_array( $resultRow[$columnName] ) )
+			{
+				$resultRow[$columnName] = $resultRow[$columnName]['label'];
+			}
 			$imgParsedData = isset( $resultRow[$columnName] )
 			                    ? $module->parseHTML( $resultRow[$columnName], true ) : '';
 			$thisWidth = $imgColumnWidths[$columnName];

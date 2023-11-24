@@ -147,7 +147,7 @@ if ( ! empty( $_POST ) )
 	}
 
 	// Save data
-	$module->submitReportConfig( $reportID, true, 'image' );
+	$module->submitReportConfig( $reportID, true, [ 'image', 'api' ] );
 	$reportData = [ 'desc' => $_POST['query_desc'], 'forms' => [], 'where' => $_POST['query_where'],
 	                'orderby' => $_POST['query_orderby'], 'select' => [],
 	                'nomissingdatacodes' => isset( $_POST['query_nomissingdatacodes'] ) ];
@@ -290,7 +290,7 @@ $recordIDField = \REDCap::getRecordIdField();
 $smartVarsInfo = \Piping::getSpecialTagsInfo();
 $listSmartVars = array_merge( array_keys( $smartVarsInfo[ $GLOBALS['lang']['global_17'] ] ),
                               array_keys( $smartVarsInfo[ $GLOBALS['lang']['global_156'] ] ),
-                              [ 'is-download' ] );
+                              [ 'is-download', 'is-api' ] );
 array_walk( $listSmartVars, function( &$i ) { $i = '[' . $i . ']'; } );
 $listFormVars = [];
 foreach ( array_keys( $module->getInstrumentList() ) as $instrument )
@@ -321,7 +321,7 @@ echo $module->escapeHTML( $reportID ), "\n"; ?>
 </p>
 <form method="post" id="queryform">
  <table class="mod-advrep-formtable">
-<?php $module->outputReportConfigOptions( $reportConfig, true, 'image' ); ?>
+<?php $module->outputReportConfigOptions( $reportConfig, true, [ 'image', 'api' ] ); ?>
   <tr><th colspan="2">Report Definition</th></tr>
   <tr>
    <td>Description</td>
