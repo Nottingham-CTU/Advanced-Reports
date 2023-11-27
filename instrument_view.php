@@ -36,6 +36,143 @@ if ( ! $isApiRequest && ! $module->isReportAccessible( $reportID ) )
 }
 
 
+// Define the FieldReference class used for generating editable fields.
+class FieldReference
+{
+	private $record;
+	private $fieldName;
+	private $event;
+	private $instance;
+	private $value;
+	private $label;
+
+	public function __construct( $record, $fieldName, $event, $instance, $value, $label = '' )
+	{
+		$this->record = $record;
+		$this->fieldName = $fieldName;
+		$this->event = $event;
+		$this->instance = $instance;
+		$this->value = $value;
+		$this->label = $label;
+	}
+
+	public function makeUpdateForm()
+	{
+		global $module;
+		$fieldType = \REDCap::getFieldType( $this->fieldName );
+		if ( ! in_array( $fieldType,
+		                 [ 'text', 'notes', 'radio', 'dropdown', 'yesno', 'truefalse' ] ) )
+		{
+			return $module->escapeHTML( $this->value );
+		}
+		$output = '<form method="post" class="valedit"><input type="hidden" name="record" value="' .
+		          $module->escapeHTML( $this->record ) .
+		          '"><input type="hidden" name="field" value="' .
+		          $module->escapeHTML( $this->fieldName ) . '">';
+		if ( $this->event !== null )
+		{
+			$output .= '<input type="hidden" name="event" value="' .
+			          $module->escapeHTML( $this->event ) . '">';
+		}
+		if ( $this->instance !== null )
+		{
+			$output .= '<input type="hidden" name="instance" value="' .
+			          $module->escapeHTML( $this->instance ) . '">';
+		}
+		if ( $fieldType == 'text' )
+		{
+			$output .= '<input onchange="$(this.form).submit()" type="text" name="value" value="' .
+			           $module->escapeHTML( $this->value ) . '">';
+		}
+		elseif ( $fieldType == 'notes' )
+		{
+			$output .= '<textarea onchange="$(this.form).submit()" name="value" rows="2">' .
+			           $module->escapeHTML( $this->value ) . '</textarea>';
+		}
+		elseif ( in_array( $fieldType, [ 'radio', 'dropdown', 'yesno', 'truefalse' ] ) )
+		{
+			if ( $fieldType == 'yesno' )
+			{
+				$choices = [ '1' => $GLOBALS['lang']['design_100'],
+				             '0' => $GLOBALS['lang']['design_99'] ];
+			}
+			elseif ( $fieldType == 'truefalse' )
+			{
+				$choices = [ '1' => $GLOBALS['lang']['design_186'],
+				             '0' => $GLOBALS['lang']['design_187'] ];
+			}
+			else
+			{
+				$choices = $module->getChoiceLabels( $this->fieldName );
+			}
+			$output .= '<select onchange="$(this.form).submit()" name="value">' .
+			           '<option value=""></option>';
+			foreach ( $choices as $choiceCode => $choiceLabel )
+			{
+				$output .= '<option' . ( $choiceCode == $this->value ? ' selected' : '' ) .
+				           ' value="' . $module->escapeHTML( $choiceCode ) . '">' .
+				           $module->escapeHTML( $choiceLabel ) . '</option>';
+			}
+			$output .= '</select>';
+		}
+		$output .= '<input type="hidden" name="key" value="' .
+		           self::makeKey( $_SESSION['redcap_csrf_token']
+		                                   [array_key_last($_SESSION['redcap_csrf_token'])],
+		                          $this->record, $this->fieldName, $this->event,
+		                          $this->instance ) . '"></form>';
+		return $output;
+	}
+
+	public function getLabel()
+	{
+		return $this->label;
+	}
+
+	public function __toString()
+	{
+		return $this->value;
+	}
+
+	public static function makeKey( $csrfToken, $record, $fieldName, $event, $instance )
+	{
+		return sha1( json_encode( [ $csrfToken, (string)$record, $fieldName, $event ?? '',
+		                            (int)($instance ?? 1) ] ) );
+	}
+}
+
+
+// If a value to be changed has been submitted, check the submission is valid and update the value.
+if ( isset( $_POST['key'] ) &&
+     $_POST['key'] == FieldReference::makeKey( $_POST['csrf_token'], $_POST['record'],
+                                               $_POST['field'], $_POST['event'],
+                                               $_POST['instance'] ) )
+{
+	$data = [ 'record' => $_POST['record'], 'field_name' => $_POST['field'],
+	          'value' => $_POST['value'] ];
+	if ( isset( $_POST['event'] ) )
+	{
+		$data[ 'redcap_event_name' ] = $_POST['event'];
+	}
+	if ( isset( $_POST['instance'] ) )
+	{
+		$instrument = $module->getFormForField( $_POST['field'] );
+		$data[ 'redcap_repeat_instance' ] = $_POST['instance'];
+		$data[ 'redcap_repeat_instrument' ] = $instrument;
+	}
+	$result = \REDCap::saveData( [ 'dataFormat' => 'json-array',
+	                               'type' => 'eav', 'data' => [ $data ] ] );
+	header( 'Content-Type: application/json' );
+	if ( ! empty( $result['errors'] ) )
+	{
+		http_response_code(400);
+		echo json_encode( $result['errors'] );
+		exit;
+	}
+	echo 'true';
+	exit;
+}
+
+
 // Get the report data.
 $reportConfig = $listReports[$reportID];
 $reportData = $module->getReportData( $reportID );
@@ -139,10 +276,18 @@ foreach ( $reportData['forms'] as $queryForm )
 			{
 				$newResultRow = $resultRow;
 				$insertedRedcapFields = false;
+				$formEvent = ( isset( $formValuesRow['redcap_event_name'] )
+				               ? $formValuesRow['redcap_event_name'] : null );
+				$formInstance = ( isset( $formValuesRow['redcap_repeat_instance'] )
+				               ? $formValuesRow['redcap_repeat_instance'] : null );
 				foreach ( $fields as $field )
 				{
 					$newResultRow[ '[' . $alias . '][' . $field . ']' ] =
-						[ 'value' => $formValuesRow[$field], 'label' => $formLabelsRow[$field] ];
+						[ 'value' => $formValuesRow[$field], 'label' => $formLabelsRow[$field],
+						  'ref' => new FieldReference( $formValuesRow[\REDCap::getRecordIdField()],
+						                               $field, $formEvent, $formInstance,
+						                               $formValuesRow[$field],
+						                               $formLabelsRow[$field] ) ];
 					if ( ! $insertedRedcapFields )
 					{
 						foreach ( $redcapFields as $field )
@@ -295,10 +440,12 @@ if ( ! empty( $reportData['select'] ) )
 	$newResultTable = [];
 	foreach ( $reportData['select'] as $selectField )
 	{
+		// If no alias specified, use the field name/logic.
 		if ( $selectField['alias'] == '' )
 		{
 			$selectField['alias'] = $selectField['field'];
 		}
+		// Determine if grouping is used.
 		if ( isset( $selectField['grouping'] ) && $selectField['grouping'] != '' )
 		{
 			$hasGrouping = true;
@@ -307,19 +454,33 @@ if ( ! empty( $reportData['select'] ) )
 				$groupingFields[] = $selectField['alias'];
 			}
 		}
+		// Add to the list of select fields.
 		$selectFields[] = [ 'field' => $selectField['field'], 'alias' => $selectField['alias'],
 		                    'grouping' => $selectField['grouping'] ?? '',
 		                    'function' => $module->parseLogic( $selectField['field'],
 		                                                       $requestType, true ) ];
 	}
+	// Apply the select fields to each result row.
 	foreach ( $resultTable as $resultRow )
 	{
 		$newResultRow = [];
 		foreach ( $selectFields as $selectField )
 		{
+			// Select the field reference if the field is to be editable.
+			if ( ! $hasGrouping && preg_match( '/^\\[[a-z0-9_]+\\]\\[[a-z0-9_]+\\]:edit$/i',
+			                                   $selectField['field'] ) )
+			{
+				$selectParamItem = $selectField['function'][1][0];
+				$newResultRow[ $selectField['alias'] ] = $resultRow[ '[' . $selectParamItem[0] .
+				                                         '][' . $selectParamItem[1] . ']' ]['ref'];
+				continue;
+			}
+			// Get data label or logic expression result.
 			$selectParams = [];
 			foreach ( $selectField['function'][1] as $selectParamItem )
 			{
+				// Default to selecting the label if the field is to be used by itself, or the value
+				// if it is part of a logic expression.
 				$defaultValOrLbl = [ 'value', 'label' ];
 				if ( preg_match( '/^\\[[a-z0-9_]+\\]\\[[a-z0-9_]+\\]$/i', $selectField['field'] ) )
 				{
@@ -335,6 +496,7 @@ if ( ! empty( $reportData['select'] ) )
 		}
 		$newResultTable[] = $newResultRow;
 	}
+	// Update the result table.
 	$resultTable = &$newResultTable;
 	unset( $newResultTable );
 }
@@ -347,14 +509,17 @@ if ( $hasGrouping )
 	$newResultTable = [];
 	foreach ( $resultTable as $resultRow )
 	{
+		// Determine the grouping key based on the values of the fields to group by.
 		$groupKey = json_encode( array_reduce( $groupingFields,
 		                                       function ( $c, $i ) use ( $resultRow )
 		                                       {
 		                                           return $c[] = $resultRow[ $i ];
 		                                       }, [] ) );
+		// Get the result row for the group (create new rows as required).
 		$newResultRow = isset( $newResultTable[ $groupKey ] ) ? $newResultTable[ $groupKey ] : [];
 		foreach ( $selectFields as $selectField )
 		{
+			// For a new row, initialise the field.
 			if ( ! isset( $newResultRow[ $selectField['alias'] ] ) )
 			{
 				if ( $selectField['grouping'] == 'this' )
@@ -366,13 +531,16 @@ if ( $hasGrouping )
 					$newResultRow[ $selectField['alias'] ] = [];
 				}
 			}
+			// Append the value to the group.
 			if ( $selectField['grouping'] != 'this' )
 			{
 				$newResultRow[ $selectField['alias'] ][] = $resultRow[ $selectField['alias'] ];
 			}
 		}
+		// Update the row in the group table.
 		$newResultTable[ $groupKey ] = $newResultRow;
 	}
+	// Perform the grouping function(s) on the grouped values in the group table.
 	foreach ( $newResultTable as $groupKey => $newResultRow )
 	{
 		foreach ( $selectFields as $selectField )
@@ -386,6 +554,7 @@ if ( $hasGrouping )
 		}
 		$newResultTable[ $groupKey ] = $newResultRow;
 	}
+	// Update the result table.
 	$newResultTable = array_values( $newResultTable );
 	$resultTable = &$newResultTable;
 	unset( $newResultTable );
@@ -396,14 +565,12 @@ if ( $hasGrouping )
 // Return the result table for API requests.
 if ( $isApiRequest )
 {
-	if ( $selectFields == [] )
+	foreach ( $resultTable as $resultIndex => $resultRow )
 	{
-		foreach ( $resultTable as $resultIndex => $resultRow )
+		foreach ( $resultRow as $fieldName => $value )
 		{
-			foreach ( $resultRow as $fieldName => $value )
-			{
-				$resultTable[ $resultIndex ][ $fieldName ] = $value['value'];
-			}
+			$resultTable[ $resultIndex ][ $fieldName ] = is_array( $value ) ? $value['value']
+			                                                                : (string)$value;
 		}
 	}
 	return $resultTable;
@@ -441,7 +608,7 @@ if ( $isCsvDownload )
 			}
 			echo $firstField ? '' : ',';
 			$firstField = false;
-			echo '"', str_replace( '"', '""', $module->parseHTML( $value, true ) ), '"';
+			echo '"', str_replace( '"', '""', $module->parseHTML( (string)$value, true ) ), '"';
 		}
 	}
 	exit;
@@ -482,12 +649,16 @@ if ( isset( $_GET['as_image']) && $reportConfig['as_image'] )
 	{
 		foreach ( $columns as $columnName )
 		{
-			if ( is_array( $resultRow[$columnName] ) )
+			if ( is_object( $resultRow[$columnName] ) )
+			{
+				$resultRow[$columnName] = $resultRow[$columnName]->getLabel();
+			}
+			elseif ( is_array( $resultRow[$columnName] ) )
 			{
 				$resultRow[$columnName] = $resultRow[$columnName]['label'];
 			}
 			$imgParsedData = isset( $resultRow[$columnName] )
-			                    ? $module->parseHTML( $resultRow[$columnName], true ) : '';
+			                    ? $module->parseHTML( (string)$resultRow[$columnName], true ) : '';
 			$thisWidth = ( strlen( $imgParsedData ) * $imgDataCharW ) + 5;
 			if ( $imgColumnWidths[$columnName] < $thisWidth )
 			{
@@ -518,12 +689,16 @@ if ( isset( $_GET['as_image']) && $reportConfig['as_image'] )
 	{
 		foreach ( $columns as $columnName )
 		{
-			if ( is_array( $resultRow[$columnName] ) )
+			if ( is_object( $resultRow[$columnName] ) )
+			{
+				$resultRow[$columnName] = $resultRow[$columnName]->getLabel();
+			}
+			elseif ( is_array( $resultRow[$columnName] ) )
 			{
 				$resultRow[$columnName] = $resultRow[$columnName]['label'];
 			}
 			$imgParsedData = isset( $resultRow[$columnName] )
-			                    ? $module->parseHTML( $resultRow[$columnName], true ) : '';
+			                    ? $module->parseHTML( (string)$resultRow[$columnName], true ) : '';
 			$thisWidth = $imgColumnWidths[$columnName];
 			imagerectangle( $img, $posW, $posH, $posW + $thisWidth, $posH + $imgDataH, $imgBlack );
 			imagestring( $img, $imgDataFont, $posW + 2, $posH + 1, $imgParsedData, $imgBlack );
@@ -585,6 +760,11 @@ foreach ( $resultTable as $resultRow )
 <?php
 	foreach ( $resultRow as $value )
 	{
+		if ( is_object( $value ) )
+		{
+			echo '<td>' . $value->makeUpdateForm() . "</td>\n";
+			continue;
+		}
 		if ( is_array( $value ) )
 		{
 			$value = $value['label'];
@@ -618,6 +798,22 @@ if ( $rowCount > 0 )
 
 $module->outputViewReportJS();
 
+?>
+<script type="text/javascript">
+$('#mod-advrep-table .valedit').submit( function(e)
+{
+  e.preventDefault()
+  $(this).find('[name="redcap_csrf_token"]').attr('name','csrf_token')
+  $.post( '', $(this).serialize() ).always( function( data )
+  {
+    if ( data !== true )
+    {
+      alert( 'An error occurred, the data could not be submitted.' )
+    }
+  } )
+})
+</script>
+<?php
 
 // Display the project footer
 require_once APP_PATH_DOCROOT . 'ProjectGeneral/footer.php';
