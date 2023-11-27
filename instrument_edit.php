@@ -180,7 +180,7 @@ if ( ! empty( $_POST ) )
 
 
 
-function writeInstrumentRow1( $setWidths, $formVal, $aliasVal ) // TODO: join option
+function writeInstrumentRow1( $setWidths, $formVal, $aliasVal, $joinVal = '' )
 {
 	global $module;
 ?>
@@ -192,7 +192,7 @@ function writeInstrumentRow1( $setWidths, $formVal, $aliasVal ) // TODO: join op
 ?>
        <select name="query_form_join[]">
         <option value="inner">Inner Join</option>
-        <option value="left">Left Join</option>
+        <option value="left"<?php echo $joinVal == 'left' ? ' selected' : ''; ?>>Left Join</option>
        </select>
 <?php
 	}
@@ -372,10 +372,12 @@ foreach ( $reportData['forms'] as $formData )
 		continue;
 	}
 ?>
-     <tr><?php writeInstrumentRow1( false, $formData['form'], $formData['alias'] ); ?></tr>
      <tr><?php
-writeInstrumentRow2( $formData['on'], $formData['form'], $reportData['forms'][0]['form'],
-                     $formData['alias'], $reportData['forms'][0]['alias'] );
+	writeInstrumentRow1( false, $formData['form'], $formData['alias'], $formData['join'] );
+?></tr>
+     <tr><?php
+	writeInstrumentRow2( $formData['on'], $formData['form'], $reportData['forms'][0]['form'],
+	                     $formData['alias'], $reportData['forms'][0]['alias'] );
 ?></tr>
 <?php
 }
@@ -434,7 +436,7 @@ foreach ( $reportData['select'] as $fieldData )
 	}
 ?>
      <tr><?php
-writeSelectRow( false, $fieldData['field'], $fieldData['alias'], $fieldData['grouping'] );
+	writeSelectRow( false, $fieldData['field'], $fieldData['alias'], $fieldData['grouping'] );
 ?></tr>
 <?php
 }
