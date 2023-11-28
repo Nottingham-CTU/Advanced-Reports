@@ -182,18 +182,6 @@ $resultParams = [ 'return_format' => 'json-array', 'combine_checkbox_values' => 
                   'removeMissingDataCodes' => $reportData['nomissingdatacodes'] ];
 $redcapFields = [ 'redcap_event_name', 'redcap_repeat_instance', 'redcap_data_access_group' ];
 
-function getInstrumentData( $fields, $labels )
-{
-	if ( \REDCap::versionCompare( REDCAP_VERSION, '12.5.2', '<' ) )
-	{
-		$GLOBALS['resultParams']['return_format'] = 'json';
-		return json_decode( \REDCap::getData( $GLOBALS['resultParams'] +
-	                                 [ 'exportAsLabels' => $labels, 'fields' => $fields ] ), true );
-	}
-	return \REDCap::getData( $GLOBALS['resultParams'] +
-	                         [ 'exportAsLabels' => $labels, 'fields' => $fields ] );
-}
-
 // Build the result table.
 $resultTable = [[]];
 foreach ( $reportData['forms'] as $queryForm )
@@ -205,8 +193,10 @@ foreach ( $reportData['forms'] as $queryForm )
 	$fields = array_unique( array_merge( [ \REDCap::getRecordIdField() ],
 	                                     \REDCap::getFieldNames( $form ) ) );
 	$fieldMetadata = \REDCap::getDataDictionary( 'array', false, $fields );
-	$formValues = getInstrumentData( $fields, false );
-	$formLabels = getInstrumentData( $fields, true );
+	$formValues = \REDCap::getData( $resultParams +
+	                                [ 'exportAsLabels' => false, 'fields' => $fields ] );
+	$formLabels = \REDCap::getData( $resultParams +
+	                                [ 'exportAsLabels' => true, 'fields' => $fields ] );
 	$dateFields = [];
 	if ( ! $isCsvDownload )
 	{
