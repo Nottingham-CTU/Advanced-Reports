@@ -53,7 +53,7 @@ if ( ! empty( $_POST ) && isset( $_POST['action'] ) )
 	// Copy a report.
 	if ( $_POST['action'] == 'copy_report' )
 	{
-		if ( $_POST['report_id'] == '' || $_POST['new_report_id'] )
+		if ( $_POST['report_id'] == '' || $_POST['new_report_id'] == '' )
 		{
 			echo 'Error: Required field missing.';
 			exit;
@@ -86,7 +86,7 @@ if ( ! empty( $_POST ) && isset( $_POST['action'] ) )
 		       $reportConfig['lastupdated_user'], $reportConfig['lastupdated_time'] );
 		if ( isset( $reportConfig['as_api'] ) || isset( $reportConfig['api_key'] ) )
 		{
-			$reportConfig['as_api'] = 'N';
+			$reportConfig['as_api'] = false;
 			$reportConfig['api_key'] = '';
 		}
 		foreach ( $reportConfig as $configName => $configValue )
@@ -157,7 +157,7 @@ $module->writeStyle();
    <td>Unique Report Name</td>
    <td>
     <input type="text" name="report_id" required placeholder="e.g. my_report"
-           pattern="[a-z0-9_-]+" title="lowercase letters, numbers, dashes and underscores">
+           pattern="[a-z0-9_\-]+" title="lowercase letters, numbers, dashes and underscores">
    </td>
   </tr>
   <tr>
@@ -215,6 +215,7 @@ if ( count( $listReports ) > 0 )
   </td>
  </tr>
 <?php
+			$lastCategory = $infoReport['category'] ?? '';
 		}
 ?>
  <tr>
@@ -310,9 +311,9 @@ if ( count( $listReports ) > 0 )
 </table>
 <script type="text/javascript">
  $(function(){
-   var vDialog = $('<div>Copy report <i></i>?<br>New unique report name: ' +
+   var vDialog = $('<div>Copy report <i></i>?<br><br>New unique report name: ' +
                    '<input type="text" style="width:95%" placeholder="e.g. my_report" ' +
-                   'pattern="[a-z0-9_-]+" title="lowercase letters, numbers, dashes ' +
+                   'required pattern="[a-z0-9_\\-]+" title="lowercase letters, numbers, dashes ' +
                    'and underscores"></div>')
    var vCopyID = ''
    vDialog.dialog(
@@ -322,7 +323,7 @@ if ( count( $listReports ) > 0 )
      {
        OK : function()
        {
-         if ( vDialog.find('input').val() != '' )
+         if ( vDialog.find('input').prop('validity').valid )
          {
            $('#copyreport_' + vCopyID).find('[name="new_report_id"]')
                                       .val( vDialog.find('input').val() )
