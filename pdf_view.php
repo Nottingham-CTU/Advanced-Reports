@@ -32,32 +32,24 @@ $reportConfig = $listReports[$reportID];
 $reportData = $module->getReportData( $reportID );
 
 
-// Get the data for inclusion in the PDF.
-$listResults = [];
-foreach ( $reportData['forms'] as $queryForm )
+// Check a valid source is specified, redirect to main reports page if not.
+if ( ! isset( $reportData['source'] ) || ! isset( $listReports[ $reportData['source'] ] ) ||
+     $listReports[ $reportData['source'] ]['type'] != 'instrument' )
 {
-	// Get the form name and alias (use form name for alias if not defined).
-	$form = $queryForm['form'];
-	$alias = $queryForm['alias'] == '' ? $form : $queryForm['alias'];
-	// Get the fields for the form and retrieve the values and value labels for each record.
-	$fields = array_unique( array_merge( [ \REDCap::getRecordIdField() ],
-	                                     \REDCap::getFieldNames( $form ) ) );
-	$fieldMetadata = \REDCap::getDataDictionary( 'array', false, $fields );
-	$formValues = getInstrumentData( $fields, false );
-	$formLabels = getInstrumentData( $fields, true );
-	$dateFields = [];
-	foreach ( $fieldMetadata as $fieldName => $fieldParams )
-	{
-		if ( $fieldParams['field_type'] == 'text' &&
-		     ( substr( $fieldParams[TVALIDSTR], 0, 5 ) == 'date_' ||
-		       substr( $fieldParams[TVALIDSTR], 0, 9 ) == 'datetime_' ||
-		       in_array( $fieldParams[TVALIDSTR], [ 'time', 'time_hh_mm_ss' ] ) ) )
-		{
-			$dateFields[] = $fieldName;
-		}
-	}
+	header( 'Location: ' . $module->getUrl( 'reports.php' ) );
+	exit;
 }
 
+
+// Get the data for inclusion in the PDF.
+$_POST = [];
+$_GET['report_id'] = $reportData['source'];
+$listResults = (function ( $module, $type )
+{
+	$isApiRequest = true;
+	$isInternalRequest = true;
+	return ( require $type . '_view.php' );
+})( $module, $listReports[ $reportData['source'] ]['type'] );
 
 
 // Get the HTML for the PDF.

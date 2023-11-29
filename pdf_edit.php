@@ -22,53 +22,29 @@ $reportData = $module->getReportData( $reportID );
 
 
 
+// Get the reports which can be used as a data source for this report.
+$listDataSources = [];
+foreach ( $listReports as $rID => $rConfig )
+{
+	if ( $rConfig['type'] == 'instrument' )
+	{
+		$listDataSources[ $rID ] = $rConfig['label'];
+	}
+}
+
+
+
 // Handle form submissions.
 if ( ! empty( $_POST ) )
 {
 	// Validate data
 	$validationMsg = '';
-	// - Check the forms/fields are specified if an alias, condition or sort logic is specified.
-	foreach ( $_POST['query_form'] as $i => $formName )
-	{
-		if ( $formName == '' &&
-		     ( $_POST['query_form_alias'][$i] != '' ||
-		       $_POST['query_where'][$i] != '' ||
-		       $_POST['query_orderby'][$i] != '' ) )
-		{
-			$validationMsg =
-					'Form cannot be empty if alias or condition/sorting logic specified.';
-			break;
-		}
-	}
-	// - Check the validity of forms condition and sorting logic.
+	// - Check the data source is specified and is valid.
 	if ( $validationMsg == '' )
 	{
-		try
+		if ( ! isset( $listDataSources[ $_POST['source'] ] ) )
 		{
-			foreach ( $_POST['query_where'] as $formCond )
-			{
-				if ( $formCond != '' )
-				$module->parseLogic( $formCond, false, false, false );
-			}
-		}
-		catch ( \Exception $e )
-		{
-			$validationMsg = 'Error in form condition logic - ' . $e->getMessage();
-		}
-	}
-	if ( $validationMsg == '' )
-	{
-		try
-		{
-			foreach ( $_POST['query_orderby'] as $formCond )
-			{
-				if ( $formCond != '' )
-				$module->parseLogic( $formCond, false, false, false );
-			}
-		}
-		catch ( \Exception $e )
-		{
-			$validationMsg = 'Error in form sorting logic - ' . $e->getMessage();
+			$validationMsg = 'A data source has not been selected.';
 		}
 	}
 	if ( isset( $_SERVER['HTTP_X_RC_ADVREP_PDFQUERYCHK'] ) )
@@ -90,19 +66,10 @@ if ( ! empty( $_POST ) )
 	}
 
 	// Save data
-	$module->submitReportConfig( $reportID, true, 'image' );
-	$reportData = [ 'forms' => [], 'pdf' => $_POST['pdf'], 'pdf_size' => $_POST['pdf_size'],
+	$module->submitReportConfig( $reportID, false );
+	$reportData = [ 'source' => $_POST['source'], 'pdf' => $_POST['pdf'],
+	                'pdf_size' => $_POST['pdf_size'],
 	                'pdf_orientation' => $_POST['pdf_orientation'] ];
-	foreach ( $_POST['query_form'] as $i => $formName )
-	{
-		if ( $formName == '' )
-		{
-			continue;
-		}
-		$reportData['forms'][] = [ 'form' => $formName, 'alias' => $_POST['query_form_alias'][$i],
-		                           'where' => $_POST['query_where'][$i],
-		                           'orderby' => $_POST['query_orderby'][$i] ];
-	}
 	$module->setReportData( $reportID, $reportData );
 	header( 'Location: ' . $module->getUrl( 'reports_edit.php' ) );
 	exit;
@@ -152,89 +119,23 @@ echo $module->escapeHTML( $reportID ), "\n"; ?>
 <form method="post" id="queryform">
  <table class="mod-advrep-formtable">
 <?php $module->outputReportConfigOptions( $reportConfig, false ); ?>
-  <tr><th colspan="2">Report Definition - Data Query</th></tr>
+  <tr><th colspan="2">Report Definition</th></tr>
   <tr>
-   <td></td>
+   <td>Source Report</td>
    <td>
-    <div id="query_err_msg" class="mod-advrep-errmsg" style="display:none;margin-top:5px">
-     <i class="fas fa-exclamation-triangle"></i>
-     <span></span>
-    </div>
-   </td>
-  </tr>
-  <tr>
-   <td>Instruments</td>
-   <td>
-    <table id="inst-entries-tbl" style="width:95%;max-width:550px">
+    <select name="source">
+     <option value=""></option>
 <?php
-if ( empty( $reportData['forms'] ) )
+foreach ( $listDataSources as $sourceID => $sourceLabel )
 {
-	$reportData['forms'] = [ [ 'form' => '', 'alias' => '', 'where' => '', 'orderby' => '' ] ];
-}
-foreach ( $reportData['forms'] as $formData )
-{
-?>
-     <tr>
-      <td style="text-align:left;width:60px">&#8226;&nbsp;Instrument:</td>
-      <td style="text-align:left;width:60px"><?php
-	$module->outputInstrumentDropdown( 'query_form[]', $formData['form'] );
-?></td>
-      <td style="text-align:left;width:unset">
-       <input type="text" name="query_form_alias[]" placeholder="alias (optional)"
-              value="<?php echo $module->escapeHTML( $formData['alias'] ); ?>" style="width:100%">
-      </td>
-     </tr>
-     <tr>
-      <td style="text-align:left;width:unset">&nbsp;&nbsp;&nbsp;Condition:</td>
-      <td colspan="2" style="text-align:left;width:unset">
-       <input type="text" name="query_where[]" placeholder="condition logic" style="width:100%"
-              value="<?php echo $module->escapeHTML( $formData['where'] ); ?>">
-      </td>
-     </tr>
-     <tr>
-      <td style="text-align:left;width:unset">&nbsp;&nbsp;&nbsp;Sorting:</td>
-      <td colspan="2" style="text-align:left;width:unset">
-       <input type="text" name="query_orderby[]" style="width:100%" placeholder="sorting logic"
-              list="field-var-list-sort"
-              value="<?php echo $module->escapeHTML( $formData['orderby'] ?? '' ); ?>">
-      </td>
-     </tr>
-<?php
+	echo '     <option value="', $module->escapeHTML( $sourceID ), '"',
+	     ( ( $reportData['source'] ?? '' ) == $sourceID ? ' selected' : '' ),
+	     '>', $module->escapeHTML( $sourceLabel ), '</option>', "\n";
 }
 ?>
-     <tr style="display:none">
-      <td style="text-align:left;width:unset">&#8226;&nbsp;Instrument:</td>
-      <td style="text-align:left;width:unset"><?php
-$module->outputInstrumentDropdown( 'query_form[]', '' );
-?></td>
-      <td style="text-align:left;width:unset">
-       <input type="text" name="query_form_alias[]" placeholder="alias (optional)"
-              style="width:100%">
-      </td>
-     </tr>
-     <tr style="display:none">
-      <td style="text-align:left;width:unset">&nbsp;&nbsp;&nbsp;Condition:</td>
-      <td colspan="2" style="text-align:left;width:unset">
-       <input type="text" name="query_where[]" placeholder="condition logic" style="width:100%">
-      </td>
-     </tr>
-     <tr style="display:none">
-      <td style="text-align:left;width:unset">&nbsp;&nbsp;&nbsp;Sorting:</td>
-      <td colspan="2" style="text-align:left;width:unset">
-       <input type="text" name="query_orderby[]" style="width:100%" placeholder="sorting logic"
-              list="field-var-list-sort"
-              value="<?php echo $module->escapeHTML( $formData['orderby'] ?? '' ); ?>">
-      </td>
-     </tr>
-    </table>
-    <span id="inst-entries-link" style="display:none">
-     <a onclick="$('#inst-entries-tbl tr').slice(-3).clone(true).css('display',''
-                    ).insertBefore($('#inst-entries-tbl tr').slice(-3,-2));return false"
-        href="#" class=""><i class="fas fa-plus-circle fs12"></i> Add instrument</a>
-    </span>
+    </select>
    </td>
   </tr>
-  <tr><th colspan="2">Report Definition - PDF Template</th></tr>
   <tr>
    <td>Paper Size</td>
    <td>
@@ -285,7 +186,6 @@ echo $reportData['pdf'] ?? ''; ?></textarea>
 <script type="text/javascript">
  (function ()
  {
-   $('#inst-entries-link').css('display','')
    var vValidated = false
    $('#queryform')[0].onsubmit = function()
    {
