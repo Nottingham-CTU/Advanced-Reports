@@ -20,6 +20,10 @@ if ( ! $module->isReportEditable( 'instrument' ) ||
 }
 $reportConfig = $listReports[$reportID];
 $reportData = $module->getReportData( $reportID );
+$canSaveIfApi = ( ! $module->getSystemSetting( 'admin-only-api' ) ||
+                  $module->getUser()->isSuperUser() );
+$canSaveIfEditable = ( ! $module->getSystemSetting( 'admin-only-editable' ) ||
+                       $module->getUser()->isSuperUser() );
 
 
 
@@ -28,16 +32,23 @@ if ( ! empty( $_POST ) )
 {
 	// Validate data
 	$validationMsg = '';
-	// - Check the forms/fields are specified if an alias or join condition is specified.
-	foreach ( $_POST['query_form'] as $i => $formName )
+	if ( ! $canSaveIfApi && $_POST['report_as_api'] == 'Y' )
 	{
-		if ( $formName == '' &&
-		     ( $i == 0 || $_POST['query_form_alias'][$i] != '' ||
-		       $_POST['query_form_on'][ $i - 1 ] != '' ) )
+		$validationMsg = 'Reports with API access can only be saved by an administrator.';
+	}
+	// - Check the forms/fields are specified if an alias or join condition is specified.
+	if ( $validationMsg == '' )
+	{
+		foreach ( $_POST['query_form'] as $i => $formName )
 		{
-			$validationMsg =
-					'Form cannot be empty if the first entry or if alias/condition specified.';
-			break;
+			if ( $formName == '' &&
+			     ( $i == 0 || $_POST['query_form_alias'][$i] != '' ||
+			       $_POST['query_form_on'][ $i - 1 ] != '' ) )
+			{
+				$validationMsg =
+						'Form cannot be empty if the first entry or if alias/condition specified.';
+				break;
+			}
 		}
 	}
 	if ( $validationMsg == '' )
@@ -114,6 +125,12 @@ if ( ! empty( $_POST ) )
 					if ( $_POST['query_grouping'][ $index ] != '' )
 					{
 						$hasGroupingSelected = true;
+					}
+					if ( ! $canSaveIfEditable &&
+					     preg_match( '/^\\[[a-z0-9_]+\\]\\[[a-z0-9_]+\\]:edit$/i', $fieldName ) )
+					{
+						$validationMsg = 'Reports with editable fields can only be saved ' .
+						                 'by an administrator.';
 					}
 				}
 			}
