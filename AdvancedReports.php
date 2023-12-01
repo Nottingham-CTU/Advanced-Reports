@@ -1188,7 +1188,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
         if ( vItems !== false && vText != '' && vItems.indexOf( vText ) == -1 )
         {
           vItems.push( vText )
-          if ( vItems.length > 20 )
+          if ( vItems.length > 30 )
           {
             vItems = false
           }
@@ -1236,7 +1236,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
             vHeader[indexTd].setAttribute('data-type', 'string')
           }
         }
-        else // string
+        else if ( vText != '' ) // string
         {
           vHeader[indexTd].setAttribute('data-type', 'string')
         }
@@ -1249,6 +1249,27 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
         elemTh.setAttribute('data-type', 'string')
       }
     });
+
+<?php
+		$userDateFormat = \DateTimeRC::get_user_format_base();
+		if ( $userDateFormat == 'DMY' || $userDateFormat == 'MDY' )
+		{
+			$userDateSubstr = $userDateFormat == 'DMY' ? [ '3,5', '0,2' ] : [ '0,2', '3,5' ];
+?>
+    var vDateParse = Date.parse
+    Date.parse = function ( vDateVal )
+    {
+      if ( /^[0-9]{2}[^0-9][0-9]{2}[^0-9][0-9]{4}([^0-9]|$)/.test( vDateVal ) )
+      {
+        vDateVal = '' + vDateVal.substring(6,10) + vDateVal.substring(5,6) +
+                   vDateVal.substring(<?php echo $userDateSubstr[0]; ?>) + vDateVal.substring(2,3) +
+                   vDateVal.substring(<?php echo $userDateSubstr[1]; ?>) + vDateVal.substring(10)
+      }
+      return vDateParse( vDateVal )
+    };
+<?php
+		}
+?>
 
 
     (function()
@@ -1273,6 +1294,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
         }
       }
     })()
+
   })
 </script>
 <?php

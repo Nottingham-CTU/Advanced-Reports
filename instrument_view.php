@@ -730,11 +730,15 @@ if ( isset( $reportData['desc'] ) && $reportData['desc'] != '' )
 <?php
 if ( count( $resultTable ) > 0 )
 {
+	$colNum = 0;
 	foreach ( $resultTable[0] as $fieldName => $value )
 	{
 ?>
-   <th class="sorting"><?php echo $module->escapeHTML( $fieldName ); ?></th>
+   <th class="sorting" data-colnum="<?php echo $colNum; ?>">
+    <?php echo $module->escapeHTML( $fieldName ), "\n"; ?>
+   </th>
 <?php
+		$colNum++;
 	}
 }
 ?>
