@@ -63,6 +63,12 @@ report. Keep this in mind when setting the user roles which can access each repo
   instrument
   * Append *&as_image=1* to the report URL to retrieve as an image.
   * Access rights are still enforced, so reports may not be visible if embedded in surveys.
+* **Allow API access** \* determines whether the report can be accessed using the API
+  * Note that the Advanced Reports API is separate from the REDCap API and uses its own per-report
+    API keys.
+  * The API key has to be sent as the value of the `api_key` field in a HTTP POST request.
+  * Administrators have the option (in the module system settings) to prohibit non-administrators
+    from saving reports where API access is enabled.
 
 \* only available on some report types
 
@@ -105,6 +111,16 @@ smart variables.
 
 Please refer to the [Instrument Query report instructions](README-InstrumentQ.md) for more
 information.
+
+### PDF report options
+
+PDF reports can format other reports into a PDF file.
+
+* **Source Report** the source report from which to fetch the data
+* **Paper Size** the paper size and orientation used in the PDF file
+* **HTML Source** the template/layout of the report in HTML format
+
+Please refer to the [PDF report instructions](README-PDF.md) for more information.
 
 ### Record Table report options
 

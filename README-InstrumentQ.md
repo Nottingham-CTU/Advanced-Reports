@@ -14,16 +14,36 @@ using `:value` and `:label`, for example: `[instrument_1][choice_field]:value`
 When specifying *fields to display*, `:edit` can be appended to the field name to allow a value to
 be edited directly from the report. This works only where the field is specified in isolation, not
 as part of calculation logic. New values will not be able to be saved if the record is locked.
+Administrators have the option (in the module system settings) to prohibit non-administrators from
+saving reports where editable fields have been used.
+
+### Virtual Instrument Fields
+
+There are several virtual fields for each instrument which can be used in an Instrument Query:
+
+* `[redcap_event_name]`
+  * Event label (as field label), or unique event name (as field value)
+* `[redcap_repeat_instance]`
+  * Instance number
+* `[redcap_data_access_group]`
+  * Group label (as field label), or unique group name (as field value)
+* `[redcap_form_url]`
+  * URL of the REDCap data entry form
+* `[redcap_survey_url]`
+  * URL of the survey
 
 ## Using Calculation Logic
 
 In the options which support calculation logic, you can use any REDCap calculation logic/functions.
-Some smart variables are also supported (those which do not require a record context).
+Smart variables which do not require a record context are also supported. Smart variables which
+require a record context cannot be supported, for this functionality please refer to the virtual
+instrument fields.
 
 ### Report Specific Smart Variables
 
-Instrument Query reports support the `[is-download]` smart variable, which has a value of `1` if the
-report is being downloaded as a CSV file, and `0` otherwise.
+Instrument Query reports support the following smart variables: `[is-download]` (which has a value
+of `1` if the report is being downloaded as a CSV file, and `0` otherwise), and `[is-api]` (which
+has a value of `1` if the report is being accessed using the API, and `0` otherwise).
 
 Query string smart variables are also supported.
 
@@ -66,9 +86,19 @@ to pick parameter names different from the following (unless you want to use tho
 ### Instruments
 
 Select the instruments that you want to use in the Instrument Query. Each instrument will be treated
-like a separate database table and every record from the first instrument will be joined to every
-row in the second instrument. You can limit which rows are included in the join using the ON
-condition logic. For example: `[instrument_1][record_id] = [instrument_2][record_id]`
+like a separate database table and every row from the first instrument will be joined to every
+row in the second instrument.
+
+You can limit which rows are included in the join using the condition logic. For example:
+`[instrument_1][record_id] = [instrument_2][record_id]`. When you add new instruments, condition
+logic will automatically be added so only rows with matching record IDs will be joined.
+
+Two types of join are supported. **Inner join** will simply join every row in the new instrument
+with every row in the preceding data (subject to condition logic). This means that if you are
+joining two instruments where one has 5 rows and the other has 10 rows, then without condition logic
+50 rows will be returned. **Left join** is similar, but will always return a row from the left side
+of the join, even if there are no matching rows on the right side of the join (in this case the
+fields from the new instrument being joined will be blank).
 
 You can optionally specify an alias for each instrument. This is useful if you want to select the
 same instrument more than once.
@@ -88,3 +118,18 @@ the records when displayed. You can append ` DESC` to the end to sort in descend
 Here you can specify which fields should be displayed. If no fields are specified, all fields from
 the selected instruments will be displayed. You can specify calculation logic instead of a field
 name to perform that calculation as part of the report.
+
+### Grouping
+
+This allows you to group the data by one or more of the fields, and apply functions to the remaining
+fields. This is useful for example if you want to group the data by DAG, you can group on the DAG
+field and return averages, sums, percentages or min/max values of the other fields.
+
+For the **mean** and **percentage** functions, fractional values in the form `num/count` can be
+supplied, such that the `num` and `count` values from each row are summed together, and the result
+is the sum of the `num` values divided by the sum of the `count` values. Where a single number is
+used without a `count` value, this is equivalent to a `count` value of `1`. The **percentage**
+function is equivalent to the **mean** function, but the result is multiplied by 100 and displayed
+with a percent sign.
+
+If grouping is selected, it must be selected for all fields.
