@@ -152,12 +152,17 @@ if ( isset( $_POST['key'] ) &&
 	if ( isset( $_POST['event'] ) )
 	{
 		$data[ 'redcap_event_name' ] = $_POST['event'];
+		$eventID = \REDCap::getEventIdFromUniqueEvent( $_POST['event'] );
 	}
 	if ( isset( $_POST['instance'] ) )
 	{
 		$instrument = $module->getFormForField( $_POST['field'] );
 		$data[ 'redcap_repeat_instance' ] = $_POST['instance'];
-		$data[ 'redcap_repeat_instrument' ] = $instrument;
+		if ( ! isset( $data[ 'redcap_event_name' ] ) ||
+		     in_array( $instrument, $module->getRepeatingForms( $eventID ) ) )
+		{
+			$data[ 'redcap_repeat_instrument' ] = $instrument;
+		}
 	}
 	$result = \REDCap::saveData( [ 'dataFormat' => 'json-array',
 	                               'type' => 'eav', 'data' => [ $data ] ] );
