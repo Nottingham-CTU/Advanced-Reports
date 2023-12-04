@@ -114,7 +114,15 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 							$definition .= "\n- ";
 							if ( $definition != "Instruments:\n- " )
 							{
-								$definition .= 'JOIN ';
+								if ( isset( $queryForm['join'] ) )
+								{
+									$definition .= strtoupper( $queryForm['join'] );
+								}
+								else
+								{
+									$definition .= 'INNER';
+								}
+								$definition .= ' JOIN ';
 							}
 							$definition .= $queryForm['form'];
 							if ( $queryForm['alias'] != '' )
@@ -143,6 +151,11 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 								if ( $queryField['alias'] != '' )
 								{
 									$definition .= ' AS `' . $queryField['alias'] . '`';
+								}
+								if ( isset( $queryField['grouping'] ) &&
+								     $queryField['grouping'] != '' )
+								{
+									$definition .= ' GROUPING ' . $queryField['grouping'];
 								}
 							}
 						}
@@ -214,6 +227,17 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 							}
 							$definition .= $infoCategory['end_field'] . ']';
 						}
+					}
+					// For PDF reports...
+					elseif ( $reportConfig['type'] == 'pdf' )
+					{
+						$definition = 'Source Report: ';
+						$definition .= $reportData['source'];
+						$definition .= "\nPaper Size: ";
+						$definition .= ucfirst( $reportData['pdf_size'] ) . ' ' .
+						               ucfirst( $reportData['pdf_orientation'] );
+						$definition .= "\nHTML Source:\n";
+						$definition .= $reportData['pdf'];
 					}
 					// Add the report to the simplified view.
 					$UITweaker->addCustomReport( [ 'title' => $reportConfig['label'],
