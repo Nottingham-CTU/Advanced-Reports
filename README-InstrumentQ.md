@@ -95,10 +95,10 @@ logic will automatically be added so only rows with matching record IDs will be 
 
 Two types of join are supported. **Inner join** will simply join every row in the new instrument
 with every row in the preceding data (subject to condition logic). This means that if you are
-joining two instruments where one has 5 rows and the other has 10 rows, then without condition logic
-50 rows will be returned. **Left join** is similar, but will always return a row from the left side
-of the join, even if there are no matching rows on the right side of the join (in this case the
-fields from the new instrument being joined will be blank).
+joining two instruments, only those rows with linking fields that match in both instruments will be
+returned. **Left join** is similar, but will always return a row from the left side of the join,
+even if there are no matching rows on the right side of the join (in this case the fields from the
+new instrument being joined will be blank).
 
 You can optionally specify an alias for each instrument. This is useful if you want to select the
 same instrument more than once.

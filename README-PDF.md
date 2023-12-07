@@ -38,3 +38,15 @@ the first row of the source report) and after it is complete, the logic will ret
 loop where it left off.
 
 If field variables are used outside of a *loop* section, the data from the first row will be used.
+
+**Logic tag example:**
+(where the source report outputs data for one record, identified by field `record_id`, with multiple
+rows, one for each instance of a field `result`)
+```
+<p>Data for [record_id]:</p>
+<ul>
+<?loop>
+<li>[result]<?if([result]<5)> -- Warning: low value<?end><?if([result]>95)> -- Warning: high value<?end></li>
+<?end>
+</ul>
+```
