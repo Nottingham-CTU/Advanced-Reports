@@ -323,9 +323,17 @@ if ( ! empty( \REDCap::getGroupNames() ) )
 $listFormVars = [];
 foreach ( array_keys( $module->getInstrumentList() ) as $instrument )
 {
+	$formFieldNames = \REDCap::getFieldNames( $instrument );
+	foreach ( $formFieldNames as $i => $formFieldName )
+	{
+		if ( \REDCap::getFieldType( $formFieldName ) == 'descriptive' )
+		{
+			unset( $formFieldNames[$i] );
+		}
+	}
 	$listFormVars[ $instrument ] = array_values(
 	                                array_unique( array_merge( $listCommonFormVars,
-	                                                    \REDCap::getFieldNames( $instrument ) ) ) );
+	                                                          array_values( $formFieldNames ) ) ) );
 }
 
 
