@@ -1714,7 +1714,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		foreach ( $listConfig as $configSetting )
 		{
 			$configValue = $_POST["report_$configSetting"];
-			if ( in_array( $configSetting, [ 'visible', 'download', 'as_image' ] ) )
+			if ( in_array( $configSetting, [ 'visible', 'download', 'as_image', 'as_api' ] ) )
 			{
 				$configValue = $configValue == 'Y' ? true : false;
 			}
