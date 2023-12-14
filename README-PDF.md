@@ -18,10 +18,10 @@ Create your document template using HTML. The module will convert this to a PDF.
 You can use *field variables* and *logic tags* to include the data from the source report into your
 PDF report.
 
-**Field Variables** consist of the name of the field or column as output by the source report,
-enclosed in square brackets, for example `[record_id]`. Note that if the source report has square
-brackets in the column name, these will also have to be included, for example:
-`[[baseline][record_id]]`.
+**Field Variables** consist of the name of the field or column as output by the source report (this
+will be the alias name, if one is specified), enclosed in square brackets, for example
+`[record_id]`. Note that if the source report has square brackets in the column name, these will
+also have to be included, for example: `[[baseline][record_id]]`.
 
 **Logic Tags** control how the report is displayed:
 * `<?loop>` will repeat the following section, once for each row in the source report

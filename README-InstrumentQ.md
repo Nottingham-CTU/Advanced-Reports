@@ -123,7 +123,14 @@ name to perform that calculation as part of the report.
 
 This allows you to group the data by one or more of the fields, and apply functions to the remaining
 fields. This is useful for example if you want to group the data by DAG, you can group on the DAG
-field and return averages, sums, percentages or min/max values of the other fields.
+field and return any of the following for the other fields:
+
+* maximum value
+* mean average
+* median average
+* minimum value
+* percentage
+* sum of all values
 
 For the **mean** and **percentage** functions, fractional values in the form `num/count` can be
 supplied, such that the `num` and `count` values from each row are summed together, and the result
