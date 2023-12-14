@@ -508,7 +508,8 @@ if ( $hasGrouping )
 		$groupKey = json_encode( array_reduce( $groupingFields,
 		                                       function ( $c, $i ) use ( $resultRow )
 		                                       {
-		                                           return $c[] = $resultRow[ $i ];
+		                                           $c[] = $resultRow[ $i ];
+		                                           return $c;
 		                                       }, [] ) );
 		// Get the result row for the group (create new rows as required).
 		$newResultRow = isset( $newResultTable[ $groupKey ] ) ? $newResultTable[ $groupKey ] : [];
