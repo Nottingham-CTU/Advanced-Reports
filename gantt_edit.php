@@ -42,6 +42,8 @@ if ( ! empty( $_POST ) )
 	       ( count( $_POST['chart_category'] ) != count( $_POST['chart_start_event'] ) ||
 	         count( $_POST['chart_category'] ) != count( $_POST['chart_end_event'] ) ) ) )
 	{
+		// -- End here in the unlikely event the groups of variables submitted are mismatched.
+		echo 'Advanced Reports internal error: mismatching number of options.';
 		exit;
 	}
 	// - Check the filter logic is valid.
