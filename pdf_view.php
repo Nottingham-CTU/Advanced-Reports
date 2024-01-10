@@ -65,6 +65,7 @@ $inputHTML = preg_split( '/(<\\?(?:end|loop|if(\\((?:[^)(\'"]+|\'[^\']*\'|"[^"]*
 //   source report's column names are used).
 function fieldReplace( $input, $record, $forCalc )
 {
+	global $module;
 	$fieldNames = array_map( function ( $i ) { return '[' . $i . ']'; }, array_keys( $record ) );
 	if ( $forCalc )
 	{
@@ -73,7 +74,8 @@ function fieldReplace( $input, $record, $forCalc )
 	}
 	else
 	{
-		$values = array_values( $record );
+		$values = array_map( function ( $i ) use ( $module ) { return $module->parseHTML( $i ); },
+		                     array_values( $record ) );
 	}
 	return str_replace( $fieldNames, $values, $input );
 }
