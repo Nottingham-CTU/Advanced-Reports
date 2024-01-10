@@ -470,8 +470,23 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			       substr( $infoField['text_validation_type_or_show_slider_number'],
 			               0, 8 ) == 'datetime' ) )
 			{
+				$fieldLabel = trim( $infoField['field_label'] );
+				if ( strlen( $fieldLabel ) > 45 )
+				{
+					$fieldLabel = explode( "\n", $fieldLabel );
+					$fieldLabel = trim( $fieldLabel[0] );
+					if ( strlen( $fieldLabel ) > 45 )
+					{
+						$fieldLabel =
+							substr( $fieldLabel, 0, 35 ) . ' ... ' . substr( $fieldLabel, -5 );
+					}
+				}
+				else
+				{
+					$fieldLabel = str_replace( [ "\r", "\n" ], ' ', $fieldLabel );
+				}
 				$listFields[ $infoField['field_name'] ] =
-					$infoField['field_name'] . ' - ' . $infoField['field_label'];
+					$infoField['field_name'] . ' - ' . $fieldLabel;
 			}
 		}
 		return $listFields;
