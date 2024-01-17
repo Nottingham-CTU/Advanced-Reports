@@ -50,6 +50,55 @@ if ( ! empty( $_POST ) && isset( $_POST['action'] ) )
 		exit;
 	}
 
+	// Copy a report.
+	if ( $_POST['action'] == 'copy_report' )
+	{
+		if ( $_POST['report_id'] == '' || $_POST['new_report_id'] == '' )
+		{
+			echo 'Error: Required field missing.';
+			exit;
+		}
+		if ( preg_match( '/[^a-z0-9_-]/', $_POST['new_report_id'] ) )
+		{
+			echo 'Error: Invalid unique report name.';
+			exit;
+		}
+		$reportConfig = $module->getReportConfig( $_POST['report_id'] );
+		if ( ! $module->isReportEditable( $reportConfig['type'] ) )
+		{
+			echo 'Error: Cannot copy selected report type.';
+			exit;
+		}
+		$listReports = $module->getReportList();
+		if ( ! isset( $listReports[ $_POST['report_id'] ] ) )
+		{
+			echo 'Error: Report does not exist.';
+			exit;
+		}
+		if ( isset( $listReports[ $_POST['new_report_id'] ] ) )
+		{
+			echo 'Error: Unique report name already in use.';
+			exit;
+		}
+		$module->addReport( $_POST['new_report_id'],
+		                    $reportConfig['type'], $reportConfig['label'] );
+		unset( $reportConfig['type'], $reportConfig['label'], $reportConfig['visible'],
+		       $reportConfig['lastupdated_user'], $reportConfig['lastupdated_time'] );
+		if ( isset( $reportConfig['as_api'] ) || isset( $reportConfig['api_key'] ) )
+		{
+			$reportConfig['as_api'] = false;
+			$reportConfig['api_key'] = '';
+		}
+		foreach ( $reportConfig as $configName => $configValue )
+		{
+			$module->setReportConfig( $_POST['new_report_id'], $configName, $configValue );
+		}
+		$module->setReportData( $_POST['new_report_id'],
+		                        $module->getReportData( $_POST['report_id'] ) );
+		header( 'Location: ' . $module->getUrl( 'reports_edit.php' ) );
+		exit;
+	}
+
 	// Delete a report.
 	if ( $_POST['action'] == 'delete_report' )
 	{
@@ -108,7 +157,7 @@ $module->writeStyle();
    <td>Unique Report Name</td>
    <td>
     <input type="text" name="report_id" required placeholder="e.g. my_report"
-           pattern="[a-z0-9_-]+" title="lowercase letters, numbers, dashes and underscores">
+           pattern="[a-z0-9_\-]+" title="lowercase letters, numbers, dashes and underscores">
    </td>
   </tr>
   <tr>
@@ -152,24 +201,41 @@ if ( count( $listReports ) > 0 )
 <p>&nbsp;</p>
 <table class="mod-advrep-listtable" style="width:97%">
  <tr>
-  <th colspan="4" style="font-size:130%">Edit Report</th>
+  <th colspan="5" style="font-size:130%">Edit Report</th>
  </tr>
 <?php
 	foreach ( $listReports as $reportID => $infoReport )
 	{
+		if ( ! isset( $lastCategory ) || $infoReport['category'] != $lastCategory )
+		{
 ?>
  <tr>
-  <td style="text-align:left">
-   <span style="font-size:115%">
+  <td colspan="5" style="text-align:left;font-size:0.95em;font-weight:bold">
+   <?php echo $infoReport['category'] ?? '<i>(no category)</i>', "\n"; ?>
+  </td>
+ </tr>
+<?php
+			$lastCategory = $infoReport['category'] ?? '';
+		}
+?>
+ <tr>
+  <td style="text-align:left;padding-left:8px">
+   <span style="font-size:1.2em">
     <?php echo htmlspecialchars( $infoReport['label'] ), "\n"; ?>
    </span>
    <br>
    <span style="font-size:90%">
     <b>Name:</b> <?php echo $reportID; ?> &nbsp;|&nbsp;
     <b>Type:</b> <?php echo $module->getReportTypes()[ $infoReport['type'] ]; ?> &nbsp;|&nbsp;
-    <b>Category:</b> <?php echo $infoReport['category'] ?? '<i>(none)</i>'; ?> &nbsp;|&nbsp;
     <b>Visibility:</b> <?php echo $infoReport['visible'] ? 'visible' : 'hidden', "\n"; ?>
 <?php
+		if ( isset( $infoReport['as_api'] ) && $infoReport['as_api'] == 'Y' &&
+		     $infoReport['api_key'] != '' )
+		{
+?>
+    &nbsp;|&nbsp; <b>API</b>
+<?php
+		}
 		if ( isset( $infoReport['lastupdated_user'] ) )
 		{
 ?>
@@ -181,7 +247,7 @@ if ( count( $listReports ) > 0 )
 ?>
    </span>
   </td>
-  <td style="width:85px;text-align:center">
+  <td style="width:75px;text-align:center">
 <?php
 		if ( $module->isReportEditable( $infoReport['type'] ) )
 		{
@@ -192,7 +258,7 @@ if ( count( $listReports ) > 0 )
 		}
 ?>
   </td>
-  <td style="width:85px;text-align:center">
+  <td style="width:75px;text-align:center">
 <?php
 		if ( $module->isReportEditable( $infoReport['type'] ) )
 		{
@@ -203,7 +269,25 @@ if ( count( $listReports ) > 0 )
 		}
 ?>
   </td>
-  <td style="width:95px;text-align:center">
+  <td style="width:75px;text-align:center">
+<?php
+		if ( $module->isReportEditable( $infoReport['type'] ) )
+		{
+?>
+   <a href="" class="fs12" onclick="return mod_advrep_copy( '<?php
+			echo $reportID, "', '";
+			echo addslashes( htmlspecialchars( $infoReport['label'] ) );
+?>')"><i class="fas fa-copy fs14"></i> Copy</a>
+   <form method="post" id="copyreport_<?php echo $reportID; ?>">
+    <input type="hidden" name="action" value="copy_report">
+    <input type="hidden" name="report_id" value="<?php echo $reportID; ?>">
+    <input type="hidden" name="new_report_id" value="">
+   </form>
+<?php
+		}
+?>
+  </td>
+  <td style="width:85px;text-align:center">
 <?php
 		if ( $module->isReportEditable( $infoReport['type'] ) )
 		{
@@ -226,6 +310,43 @@ if ( count( $listReports ) > 0 )
 ?>
 </table>
 <script type="text/javascript">
+ $(function(){
+   var vDialog = $('<div>Copy report <i></i>?<br><br>New unique report name: ' +
+                   '<input type="text" style="width:95%" placeholder="e.g. my_report" ' +
+                   'required pattern="[a-z0-9_\\-]+" title="lowercase letters, numbers, dashes ' +
+                   'and underscores"></div>')
+   var vCopyID = ''
+   vDialog.dialog(
+   {
+     autoOpen:false,
+     buttons:
+     {
+       OK : function()
+       {
+         if ( vDialog.find('input').prop('validity').valid )
+         {
+           $('#copyreport_' + vCopyID).find('[name="new_report_id"]')
+                                      .val( vDialog.find('input').val() )
+           vDialog.dialog('close')
+           $('#copyreport_' + vCopyID)[0].submit()
+         }
+       },
+       Cancel : function() { vDialog.dialog('close') }
+     },
+     modal:true,
+     resizable:false,
+     title:'Copy Report',
+     width:350
+   })
+   window.mod_advrep_copy = function( id, label )
+   {
+     vCopyID = id
+     vDialog.find('i').text(label)
+     vDialog.find('input').val('')
+     vDialog.dialog('open')
+     return false
+   }
+ })
  $(function(){
    var vDialog = $('<div>Are you sure you want to delete the report <i></i>?</div>')
    var vDelID = ''

@@ -37,6 +37,7 @@ The following report types are currently available:
 
 * **Gantt**
 * **Instrument Query**
+* **PDF**
 * **Record Table**
 * **SQL** (direct database query) \*
 
@@ -44,7 +45,7 @@ The following report types are currently available:
 
 ### Common report options
 
-:warning: Unless otherwise specified, advanced reports do not apply a user's data viewing rights or
+&#9888;&#65039; Unless otherwise specified, advanced reports do not apply a user's data viewing rights or
 data export rights to the data returned and the user will be able to see all data returned by the
 report. Keep this in mind when setting the user roles which can access each report.
 
@@ -62,6 +63,12 @@ report. Keep this in mind when setting the user roles which can access each repo
   instrument
   * Append *&as_image=1* to the report URL to retrieve as an image.
   * Access rights are still enforced, so reports may not be visible if embedded in surveys.
+* **Allow API access** \* determines whether the report can be accessed using the API
+  * Note that the Advanced Reports API is separate from the REDCap API and uses its own per-report
+    API keys.
+  * The API key has to be sent as the value of the `api_key` field in a HTTP POST request.
+  * Administrators have the option (in the module system settings) to prohibit non-administrators
+    from saving reports where API access is enabled.
 
 \* only available on some report types
 
@@ -77,6 +84,7 @@ report. Keep this in mind when setting the user roles which can access each repo
     starts on the chart
   * **End Date Field** is the event/field which contains the date which determines where the bar
     ends on the chart
+* **Filter Logic** is the (optional) conditional logic on which the records will be filtered
 
 Calculated fields can be used for the start and end dates, the Gantt report will interpret the value
 as a Unix timestamp representing a UTC date/time.
@@ -103,6 +111,16 @@ smart variables.
 
 Please refer to the [Instrument Query report instructions](README-InstrumentQ.md) for more
 information.
+
+### PDF report options
+
+PDF reports can format other reports into a PDF file.
+
+* **Source Report** the source report from which to fetch the data
+* **Paper Size** the paper size and orientation used in the PDF file
+* **HTML Source** the template/layout of the report in HTML format
+
+Please refer to the [PDF report instructions](README-PDF.md) for more information.
 
 ### Record Table report options
 

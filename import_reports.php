@@ -40,6 +40,12 @@ if ( ! empty( $_FILES ) ) // file is uploaded
 	{
 		foreach ( $data['report-list'] as $reportID )
 		{
+			if ( preg_match( '/[^a-z0-9_-]/', $reportID ) )
+			{
+				$mode = 'error';
+				$error = "The uploaded file contains an invalid report ID: $reportID";
+				break;
+			}
 			if ( ! isset( $data["report-config-$reportID"] ) ||
 			     ! array_key_exists( "report-data-$reportID", $data ) )
 			{
@@ -233,7 +239,8 @@ elseif ( $mode == 'verify' )
 			            'roles_access' => 'Report accessible by roles',
 			            'download' => 'Report can be downloaded',
 			            'roles_download' => 'Report downloadable by roles',
-			            'as_image' => 'Report can be retrieved as an image' ]
+			            'as_image' => 'Report can be retrieved as an image',
+			            'as_api' => 'API access enabled' ]
 			          as $configName => $configLabel )
 			{
 				$configValue = $data["report-config-$reportID"][$configName];
@@ -308,7 +315,8 @@ elseif ( $mode == 'verify' )
 			            'roles_access' => 'Report accessible by roles',
 			            'download' => 'Report can be downloaded',
 			            'roles_download' => 'Report downloadable by roles',
-			            'as_image' => 'Report can be retrieved as an image' ]
+			            'as_image' => 'Report can be retrieved as an image',
+			            'as_api' => 'API access enabled' ]
 			          as $configName => $configLabel )
 			{
 				$configValue = [];

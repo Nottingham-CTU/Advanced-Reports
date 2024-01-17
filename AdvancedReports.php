@@ -114,7 +114,15 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 							$definition .= "\n- ";
 							if ( $definition != "Instruments:\n- " )
 							{
-								$definition .= 'JOIN ';
+								if ( isset( $queryForm['join'] ) )
+								{
+									$definition .= strtoupper( $queryForm['join'] );
+								}
+								else
+								{
+									$definition .= 'INNER';
+								}
+								$definition .= ' JOIN ';
 							}
 							$definition .= $queryForm['form'];
 							if ( $queryForm['alias'] != '' )
@@ -143,6 +151,11 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 								if ( $queryField['alias'] != '' )
 								{
 									$definition .= ' AS `' . $queryField['alias'] . '`';
+								}
+								if ( isset( $queryField['grouping'] ) &&
+								     $queryField['grouping'] != '' )
+								{
+									$definition .= ' GROUPING ' . $queryField['grouping'];
 								}
 							}
 						}
@@ -214,6 +227,17 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 							}
 							$definition .= $infoCategory['end_field'] . ']';
 						}
+					}
+					// For PDF reports...
+					elseif ( $reportConfig['type'] == 'pdf' )
+					{
+						$definition = 'Source Report: ';
+						$definition .= $reportData['source'];
+						$definition .= "\nPaper Size: ";
+						$definition .= ucfirst( $reportData['pdf_size'] ) . ' ' .
+						               ucfirst( $reportData['pdf_orientation'] );
+						$definition .= "\nHTML Source:\n";
+						$definition .= $reportData['pdf'];
 					}
 					// Add the report to the simplified view.
 					$UITweaker->addCustomReport( [ 'title' => $reportConfig['label'],
@@ -362,7 +386,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		}
 		else
 		{
-			$listIDs = json_decode( $listIDs, true );
+			$listIDs = array_values( json_decode( $listIDs, true ) );
 		}
 		$listIDs[] = $reportID;
 		$this->setSystemSetting( "p$projectID-report-list", json_encode( $listIDs ) );
@@ -392,6 +416,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		{
 			unset( $listIDs[$k] );
 		}
+		$listIDs = array_values( $listIDs );
 		$this->setSystemSetting( "p$projectID-report-list", json_encode( $listIDs ) );
 	}
 
@@ -445,8 +470,23 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			       substr( $infoField['text_validation_type_or_show_slider_number'],
 			               0, 8 ) == 'datetime' ) )
 			{
+				$fieldLabel = trim( $infoField['field_label'] );
+				if ( strlen( $fieldLabel ) > 45 )
+				{
+					$fieldLabel = explode( "\n", $fieldLabel );
+					$fieldLabel = trim( $fieldLabel[0] );
+					if ( strlen( $fieldLabel ) > 45 )
+					{
+						$fieldLabel =
+							substr( $fieldLabel, 0, 35 ) . ' ... ' . substr( $fieldLabel, -5 );
+					}
+				}
+				else
+				{
+					$fieldLabel = str_replace( [ "\r", "\n" ], ' ', $fieldLabel );
+				}
 				$listFields[ $infoField['field_name'] ] =
-					$infoField['field_name'] . ' - ' . $infoField['field_label'];
+					$infoField['field_name'] . ' - ' . $fieldLabel;
 			}
 		}
 		return $listFields;
@@ -511,6 +551,10 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	function getReportList()
 	{
 		$projectID = $this->getProjectID();
+		if ( $projectID === null )
+		{
+			return [];
+		}
 		$listIDs = $this->getSystemSetting( "p$projectID-report-list" );
 		if ( $listIDs === null )
 		{
@@ -538,6 +582,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	{
 		return [ 'gantt' => 'Gantt',
 		         'instrument' => 'Instrument Query',
+		         'pdf' => 'PDF',
 		         'recordtbl' => 'Record Table',
 		         'sql' => 'SQL' ];
 	}
@@ -606,6 +651,75 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			$url .= $urlVariable . '=' . rawurlencode( $value );
 		}
 		return $url;
+	}
+
+
+
+	// Outputs JavaScript to create text/combo-boxes.
+	function outputComboboxJS()
+	{
+
+?>
+  <script type="text/javascript">
+  $( function() {
+    $.widget( "advrep.combobox",
+    {
+      _create: function()
+      {
+        this.wrapper = $( '<span style="display:flex">' )
+        this.wrapper.addClass( 'advrep-combobox' ).insertAfter( this.element )
+        this.element.appendTo( this.wrapper )
+        this.element
+          .addClass( 'advrep-combobox-input ui-widget ui-widget-content ' +
+                     'ui-state-default ui-corner-left' )
+          .autocomplete( { delay: 0, minLength: 0, source: this._source.bind( this ) } )
+          .tooltip( { classes: { 'ui-tooltip': 'ui-state-highlight' } } )
+        this._createShowAllButton()
+      },
+      _createShowAllButton: function()
+      {
+        var input = this.element, wasOpen = false;
+        $( '<a>' )
+          .attr( 'tabIndex', -1 )
+          .appendTo( this.wrapper )
+          .button( { icons: { primary: 'ui-icon-triangle-1-s' }, text: false } )
+          .removeClass( 'ui-corner-all' )
+          .addClass( 'advrep-combobox-toggle ui-corner-right' )
+          .on( 'mousedown', function()
+          {
+            wasOpen = input.autocomplete( "widget" ).is( ":visible" )
+          } )
+          .on( 'click', function()
+          {
+            input.trigger( 'focus' )
+            if ( wasOpen ) { return }
+            input.autocomplete( 'search', '' );
+          })
+      },
+      _source: function( request, response )
+      {
+        var input = this.element
+        var matcher = new RegExp( $.ui.autocomplete.escapeRegex(request.term), "i" );
+        response( $('#'+$(input).data('list')).children( "option" ).map(function() {
+          var text = $( this ).text();
+          if ( this.value && ( !request.term || matcher.test(text) ) )
+            return {
+              label: text,
+              value: text,
+              option: this
+            };
+        }) );
+      },
+      _destroy: function()
+      {
+        this.element.insertBefore( this.wrapper )
+        this.wrapper.remove();
+      }
+    } )
+  } )
+  </script>
+<?php
+
 	}
 
 
@@ -780,6 +894,40 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
     <span class="field-desc">
      If enabled, the report can be retrieved as an image by all users with access.
     </span>
+   </td>
+  </tr>
+<?php
+		}
+
+		if ( in_array( 'api', $includeAdditional ) )
+		{
+?>
+  <tr>
+   <td>Allow API access</td>
+   <td>
+    <label>
+     <input type="radio" name="report_as_api" value="Y" required<?php
+		echo $reportConfig['as_api'] ? ' checked' : ''; ?>> Yes
+    </label>
+    <br>
+    <label>
+     <input type="radio" name="report_as_api" value="N" required<?php
+		echo $reportConfig['as_api'] ? '' : ' checked'; ?>> No
+    </label>
+    <br>
+    <span class="field-desc">
+     If enabled, the report can be accessed using the API at the following URL:<br>
+     <?php echo $this->getUrl( 'api.php?report_id=' . $_GET['report_id'], true, true ), "\n"; ?>
+    </span>
+    <br>
+    API Key: <input type="password" name="report_api_key" style="width:320px;font-size:0.9em"
+                    onmouseover="$(this).attr('type','text')"
+                    onmouseout="$(this).attr('type','password')"
+                    value="<?php echo $reportConfig['api_key'] ?? ''; ?>" readonly>
+    <a href="#" style="margin:left:10px;font-size:0.9em"
+       onclick="if(confirm('Generate new API key?\nThis will replace the current API key.'))
+                {$('[name=report_api_key]').val('<?php echo sha1( random_bytes(100) ) ?>');
+                $(this).css('display','none')};return false">Generate new API key</a>
    </td>
   </tr>
 <?php
@@ -1079,7 +1227,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
         if ( vItems !== false && vText != '' && vItems.indexOf( vText ) == -1 )
         {
           vItems.push( vText )
-          if ( vItems.length > 20 )
+          if ( vItems.length > 30 )
           {
             vItems = false
           }
@@ -1127,7 +1275,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
             vHeader[indexTd].setAttribute('data-type', 'string')
           }
         }
-        else // string
+        else if ( vText != '' ) // string
         {
           vHeader[indexTd].setAttribute('data-type', 'string')
         }
@@ -1140,6 +1288,27 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
         elemTh.setAttribute('data-type', 'string')
       }
     });
+
+<?php
+		$userDateFormat = \DateTimeRC::get_user_format_base();
+		if ( $userDateFormat == 'DMY' || $userDateFormat == 'MDY' )
+		{
+			$userDateSubstr = $userDateFormat == 'DMY' ? [ '3,5', '0,2' ] : [ '0,2', '3,5' ];
+?>
+    var vDateParse = Date.parse
+    Date.parse = function ( vDateVal )
+    {
+      if ( /^[0-9]{2}[^0-9][0-9]{2}[^0-9][0-9]{4}([^0-9]|$)/.test( vDateVal ) )
+      {
+        vDateVal = '' + vDateVal.substring(6,10) + vDateVal.substring(5,6) +
+                   vDateVal.substring(<?php echo $userDateSubstr[0]; ?>) + vDateVal.substring(2,3) +
+                   vDateVal.substring(<?php echo $userDateSubstr[1]; ?>) + vDateVal.substring(10)
+      }
+      return vDateParse( vDateVal )
+    };
+<?php
+		}
+?>
 
 
     (function()
@@ -1164,6 +1333,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
         }
       }
     })()
+
   })
 </script>
 <?php
@@ -1213,58 +1383,74 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 	// Takes logic and parses it, returning an array consisting of a function and information about
 	// the parameters to be passed to the function to evaluate the logic.
-	function parseLogic( $str, $isDownload = false, $createFunction = true )
+	function parseLogic( $str, $requestType = false,
+	                     $allowEditable = false, $createFunction = true )
 	{
-		// Convert [value] and [label] parameters after a field to numbers so they will be accepted
-		// by the REDCap logic lexer/parser. Also pipe in the values for any smart variables.
-		$listStr = preg_split('/([\'"])/', $str, -1, PREG_SPLIT_DELIM_CAPTURE );
-		$quote = '';
-		$str = '';
-		foreach ( $listStr as $strPart )
+		// If an editable value is requested...
+		if ( $allowEditable && preg_match( '/((\[[A-Za-z0-9_]+\]){2}):edit/', $str ) )
 		{
-			if ( $quote == '' && ( $strPart == "'" || $strPart == '"' ) )
+			$str = str_replace( ':edit', '[3]', $str );
+		}
+		// Otherwise...
+		else
+		{
+			$listStr = preg_split('/([\'"])/', $str, -1, PREG_SPLIT_DELIM_CAPTURE );
+			$quote = '';
+			$str = '';
+			foreach ( $listStr as $strPart )
 			{
-				$quote = $strPart;
-			}
-			elseif ( $quote != '' && $quote == $strPart )
-			{
-				$quote = '';
-			}
-			elseif ( $quote == '' )
-			{
-				$strPart = preg_replace( '/((\[[A-Za-z0-9_]+\]){2}):value/', '$1[1]', $strPart );
-				$strPart = preg_replace( '/((\[[A-Za-z0-9_]+\]){2}):label/', '$1[2]', $strPart );
-				$strPart = str_replace( '[is-download]', ( $isDownload ? '1' : '0' ), $strPart );
-				$strPart =
-					preg_replace_callback( '/\[q(int|str):([a-z0-9_]+)\]/', function ( $m )
-					{
-						if ( !isset( $_GET[ $m[2] ] ) )
+				if ( $quote == '' && ( $strPart == "'" || $strPart == '"' ) )
+				{
+					$quote = $strPart;
+				}
+				elseif ( $quote != '' && $quote == $strPart )
+				{
+					$quote = '';
+				}
+				elseif ( $quote == '' )
+				{
+					// Convert [value] and [label] parameters after a field to numbers so they will
+					// be accepted by the REDCap logic lexer/parser.
+					$strPart = preg_replace( '/((\[[A-Za-z0-9_]+\]){2}):value/',
+					                         '$1[1]', $strPart );
+					$strPart = preg_replace( '/((\[[A-Za-z0-9_]+\]){2}):label/',
+					                         '$1[2]', $strPart );
+					// Also pipe in the values for any smart variables.
+					$strPart = str_replace( '[is-download]',
+					                        ( $requestType == 'download' ? '1' : '0' ), $strPart );
+					$strPart = str_replace( '[is-api]',
+					                        ( $requestType == 'api' ? '1' : '0' ), $strPart );
+					$strPart =
+						preg_replace_callback( '/\[q(int|str):([a-z0-9_]+)\]/', function ( $m )
 						{
-							return "''";
-						}
-						if ( $m[1] == 'int' )
-						{
-							if ( preg_match( '/^(0|(-?[1-9][0-9]*))$/', $_GET[ $m[2] ] ) )
+							if ( !isset( $_GET[ $m[2] ] ) )
 							{
-								return $_GET[ $m[2] ];
+								return "''";
 							}
-							return "''";
-						}
-						return "'" . str_replace( "'", '', $_GET[ $m[2] ] ) . "'";
-					}, $strPart );
-				try
-				{
-					$strPart = \Piping::pipeSpecialTags( $strPart, $this->getProjectId(),
-					                                     wrapInQuotes: true,
-					                                     isUsedInCalcBranching: true );
+							if ( $m[1] == 'int' )
+							{
+								if ( preg_match( '/^(0|(-?[1-9][0-9]*))$/', $_GET[ $m[2] ] ) )
+								{
+									return $_GET[ $m[2] ];
+								}
+								return "''";
+							}
+							return "'" . str_replace( "'", '', $_GET[ $m[2] ] ) . "'";
+						}, $strPart );
+					try
+					{
+						$strPart = \Piping::pipeSpecialTags( $strPart, $this->getProjectId(),
+						                                     wrapInQuotes: true,
+						                                     isUsedInCalcBranching: true );
+					}
+					catch ( \Error $e )
+					{
+						$strPart = \Piping::pipeSpecialTags( $strPart, $this->getProjectId(),
+						                                     wrapInQuotes: true );
+					}
 				}
-				catch ( \Error $e )
-				{
-					$strPart = \Piping::pipeSpecialTags( $strPart, $this->getProjectId(),
-					                                     wrapInQuotes: true );
-				}
+				$str .= $strPart;
 			}
-			$str .= $strPart;
 		}
 
 		// Parse the logic.
@@ -1292,9 +1478,84 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			{
 				$dataType = 'label';
 			}
+			elseif ( $allowEditable && $param[3] === '3' )
+			{
+				$dataType = 'edit';
+			}
 			$logicParams[] = [ $param[0], $param[1], $dataType ];
 		}
 		return [ $logic[0], $logicParams ];
+	}
+
+
+
+	// Perform grouping on an array of values.
+	function performGrouping( $listValues, $funcName )
+	{
+		if ( $funcName == 'max' )
+		{
+			return array_reduce( $listValues,
+			                     function ( $c, $i )
+			                     {
+			                         if ( $i != '' && ( $c == '' || $c < $i ) ) return $i;
+			                         else return $c;
+			                     }, '' );
+		}
+		if ( $funcName == 'min' )
+		{
+			return array_reduce( $listValues,
+			                     function ( $c, $i )
+			                     {
+			                         if ( $i != '' && ( $c == '' || $c > $i ) ) return $i;
+			                         else return $c;
+			                     }, '' );
+		}
+		if ( $funcName == 'mean' || $funcName == 'sum' || $funcName == 'percent' )
+		{
+			$sum = 0;
+			$count = 0;
+			foreach ( $listValues as $value )
+			{
+				if ( preg_match( '/^[0-9]+(\.[0-9]+)?$/', $value ) )
+				{
+					$sum += $value;
+					$count++;
+				}
+				elseif ( preg_match( '^[0-9]+(\.[0-9]+)?\/[0-9]+$', $value ) )
+				{
+					$value = explode( '/', $value );
+					$sum += $value[0];
+					$count += $value[1];
+				}
+			}
+			if ( $count == 0 )
+			{
+				return 0 . ( $funcName == 'percent' ? '%' : '' );
+			}
+			return ( ( $sum / ( $funcName == 'sum' ? 1 : $count ) ) *
+			         ( $funcName == 'percent' ? 100 : 1 ) ) .
+			       ( $funcName == 'percent' ? '%' : '' );
+		}
+		if ( $funcName == 'median' )
+		{
+			$listValues = array_reduce( $listValues,
+			                            function( $c, $i )
+			                            {
+			                                if ( $i != '' ) $c[] = $i;
+			                                return $c;
+			                            }, [] );
+			if ( empty( $listValues ) )
+			{
+				return 0;
+			}
+			sort( $listValues );
+			$count = count( $listValues );
+			if ( $count % 2 == 0 )
+			{
+				return ( $listValues[ ( $count / 2 ) - 1 ] + $listValues[ $count / 2 ] ) / 2;
+			}
+			return $listValues[ floor( $count / 2 ) ];
+		}
 	}
 
 
@@ -1460,11 +1721,15 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		foreach ( $includeAdditional as $additionalItem )
 		{
 			$listConfig[] = "as_$additionalItem";
+			if ( $additionalItem == 'api' )
+			{
+				$listConfig[] = 'api_key';
+			}
 		}
 		foreach ( $listConfig as $configSetting )
 		{
 			$configValue = $_POST["report_$configSetting"];
-			if ( in_array( $configSetting, [ 'visible', 'download', 'as_image' ] ) )
+			if ( in_array( $configSetting, [ 'visible', 'download', 'as_image', 'as_api' ] ) )
 			{
 				$configValue = $configValue == 'Y' ? true : false;
 			}

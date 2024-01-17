@@ -1,0 +1,8 @@
+{
+	"require" : { "dompdf/dompdf" : "2.0.*" },
+	"config": {
+		"platform": {
+			"php": "8.0"
+		}
+	}
+}

@@ -30,9 +30,4 @@ foreach ( $listReports as $reportName )
 		json_decode( $module->getSystemSetting("p$projectID-report-data-$reportName"), true );
 }
 
-foreach ( [ 'edit-if-design', 'edit-if-reports' ] as $extraVar )
-{
-	$data[$extraVar] = $module->getProjectSetting($extraVar);
-}
-
 echo json_encode( $data );

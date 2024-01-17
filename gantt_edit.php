@@ -26,6 +26,7 @@ $reportData = $module->getReportData( $reportID );
 if ( ! empty( $_POST ) )
 {
 	// Validate and process data
+	$validationMsg = '';
 	// - Check the groups of variables are complete.
 	$hasLabelEvents = ( isset( $_POST['label_event'] ) && count( $_POST['label_event'] ) != 0 );
 	$hasCategoryEvents = ( isset( $_POST['chart_start_event'] ) &&
@@ -41,7 +42,14 @@ if ( ! empty( $_POST ) )
 	       ( count( $_POST['chart_category'] ) != count( $_POST['chart_start_event'] ) ||
 	         count( $_POST['chart_category'] ) != count( $_POST['chart_end_event'] ) ) ) )
 	{
+		// -- End here in the unlikely event the groups of variables submitted are mismatched.
+		echo 'Advanced Reports internal error: mismatching number of options.';
 		exit;
+	}
+	// - Check the filter logic is valid.
+	if ( $validationMsg == '' && ! \LogicTester::isValid( $_POST['condition'] ) )
+	{
+		$validationMsg = 'Invalid filter logic.';
 	}
 	// - Build the dataset to save, discard empty groups, fail on invalid groups
 	//   (invalid data should have been prevented by the client side validation,
@@ -62,7 +70,8 @@ if ( ! empty( $_POST ) )
 		}
 		if ( in_array( '', $infoLabel, true ) )
 		{
-			exit;
+			$validationMsg = 'At least one label is incomplete.';
+			break;
 		}
 		$listLabels[] = $infoLabel;
 	}
@@ -85,18 +94,37 @@ if ( ! empty( $_POST ) )
 		}
 		if ( in_array( '', $infoCategory, true ) )
 		{
-			exit;
+			$validationMsg = 'At least one category is incomplete.';
+			break;
 		}
 		$listCategories[] = $infoCategory;
 	}
 	if ( count( $listLabels ) == 0 || count( $listCategories ) == 0 )
+	{
+		$validationMsg = 'At least one label and one category is required.';
+	}
+	if ( isset( $_SERVER['HTTP_X_RC_ADVREP_GANTTCHK'] ) )
+	{
+		header( 'Content-Type: application/json' );
+		if ( $validationMsg == '' )
+		{
+			echo 'true';
+		}
+		else
+		{
+			echo json_encode( $validationMsg );
+		}
+		exit;
+	}
+	if ( $validationMsg != '' )
 	{
 		exit;
 	}
 
 	// Save data
 	$module->submitReportConfig( $reportID, false );
-	$reportData = [ 'labels' => $listLabels, 'chart_categories' => $listCategories ];
+	$reportData = [ 'labels' => $listLabels, 'chart_categories' => $listCategories,
+	                'condition' => $_POST['condition'] ];
 	$module->setReportData( $reportID, $reportData );
 	header( 'Location: ' . $module->getUrl( 'reports_edit.php' ) );
 	exit;
@@ -235,6 +263,18 @@ outputGanttChartFields();
     <a href="#" id="gantt-add-cat"><i class="fas fa-plus-circle fs12"></i> Add chart category</a>
    </td>
   </tr>
+  <tr><th colspan="2">Report Definition - Filter Logic</th></tr>
+  <tr>
+   <td>Condition</td>
+   <td>
+    <input type="text" name="condition" style="width:100%"
+           value="<?php echo $module->escapeHTML( $reportData['condition'] ?? '' ); ?>">
+    <br>
+    <span class="field-desc">
+     Optional. Specify conditional logic here to filter the records to be displayed in the chart.
+    </span>
+   </td>
+  </tr>
   <tr><td colspan="2">&nbsp;</td></tr>
   <tr>
    <td></td>
@@ -247,6 +287,33 @@ outputGanttChartFields();
 <script type="text/javascript">
  $(function ()
    {
+     var vValidated = false
+     $('#advrep-gantt-form')[0].onsubmit = function()
+     {
+       if ( vValidated )
+       {
+         return true
+       }
+       $.ajax( { url : '<?php echo $module->getUrl( 'gantt_edit.php?report_id=' . $reportID ); ?>',
+                 method : 'POST',
+                 data : $('#advrep-gantt-form').serialize(),
+                          headers : { 'X-RC-AdvRep-GanttChk' : '1' },
+                          dataType : 'json',
+                          success : function ( result )
+                          {
+                            if ( result === true )
+                            {
+                              vValidated = true
+                              $('#advrep-gantt-form')[0].submit()
+                            }
+                            else
+                            {
+                              simpleDialog( result )
+                            }
+                          }
+               } )
+       return false
+     }
      var vFuncLbl = function()
      {
        var vLblStatus = { name : [], event : [], field : [] }
