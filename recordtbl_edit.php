@@ -101,6 +101,12 @@ echo $module->escapeHTML( $reportID ), "\n"; ?>
  <a href="<?php echo $module->getUrl( 'reports_edit.php' )
 ?>" class=""><i class="fas fa-arrow-circle-left fs11"></i> Back to edit reports</a>
 </p>
+<p style="margin:15px 0px">
+ <span class="yellow">
+  <img src="<?php echo APP_PATH_WEBROOT; ?>Resources/images/exclamation_orange.png" alt="">
+  The user's instrument export rights will be applied when viewing Record Table reports.
+ </span>
+</p>
 <form method="post" id="rectblform">
  <table class="mod-advrep-formtable">
 <?php $module->outputReportConfigOptions( $reportConfig, true, 'image' ); ?>
