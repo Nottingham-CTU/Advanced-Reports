@@ -24,8 +24,8 @@ $reportData = $module->getReportData( $reportID );
 
 
 $listInstruments = \REDCap::getInstrumentNames();
-$listEventUniq = \REDCap::getEventNames( true );
-$listEventName = \REDCap::getEventNames( false, true );
+$listEventUniq = \REDCap::isLongitudinal() ? \REDCap::getEventNames( true ) : [];
+$listEventName = \REDCap::isLongitudinal() ? \REDCap::getEventNames( false, true ) : [];
 $listEvents = [];
 foreach ( $listEventUniq as $eventID => $eventUniq )
 {
@@ -45,7 +45,7 @@ if ( ! empty( $_POST ) )
 	{
 		$validationMsg = 'At least one instrument must be selected.';
 	}
-	if ( $validationMsg == '' && ! isset( $_POST['rectbl_events'] ) )
+	if ( $validationMsg == '' && ! empty( $listEvents ) && ! isset( $_POST['rectbl_events'] ) )
 	{
 		$validationMsg = 'At least one event must be selected.';
 	}
@@ -73,7 +73,7 @@ if ( ! empty( $_POST ) )
 	{
 		$_POST['rectbl_forms'] = [];
 	}
-	if ( count( $_POST['rectbl_events'] ) == count( $listEvents ) )
+	if ( empty( $listEvents ) || count( $_POST['rectbl_events'] ) == count( $listEvents ) )
 	{
 		$_POST['rectbl_events'] = [];
 	}
@@ -146,26 +146,33 @@ foreach ( $listInstruments as $instrumentUniq => $instrumentName )
 ?>
    </td>
   </tr>
+<?php
+if ( \REDCap::isLongitudinal() )
+{
+?>
   <tr>
    <td>Events</td>
    <td>
 <?php
-foreach ( $listEvents as $eventUniq => $eventName )
-{
-	$eventAttr = 'value="' . $eventUniq . '"';
-	if ( ! isset( $reportData['events'] ) || empty( $reportData['events'] ) ||
-	     in_array( $eventUniq, $reportData['events'] ) )
+	foreach ( $listEvents as $eventUniq => $eventName )
 	{
-		$eventAttr .= ' checked';
-	}
+		$eventAttr = 'value="' . $eventUniq . '"';
+		if ( ! isset( $reportData['events'] ) || empty( $reportData['events'] ) ||
+		     in_array( $eventUniq, $reportData['events'] ) )
+		{
+			$eventAttr .= ' checked';
+		}
 ?>
     <input type="checkbox" name="rectbl_events[]" <?php echo $eventAttr; ?>>
     <?php echo $eventName; ?><br>
 <?php
-}
+	}
 ?>
    </td>
   </tr>
+<?php
+}
+?>
   <tr>
    <td>Hide missing data codes</td>
    <td>
