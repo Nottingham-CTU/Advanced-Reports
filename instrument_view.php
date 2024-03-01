@@ -216,6 +216,25 @@ foreach ( $reportData['forms'] as $queryForm )
 			}
 		}
 	}
+	if ( ! empty( $dateFields ) )
+	{
+		foreach ( $formLabels as $i => $formLabelsRow )
+		{
+			foreach ( $formLabelsRow as $fieldName => $value )
+			{
+				if ( in_array( $fieldName, $dateFields ) )
+				{
+					$formLabels[ $i ][ $fieldName ] =
+							\DateTimeRC::format_ts_from_ymd( $value, false, true );
+				}
+			}
+		}
+	}
+	if ( $queryForm['on'] != '' )
+	{
+		list( $joinFunction, $joinParamData ) =
+			$module->parseLogic( $queryForm['on'], $requestType );
+	}
 	$newResultTable = [];
 	foreach ( $resultTable as $resultRow )
 	{
@@ -228,20 +247,10 @@ foreach ( $reportData['forms'] as $queryForm )
 				continue;
 			}
 			$formLabelsRow = $formLabels[$i];
-			foreach ( $formLabelsRow as $fieldName => $value )
-			{
-				if ( in_array( $fieldName, $dateFields ) )
-				{
-					$formLabelsRow[ $fieldName ] =
-							\DateTimeRC::format_ts_from_ymd( $value, false, true );
-				}
-			}
 			// Check if the row from this form should be joined with the result table row.
 			$doJoin = true;
 			if ( $queryForm['on'] != '' )
 			{
-				list( $joinFunction, $joinParamData ) =
-					$module->parseLogic( $queryForm['on'], $requestType );
 				$joinParams = [];
 				foreach ( $joinParamData as $joinParamItem )
 				{

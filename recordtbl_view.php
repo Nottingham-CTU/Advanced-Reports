@@ -35,7 +35,7 @@ $reportData = $module->getReportData( $reportID );
 $userRights = $module->getUser()->getRights();
 $exportRight = $userRights['data_export_tool'];
 
-$listEvents = \REDCap::getEventNames( true );
+$listEvents = \REDCap::isLongitudinal() ? \REDCap::getEventNames( true ) : [];
 $listForms = ( empty( $reportData['forms'] ) ? array_keys( \REDCap::getInstrumentNames() )
                                              : $reportData['forms'] );
 
@@ -130,7 +130,7 @@ $listData = \REDCap::getData( [ 'return_format' => 'array', 'combine_checkbox_va
 
 $listColumns = [];
 $resultTable = [];
-$showEventNames = ( count( $listEvents ) != 1 );
+$showEventNames = ( count( $listEvents ) > 1 );
 
 foreach ( $listData as $infoRecord )
 {
