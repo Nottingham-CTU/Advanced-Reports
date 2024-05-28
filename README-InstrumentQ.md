@@ -25,12 +25,23 @@ There are several virtual fields for each instrument which can be used in an Ins
   * Event label (as field label), or unique event name (as field value)
 * `[redcap_repeat_instance]`
   * Instance number
+* `[redcap_last_instance]`
+  * Instance number of the last instance for this record/event/instrument
+  * This may be useful in filter condition logic to return only the last instance
 * `[redcap_data_access_group]`
   * Group label (as field label), or unique group name (as field value)
 * `[redcap_form_url]`
   * URL of the REDCap data entry form
 * `[redcap_survey_url]`
   * URL of the survey
+* `[redcap_created_by]`
+  * Name (as field label) or username (as field value) of the user who first saved the form
+* `[redcap_created_time]`
+  * Date/time of when the form was first saved
+* `[redcap_updated_by]`
+  * Name (as field label) or username (as field value) of the user who most recently saved the form
+* `[redcap_updated_time]`
+  * Date/time of when the form was most recently saved
 
 ## Using Calculation Logic
 
