@@ -188,12 +188,15 @@ $resultParams = [ 'return_format' => 'json-array', 'combine_checkbox_values' => 
 $redcapFields = [ 'redcap_event_name', 'redcap_repeat_instance', 'redcap_data_access_group' ];
 $redcapFields2 = [ 'redcap_form_url', 'redcap_survey_url',
                    'redcap_created_by', 'redcap_created_time',
-                   'redcap_updated_by', 'redcap_updated_time' ];
+                   'redcap_updated_by', 'redcap_updated_time', 'redcap_last_instance' ];
 
-// Get instrument created/updated users/dates.
+// Get instrument created/updated users/dates and last instance.
 $listEventNames = \REDCap::getEventNames( true );
+$dataTable = method_exists( '\REDCap', 'getDataTable' )
+                ? \REDCap::getDataTable( $module->getProjectId() ) : ( 'redcap' . '_data' );
 $logEventTable = \REDCap::getLogEventTable( $module->getProjectId() );
 $listFormCreateUpdate = [];
+$listFormLastInstance = [];
 foreach ( $reportData['forms'] as $queryForm )
 {
 	$infoFormCreateUpdate = [];
@@ -241,6 +244,21 @@ foreach ( $reportData['forms'] as $queryForm )
 	}
 	$listFormCreateUpdate[ $queryForm['form'] ] = $infoFormCreateUpdate;
 	unset( $infoFormCreateUpdate );
+	$qFormInstance = $module->query( "SELECT d.record, d.event_id, if(exists(SELECT 1 FROM " .
+	                                 "redcap_events_repeat WHERE event_id = d.event_id), " .
+	                                 "max(ifnull(d.instance,1)), '') last_instance " .
+	                                 "FROM $dataTable d JOIN redcap_metadata md ON d.field_name " .
+	                                 "= md.field_name AND d.project_id = md.project_id " .
+	                                 "WHERE d.project_id = ? AND element_type <> 'descriptive' " .
+	                                 "AND form_name = ? GROUP BY d.record, d.event_id",
+	                                 [ $module->getProjectId(), $queryForm['form'] ] );
+	while ( $infoFormInstance = $qFormInstance->fetch_assoc() )
+	{
+		$formLastInstanceEvent = ( $listEventNames === false )
+		                         ? '' : $listEventNames[ $infoFormInstance['event_id'] ];
+		$listFormLastInstance[ $queryForm['form'] ][ $infoFormInstance['record'] ]
+		                     [ $formLastInstanceEvent ] = $infoFormInstance['last_instance'];
+	}
 }
 
 // Build the result table.
@@ -452,6 +470,16 @@ foreach ( $reportData['forms'] as $queryForm )
 								  $newResultRow[ '[' . $alias . '][redcap_updated_time]' ]['value'],
 								                                 false, true );
 							$formHasRedcapFields['redcap_updated_time'] = true;
+							// Insert redcap_last_instance virtual field.
+							$newResultRow[ '[' . $alias . '][redcap_last_instance]' ] =
+								[ 'value' => $listFormLastInstance[ $form ]
+								               [ $formValuesRow[ \REDCap::getRecordIdField() ] ]
+								               [ $formValuesRow['redcap_event_name'] != '' ?
+								                 $formValuesRow['redcap_event_name'] : '' ] ];
+							$newResultRow[ '[' . $alias . '][redcap_last_instance]' ]['label'] =
+								$newResultRow[ '[' . $alias . '][redcap_last_instance]' ]['value'];
+							$formHasRedcapFields['redcap_last_instance'] = true;
+
 						}
 						$insertedRedcapFields = true;
 					}
