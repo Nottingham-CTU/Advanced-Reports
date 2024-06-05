@@ -50,14 +50,16 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			$UITweaker = \ExternalModules\ExternalModules::getModuleInstance('redcap_ui_tweaker');
 			// Supply report data to the reports simplified view.
 			if ( method_exists( $UITweaker, 'areCustomReportsExpected' ) &&
-			     $UITweaker->areCustomReportsExpected() )
+			     $UITweaker->areCustomReportsExpected() &&
+			     method_exists( $UITweaker, 'customReportsEscapeHTML' ) )
 			{
 				$listReports = $this->getReportList();
 				$reportTypes = $this->getReportTypes();
 				foreach ( $listReports as $reportID => $reportConfig )
 				{
 					$reportData = $this->getReportData( $reportID );
-					$description = '';
+					$description = $reportConfig['annotation'] == ''
+					               ? '' : ( $reportConfig['annotation'] . "\n\n" );
 					$definition = '';
 					$options = '';
 					// Get report permissions.
@@ -69,27 +71,30 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 					{
 						$reportConfig['roles_download'] = $reportConfig['roles_access'];
 					}
-					$permissions = 'View Access: ' .
-					               str_replace( "\n", ', ', $reportConfig['roles_access'] );
+					$permissions = "<b>View Access:</b>\n" .
+					               $UITweaker->customReportsEscapeHTML(
+					                                                $reportConfig['roles_access'] );
 					if ( array_key_exists('as_image', $reportConfig) && $reportConfig['as_image'] )
 					{
-						$permissions .= "\nCan retrieve as image";
+						$permissions .= "\n<i>Can retrieve as image</i>";
 					}
 					if ( $reportConfig['download'] )
 					{
-						$permissions .= "\nDownload: " .
-						                str_replace( "\n", ', ', $reportConfig['roles_download'] );
+						$permissions .= "\n<b>Download:</b>\n" .
+						                $UITweaker->customReportsEscapeHTML(
+						                                          $reportConfig['roles_download'] );
 					}
 					if ( ! $reportConfig['visible'] )
 					{
-						$permissions = "(hidden)\n$permissions";
+						$permissions = "<i>(hidden)</i>\n$permissions";
 					}
 					// For SQL reports...
 					if ( $reportConfig['type'] == 'sql' )
 					{
 						// Populate description and definition with the report description and SQL.
-						$description = $reportData['sql_desc'];
-						$definition = $reportData['sql_query'];
+						$description .= $reportData['sql_desc'];
+						$definition .=
+								$UITweaker->customReportsEscapeHTML( $reportData['sql_query'] );
 						// Note if the report is EAV format.
 						if ( in_array( $reportData['sql_type'], [ 'eav', 'eav-id' ] ) )
 						{
@@ -100,19 +105,20 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 							}
 							if ( $reportData['sql_cols'] != '' )
 							{
-								$options .= ', columns: ' . $reportData['sql_cols'];
+								$options .= ', columns: ' .
+								     $UITweaker->customReportsEscapeHTML( $reportData['sql_cols'] );
 							}
 						}
 					}
 					// For Instrument Queries...
 					elseif ( $reportConfig['type'] == 'instrument' )
 					{
-						$description = $reportData['desc'];
-						$definition = 'Instruments:';
+						$description .= $reportData['desc'];
+						$definition = '<b>Instruments:</b>';
 						foreach ( $reportData['forms'] as $queryForm )
 						{
-							$definition .= "\n- ";
-							if ( $definition != "Instruments:\n- " )
+							$definition .= "\n";
+							if ( $definition != "<b>Instruments:</b>\n" )
 							{
 								if ( isset( $queryForm['join'] ) )
 								{
@@ -124,38 +130,46 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 								}
 								$definition .= ' JOIN ';
 							}
-							$definition .= $queryForm['form'];
+							$definition .= $UITweaker->customReportsEscapeHTML( $queryForm['form'] );
 							if ( $queryForm['alias'] != '' )
 							{
-								$definition .= ' AS `' . $queryForm['alias'] . '`';
+								$definition .= ' AS `' .
+								   $UITweaker->customReportsEscapeHTML( $queryForm['alias'] ) . '`';
 							}
 							if ( $queryForm['on'] != '' )
 							{
-								$definition .= ' ON ' . $queryForm['on'];
+								$definition .= ' ON ' .
+								            $UITweaker->customReportsEscapeHTML( $queryForm['on'] );
 							}
 						}
 						if ( $reportData['where'] != '' )
 						{
-							$definition .= "\nCondition: " . $reportData['where'];
+							$definition .= "\n<b>Condition:</b>\n" .
+							            $UITweaker->customReportsEscapeHTML( $reportData['where'] );
 						}
 						if ( $reportData['orderby'] != '' )
 						{
-							$definition .= "\nSorting: " . $reportData['orderby'];
+							$definition .= "\n<b>Sorting:</b>" .
+							          $UITweaker->customReportsEscapeHTML( $reportData['orderby'] );
 						}
 						if ( ! empty( $reportData['select'] ) )
 						{
-							$definition .= "\nFields to display:";
+							$definition .= "\n<b>Fields to display:</b>";
 							foreach ( $reportData['select'] as $queryField )
 							{
-								$definition .= "\n- " . $queryField['field'];
+								$definition .= "\n- " .
+								        $UITweaker->customReportsEscapeHTML( $queryField['field'] );
 								if ( $queryField['alias'] != '' )
 								{
-									$definition .= ' AS `' . $queryField['alias'] . '`';
+									$definition .= ' AS `' .
+									   $UITweaker->customReportsEscapeHTML( $queryField['alias'] ) .
+									   '`';
 								}
 								if ( isset( $queryField['grouping'] ) &&
 								     $queryField['grouping'] != '' )
 								{
-									$definition .= ' GROUPING ' . $queryField['grouping'];
+									$definition .= ' GROUPING ' .
+									  $UITweaker->customReportsEscapeHTML( $queryField['grouping'] );
 								}
 							}
 						}
@@ -167,8 +181,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 					// For Record Tables...
 					elseif ( $reportConfig['type'] == 'recordtbl' )
 					{
-						$description = $reportData['desc'];
-						$definition = 'Instruments:';
+						$description .= $reportData['desc'];
+						$definition = '<b>Instruments:</b>';
 						if ( empty( $reportData['forms'] ) )
 						{
 							$definition .= ' ALL';
@@ -178,10 +192,10 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 							foreach ( $reportData['forms'] as $formName )
 							{
 								$definition .= "\n- ";
-								$definition .= $formName;
+								$definition .= $UITweaker->customReportsEscapeHTML( $formName );
 							}
 						}
-						$definition .= "\nEvents:";
+						$definition .= "\n<b>Events:</b>";
 						if ( empty( $reportData['events'] ) )
 						{
 							$definition .= ' ALL';
@@ -191,7 +205,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 							foreach ( $reportData['events'] as $eventName )
 							{
 								$definition .= "\n- ";
-								$definition .= $eventName;
+								$definition .= $UITweaker->customReportsEscapeHTML( $eventName );
 							}
 						}
 						if ( $reportData['nomissingdatacodes'] )
@@ -202,50 +216,60 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 					// For Gantt charts...
 					elseif ( $reportConfig['type'] == 'gantt' )
 					{
-						$definition = 'Labels:';
+						$definition = '<b>Labels:</b>';
 						foreach ( $reportData['labels'] as $infoLabel )
 						{
-							$definition .= "\n- " . $infoLabel['name'] . ': [';
+							$definition .= "\n- " .
+							      $UITweaker->customReportsEscapeHTML( $infoLabel['name'] ) . ': [';
 							if ( $infoLabel['event'] != '' )
 							{
-								$definition .= $infoLabel['event'] . '][';
+								$definition .= $UITweaker->customReportsEscapeHTML(
+								                                       $infoLabel['event'] ) . '][';
 							}
-							$definition .= $infoLabel['field'] . ']';
+							$definition .=
+							       $UITweaker->customReportsEscapeHTML( $infoLabel['field'] ) . ']';
 						}
-						$definition .= "\nCategories:";
+						$definition .= "\n<b>Categories:</b>";
 						foreach ( $reportData['chart_categories'] as $infoCategory )
 						{
-							$definition .= "\n- " . $infoCategory['name'] . ': [';
+							$definition .= "\n- " . $UITweaker->customReportsEscapeHTML(
+							                                        $infoCategory['name'] ) . ': [';
 							if ( $infoCategory['start_event'] != '' )
 							{
-								$definition .= $infoCategory['start_event'] . '][';
+								$definition .= $UITweaker->customReportsEscapeHTML(
+								                              $infoCategory['start_event'] ) . '][';
 							}
-							$definition .= $infoCategory['start_field'] . '] - [';
+							$definition .= $UITweaker->customReportsEscapeHTML(
+							                               $infoCategory['start_field'] ) . '] - [';
 							if ( $infoCategory['end_event'] != '' )
 							{
-								$definition .= $infoCategory['end_event'] . '][';
+								$definition .= $UITweaker->customReportsEscapeHTML(
+								                                $infoCategory['end_event'] ) . '][';
 							}
-							$definition .= $infoCategory['end_field'] . ']';
+							$definition .= $UITweaker->customReportsEscapeHTML(
+							                                     $infoCategory['end_field'] ) . ']';
 						}
 					}
 					// For PDF reports...
 					elseif ( $reportConfig['type'] == 'pdf' )
 					{
-						$definition = 'Source Report: ';
-						$definition .= $reportData['source'];
-						$definition .= "\nPaper Size: ";
-						$definition .= ucfirst( $reportData['pdf_size'] ) . ' ' .
-						               ucfirst( $reportData['pdf_orientation'] );
-						$definition .= "\nHTML Source:\n";
-						$definition .= $reportData['pdf'];
+						$definition = '<b>Source Report:</b> ';
+						$definition .= $UITweaker->customReportsEscapeHTML( $reportData['source'] );
+						$definition .= "\n<b>Paper Size:</b> ";
+						$definition .= $UITweaker->customReportsEscapeHTML(
+						                 ucfirst( $reportData['pdf_size'] ) . ' ' .
+						                 ucfirst( $reportData['pdf_orientation'] ) );
+						$definition .= "\n<b>HTML Source:</b>\n";
+						$definition .= $UITweaker->customReportsEscapeHTML(
+						                str_replace( [ "\r\n", "\r" ], "\n", $reportData['pdf'] ) );
 					}
 					// Add the report to the simplified view.
 					$UITweaker->addCustomReport( [ 'title' => $reportConfig['label'],
 					                               'type' => $reportTypes[ $reportConfig['type'] ],
-					                               'description' => $description,
+					                               'description' => trim( $description ),
 					                               'permissions' => $permissions,
 					                               'definition' => $definition,
-					                               'options' => $options ] );
+					                               'options' => $options ], true );
 				}
 			}
 			// Remove module settings from the external modules simplified view (report data will
