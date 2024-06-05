@@ -426,7 +426,13 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	// Use only for e.g. JSON or CSV output.
 	function echoText( $text )
 	{
-		echo array_reduce( str_split( $text ), function( $c, $i ) { return $c . $i; }, '' );
+		$text = htmlspecialchars( $text, ENT_QUOTES | ENT_SUBSTITUTE | ENT_XHTML );
+		$chars = [ '&amp;' => 38, '&quot;' => 34, '&apos;' => 39, '&lt;' => 60, '&gt;' => 62 ];
+		$text = preg_split( '/(&(?>amp|quot|apos|lt|gt);)/', $text, -1, PREG_SPLIT_DELIM_CAPTURE );
+		foreach ( $text as $part )
+		{
+			echo isset( $chars[ $part ] ) ? chr( $chars[ $part ] ) : $part;
+		}
 	}
 
 
@@ -795,14 +801,25 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
    <td>Report Label</td>
    <td>
     <input type="text" name="report_label" required
-           value="<?php echo htmlspecialchars( $reportConfig['label'] ); ?>">
+           value="<?php echo $this->escapeHTML( $reportConfig['label'] ); ?>">
    </td>
   </tr>
   <tr>
    <td>Report Category</td>
    <td>
     <input type="text" name="report_category"
-           value="<?php echo htmlspecialchars( $reportConfig['category'] ); ?>">
+           value="<?php echo $this->escapeHTML( $reportConfig['category'] ); ?>">
+   </td>
+  </tr>
+  <tr>
+   <td>Report Annotation</td>
+   <td>
+    <textarea name="report_annotation"><?php
+		echo $this->escapeHTML( $reportConfig['annotation'] ?? '' ); ?></textarea>
+    <br>
+    <span class="field-desc">
+     The report annotation will not be shown on the report.
+    </span>
    </td>
   </tr>
   <tr><th colspan="2">Access Permissions</th></tr>
@@ -829,7 +846,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
   <tr>
    <td>Grant access to roles</td>
    <td>
-    <textarea name="report_roles_access"><?php echo $reportConfig['roles_access']; ?></textarea>
+    <textarea name="report_roles_access"><?php
+		echo $this->escapeHTML( $reportConfig['roles_access'] ); ?></textarea>
     <br>
     <span class="field-desc">
      Enter each role name on a separate line.
@@ -861,7 +879,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
   <tr>
    <td>Grant downloads to roles</td>
    <td>
-    <textarea name="report_roles_download"><?php echo $reportConfig['roles_download']; ?></textarea>
+    <textarea name="report_roles_download"><?php
+			echo $this->escapeHTML( $reportConfig['roles_download'] ); ?></textarea>
     <br>
     <span class="field-desc">
      Enter each role name on a separate line. Reports can only be downloaded by users with access.
@@ -1711,12 +1730,12 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		}
 		if ( $includeDownload )
 		{
-			$listConfig =
-				[ 'label', 'category', 'visible', 'download', 'roles_access', 'roles_download' ];
+			$listConfig = [ 'label', 'category', 'annotation', 'visible',
+			                'download', 'roles_access', 'roles_download' ];
 		}
 		else
 		{
-			$listConfig = [ 'label', 'category', 'visible', 'roles_access' ];
+			$listConfig = [ 'label', 'category', 'annotation', 'visible', 'roles_access' ];
 		}
 		foreach ( $includeAdditional as $additionalItem )
 		{
