@@ -891,12 +891,12 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
    <td>
     <label>
      <input type="radio" name="report_download" value="Y" required<?php
-		echo $reportConfig['download'] ? ' checked' : ''; ?>> Yes
+			echo $reportConfig['download'] ? ' checked' : ''; ?>> Yes
     </label>
     <br>
     <label>
      <input type="radio" name="report_download" value="N" required<?php
-		echo $reportConfig['download'] ? '' : ' checked'; ?>> No
+			echo $reportConfig['download'] ? '' : ' checked'; ?>> No
     </label>
    </td>
   </tr>
@@ -918,6 +918,34 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 <?php
 		}
 
+		if ( in_array( 'saveable', $includeAdditional ) )
+		{
+?>
+  <tr>
+   <td>Report can be saved to a field</td>
+   <td>
+    <label>
+     <input type="radio" name="report_saveable" value="Y" required<?php
+			echo $reportConfig['saveable'] ? ' checked' : ''; ?>> Yes
+    </label>
+    <br>
+    <label>
+     <input type="radio" name="report_saveable" value="N" required<?php
+			echo $reportConfig['saveable'] ? '' : ' checked'; ?>> No
+    </label>
+    <br>
+    <span class="field-desc">
+     If set to <i>yes</i>, this report can be saved to a file field using the @ADVANCED-REPORT-SAVE
+     action tag.
+     <br>
+     Once a report is saved to a field, it will be accessible by anyone with access to the record
+     and instrument.
+    </span>
+   </td>
+  </tr>
+<?php
+		}
+
 		if ( in_array( 'image', $includeAdditional ) )
 		{
 ?>
@@ -926,12 +954,12 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
    <td>
     <label>
      <input type="radio" name="report_as_image" value="Y" required<?php
-		echo $reportConfig['as_image'] ? ' checked' : ''; ?>> Yes
+			echo $reportConfig['as_image'] ? ' checked' : ''; ?>> Yes
     </label>
     <br>
     <label>
      <input type="radio" name="report_as_image" value="N" required<?php
-		echo $reportConfig['as_image'] ? '' : ' checked'; ?>> No
+			echo $reportConfig['as_image'] ? '' : ' checked'; ?>> No
     </label>
     <br>
     <span class="field-desc">
@@ -950,12 +978,12 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
    <td>
     <label>
      <input type="radio" name="report_as_api" value="Y" required<?php
-		echo $reportConfig['as_api'] ? ' checked' : ''; ?>> Yes
+			echo $reportConfig['as_api'] ? ' checked' : ''; ?>> Yes
     </label>
     <br>
     <label>
      <input type="radio" name="report_as_api" value="N" required<?php
-		echo $reportConfig['as_api'] ? '' : ' checked'; ?>> No
+			echo $reportConfig['as_api'] ? '' : ' checked'; ?>> No
     </label>
     <br>
     <span class="field-desc">
@@ -1760,6 +1788,11 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		else
 		{
 			$listConfig = [ 'label', 'category', 'annotation', 'visible', 'roles_access' ];
+		}
+		if ( in_array( 'saveable', $includeAdditional ) )
+		{
+			$listConfig[] = 'saveable';
+			unset( $includeAdditional[ array_search( 'saveable', $includeAdditional ) ] );
 		}
 		foreach ( $includeAdditional as $additionalItem )
 		{
