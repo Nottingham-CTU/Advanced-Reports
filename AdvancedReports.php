@@ -579,6 +579,34 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Provide the report data for settings exports.
+	function exportProjectSettings()
+	{
+		$projectID = $this->getProjectID();
+		//$listSettings = $this->getProjectSettings();
+		//unset( $listSettings['enabled'] );
+		$listReportIDs = json_decode( $this->getSystemSetting( "p$projectID-report-list" ) ?? '[]',
+		                              true ) ?? [];
+		sort( $listReportIDs );
+		$listSettings[] = [ 'key' => 'report-list', 'value' => $listReportIDs ];
+		foreach ( $listReportIDs as $reportID )
+		{
+			$reportConfig = $this->getSystemSetting( "p$projectID-report-config-$reportID" );
+			$reportConfig = json_decode( $reportConfig, true );
+			unset( $reportConfig['lastupdated_user'], $reportConfig['lastupdated_time'],
+			       $reportConfig['api_key'] );
+			$reportConfig = json_encode( $reportConfig );
+			$listSettings[] =
+				[ 'key' => "report-config-$reportID", 'type' => 'json', 'value' => $reportConfig ];
+			$listSettings[] =
+				[ 'key' => "report-data-$reportID", 'type' => 'json',
+				  'value' => $this->getSystemSetting( "p$projectID-report-data-$reportID" ) ];
+		}
+		return $listSettings;
+	}
+
+
+
 	// Returns a list of events for the project.
 	function getEventList()
 	{
