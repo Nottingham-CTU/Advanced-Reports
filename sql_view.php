@@ -22,13 +22,14 @@ $reportData = $module->getReportData( $reportID );
 
 // Determine the request type (normal/csv/api).
 $disableAccessControl = isset( $disableAccessControl ) ? $disableAccessControl : false;
+$isApiRequest = isset( $isApiRequest ) ? $isApiRequest : false;
 $isInternalRequest = isset( $isInternalRequest ) ? $isInternalRequest : false;
 $isCsvDownload = ( ! $isApiRequest && isset( $_GET['download'] ) &&
                    ( $isInternalRequest || $module->isReportDownloadable( $reportID ) ) );
 
 
 // Check user can view this report, redirect to main reports page if not.
-if ( ! $disableAccessControl && ! $module->isReportAccessible( $reportID ) )
+if ( ! $disableAccessControl && ! $isApiRequest && ! $module->isReportAccessible( $reportID ) )
 {
 	header( 'Location: ' . $module->getUrl( 'reports.php' ) );
 	exit;
@@ -76,6 +77,22 @@ if ( $resultType == 'eav' || $resultType == 'eav-id' )
 			$resultData[ $infoRecord[0] ][ $columns[0] ] = $infoRecord[0];
 		}
 	}
+}
+
+
+
+// Return the result table for API requests.
+if ( $isApiRequest )
+{
+	if ( $resultType != 'eav' && $resultType != 'eav-id' )
+	{
+		$resultData = [];
+		while ( $infoRecord = mysqli_fetch_assoc( $query ) )
+		{
+			$resultData[] = $infoRecord;
+		}
+	}
+	return $resultData;
 }
 
 

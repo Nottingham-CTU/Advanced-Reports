@@ -23,6 +23,11 @@
 	},
 	"system-settings" : [
 		{
+			"key" : "admin-only-public",
+			"name" : "Only allow administrators to save reports with Public access",
+			"type" : "checkbox"
+		},
+		{
 			"key" : "admin-only-api",
 			"name" : "Only allow administrators to save reports with API access",
 			"type" : "checkbox"
@@ -47,12 +52,12 @@
 			"super-users-only" : true
 		}
 	],
-	"no-auth-pages" : [ "api" ],
 	"action-tags" : [
 		{
 			"tag" : "@ADVANCED-REPORT-SAVE",
 			"description" : "Saves an advanced report to a file upload field upon form submission. Please refer to the module documentation for instructions on using this action tag."
 		}
 	],
+	"no-auth-pages" : [ "api", "public" ],
 	"no-csrf-pages" : [ "api" ]
 }

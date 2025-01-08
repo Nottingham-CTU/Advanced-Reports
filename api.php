@@ -24,7 +24,7 @@ if ( ! isset( $listReports[$reportID] ) || ! isset( $listReports[$reportID]['as_
 $reportConfig = $listReports[$reportID];
 if ( $reportConfig['api_key'] == '' || ! isset( $_POST['api_key'] ) ||
      $_POST['api_key'] != $reportConfig['api_key'] ||
-     ! in_array( $reportConfig['type'], [ 'instrument', 'sql' ] ) )
+     ! in_array( $reportConfig['type'], AdvancedReports::API_TYPES ) )
 {
 	http_response_code( 400 );
 	echo 'false';

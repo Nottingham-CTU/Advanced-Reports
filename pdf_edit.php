@@ -19,6 +19,8 @@ if ( ! $module->isReportEditable( 'pdf' ) ||
 }
 $reportConfig = $listReports[$reportID];
 $reportData = $module->getReportData( $reportID );
+$canSaveIfPublic = ( ! $module->getSystemSetting( 'admin-only-public' ) ||
+                     $module->getUser()->isSuperUser() );
 
 
 
@@ -39,6 +41,10 @@ if ( ! empty( $_POST ) )
 {
 	// Validate data
 	$validationMsg = '';
+	if ( ! $canSaveIfPublic && $_POST['report_as_public'] == 'Y' )
+	{
+		$validationMsg = 'Reports with Public access can only be saved by an administrator.';
+	}
 	// - Check the data source is specified and is valid.
 	if ( $validationMsg == '' )
 	{
@@ -66,7 +72,8 @@ if ( ! empty( $_POST ) )
 	}
 
 	// Save data
-	$module->submitReportConfig( $reportID, false, [ 'saveable' ] );
+	$module->submitReportConfig( $reportID, false, [ 'saveable', 'public' ] );
+	$_POST['pdf'] = str_replace( "\r\n", "\n", $_POST['pdf'] );
 	$reportData = [ 'source' => $_POST['source'], 'pdf' => $_POST['pdf'],
 	                'pdf_size' => $_POST['pdf_size'],
 	                'pdf_orientation' => $_POST['pdf_orientation'] ];
@@ -118,7 +125,7 @@ echo $module->escapeHTML( $reportID ), "\n"; ?>
 </p>
 <form method="post" id="queryform">
  <table class="mod-advrep-formtable">
-<?php $module->outputReportConfigOptions( $reportConfig, false, [ 'saveable' ] ); ?>
+<?php $module->outputReportConfigOptions( $reportConfig, false, [ 'saveable', 'public' ] ); ?>
   <tr><th colspan="2">Report Definition</th></tr>
   <tr>
    <td>Source Report</td>

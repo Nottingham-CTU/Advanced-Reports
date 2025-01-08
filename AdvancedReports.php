@@ -5,6 +5,8 @@ namespace Nottingham\AdvancedReports;
 class AdvancedReports extends \ExternalModules\AbstractExternalModule
 {
 
+	const API_TYPES = [ 'instrument', 'sql' ];
+	const PUBLIC_TYPES = [ 'instrument', 'pdf', 'sql' ];
 	const SAVEABLE_TYPES = [ 'instrument', 'pdf', 'sql' ];
 
 	// Show the advanced reports link based on whether the user is able to view or edit any
@@ -1111,6 +1113,41 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
   </tr>
 <?php
 		}
+
+		if ( in_array( 'public', $includeAdditional ) )
+		{
+?>
+  <tr>
+   <td>Allow public access</td>
+   <td>
+    <label>
+     <input type="radio" name="report_as_public" value="Y" required<?php
+			echo $reportConfig['as_public'] ? ' checked' : ''; ?>> Yes
+    </label>
+    <br>
+    <label>
+     <input type="radio" name="report_as_public" value="N" required<?php
+			echo $reportConfig['as_public'] ? '' : ' checked'; ?>> No
+    </label>
+    <br>
+    <span class="field-desc">
+     If enabled, the report can be accessed publicly at the following URL:<br>
+     <?php echo $this->getUrl( 'public.php?report_id=' . $_GET['report_id'], true, true ), "\n"; ?>
+<?php
+			if ( $includeDownload )
+			{
+?>
+     <br>
+     If report downloads are enabled, the report can be downloaded by all users who view the report
+     at the public URL.
+<?php
+			}
+?>
+    </span>
+   </td>
+  </tr>
+<?php
+		}
 	}
 
 
@@ -1914,7 +1951,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		{
 			$configValue = $_POST["report_$configSetting"];
 			if ( in_array( $configSetting, [ 'visible', 'download', 'as_image', 'as_api',
-			                                 'saveable' ] ) )
+			                                 'saveable', 'as_public' ] ) )
 			{
 				$configValue = $configValue == 'Y' ? true : false;
 			}

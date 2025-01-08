@@ -22,6 +22,8 @@ $reportConfig = $listReports[$reportID];
 $reportData = $module->getReportData( $reportID );
 $canSaveIfApi = ( ! $module->getSystemSetting( 'admin-only-api' ) ||
                   $module->getUser()->isSuperUser() );
+$canSaveIfPublic = ( ! $module->getSystemSetting( 'admin-only-public' ) ||
+                     $module->getUser()->isSuperUser() );
 $canSaveIfEditable = ( ! $module->getSystemSetting( 'admin-only-editable' ) ||
                        $module->getUser()->isSuperUser() );
 
@@ -35,6 +37,10 @@ if ( ! empty( $_POST ) )
 	if ( ! $canSaveIfApi && $_POST['report_as_api'] == 'Y' )
 	{
 		$validationMsg = 'Reports with API access can only be saved by an administrator.';
+	}
+	if ( ! $canSaveIfPublic && $_POST['report_as_public'] == 'Y' )
+	{
+		$validationMsg = 'Reports with Public access can only be saved by an administrator.';
 	}
 	// - Check the forms/fields are specified if an alias or join condition is specified.
 	if ( $validationMsg == '' )
@@ -164,7 +170,7 @@ if ( ! empty( $_POST ) )
 	}
 
 	// Save data
-	$module->submitReportConfig( $reportID, true, [ 'saveable', 'image', 'api' ] );
+	$module->submitReportConfig( $reportID, true, [ 'saveable', 'image', 'api', 'public' ] );
 	$reportData = [ 'desc' => $_POST['query_desc'], 'forms' => [], 'where' => $_POST['query_where'],
 	                'orderby' => $_POST['query_orderby'], 'select' => [],
 	                'nomissingdatacodes' => isset( $_POST['query_nomissingdatacodes'] ) ];
@@ -357,7 +363,8 @@ echo $module->escapeHTML( $reportID ), "\n"; ?>
 </p>
 <form method="post" id="queryform">
  <table class="mod-advrep-formtable">
-<?php $module->outputReportConfigOptions( $reportConfig, true, [ 'saveable', 'image', 'api' ] ); ?>
+<?php $module->outputReportConfigOptions( $reportConfig, true,
+                                          [ 'saveable', 'image', 'api', 'public' ] ); ?>
   <tr><th colspan="2">Report Definition</th></tr>
   <tr>
    <td>Description</td>
