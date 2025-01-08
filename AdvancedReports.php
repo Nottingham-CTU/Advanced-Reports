@@ -1595,7 +1595,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	{
 		$str = str_replace( '$$PROJECT$$', intval( $this->getProjectId() ), $str );
 		$str = str_replace( '$$WEBROOT$$', APP_PATH_WEBROOT, $str );
-		return nl2br( $this->parseHTML( $str ) );
+		return $this->parseHTML( $str );
 	}
 
 
@@ -1618,10 +1618,11 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			                              ( $m[4] == '' ? '' : ' target="_blank"' ) ) ) .
 			       '>' . $m[6] . '</' . $m[7] . '>';
 		};
-		return preg_replace_callback( '/&lt;((?<t1>a) href=&quot;((?(?=&quot;)|.)*)&quot;( ' .
-		                              'target=&quot;_blank&quot;)?|(?<t2>b|i))&gt;(.*?)&lt;\/' .
-		                              '((?P=t1)|(?P=t2))&gt;/',
-		                              $fnParse, htmlspecialchars( $str, ENT_QUOTES ) );
+		return nl2br(
+		        preg_replace_callback( '/&lt;((?<t1>a) href=&quot;((?(?=&quot;)|.)*)&quot;( ' .
+		                               'target=&quot;_blank&quot;)?|(?<t2>b|i))&gt;(.*?)&lt;\/' .
+		                               '((?P=t1)|(?P=t2))&gt;/',
+		                               $fnParse, htmlspecialchars( $str, ENT_QUOTES ) ) );
 	}
 
 
