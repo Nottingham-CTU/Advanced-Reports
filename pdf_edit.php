@@ -66,7 +66,7 @@ if ( ! empty( $_POST ) )
 	}
 
 	// Save data
-	$module->submitReportConfig( $reportID, false );
+	$module->submitReportConfig( $reportID, false, [ 'saveable' ] );
 	$reportData = [ 'source' => $_POST['source'], 'pdf' => $_POST['pdf'],
 	                'pdf_size' => $_POST['pdf_size'],
 	                'pdf_orientation' => $_POST['pdf_orientation'] ];
@@ -118,7 +118,7 @@ echo $module->escapeHTML( $reportID ), "\n"; ?>
 </p>
 <form method="post" id="queryform">
  <table class="mod-advrep-formtable">
-<?php $module->outputReportConfigOptions( $reportConfig, false ); ?>
+<?php $module->outputReportConfigOptions( $reportConfig, false, [ 'saveable' ] ); ?>
   <tr><th colspan="2">Report Definition</th></tr>
   <tr>
    <td>Source Report</td>
@@ -193,7 +193,7 @@ echo $reportData['pdf'] ?? ''; ?></textarea>
      {
        return true
      }
-     $.ajax( { url : '<?php echo $module->getUrl( 'pdf_edit.php?report_id=' . $reportID ); ?>',
+     $.ajax( { url : window.location.href,
                method : 'POST',
                data : $('#queryform').serialize(),
                         headers : { 'X-RC-AdvRep-PDFQueryChk' : '1' },

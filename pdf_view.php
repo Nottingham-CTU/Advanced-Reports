@@ -8,7 +8,7 @@ const TVALIDSTR = 'text_validation_type_or_show_slider_number';
 
 
 
-// Verify the report exists, is a PDF report, and is visible.
+// Verify the report exists, and is a PDF report.
 // Redirect to main reports page if not.
 $reportID = $_GET['report_id'];
 $listReports = $module->getReportList();
@@ -19,8 +19,13 @@ if ( ! isset( $listReports[$reportID] ) || $listReports[$reportID]['type'] != 'p
 }
 
 
+// Determine the request type.
+$disableAccessControl = isset( $disableAccessControl ) ? $disableAccessControl : false;
+$isInternalRequest = isset( $isInternalRequest ) ? $isInternalRequest : false;
+
+
 // Check user can view this report, redirect to main reports page if not.
-if ( ! $module->isReportAccessible( $reportID ) )
+if ( ! $disableAccessControl && ! $module->isReportAccessible( $reportID ) )
 {
 	header( 'Location: ' . $module->getUrl( 'reports.php' ) );
 	exit;
@@ -36,6 +41,10 @@ $reportData = $module->getReportData( $reportID );
 if ( ! isset( $reportData['source'] ) || ! isset( $listReports[ $reportData['source'] ] ) ||
      $listReports[ $reportData['source'] ]['type'] != 'instrument' )
 {
+	if ( $isInternalRequest )
+	{
+		return;
+	}
 	header( 'Location: ' . $module->getUrl( 'reports.php' ) );
 	exit;
 }
@@ -65,9 +74,8 @@ $inputHTML = preg_split( '/(<\\?(?:end|loop|(?:if|setvar\\[([^\\[\\]]+)\\])' .
 //   This has to be done here, not using the module's parseLogic function, because that won't accept
 //   field names which are not valid REDCap field names (which can be the case here because the
 //   source report's column names are used).
-function fieldReplace( $input, $record, $forCalc )
+function fieldReplace( $input, $record, $forCalc, $module, $listVars )
 {
-	global $module, $listVars;
 	$fieldNames = array_map( function ( $i ) { return '[' . $i . ']'; },
 	                         array_merge( array_keys( $listVars ), array_keys( $record ) ) );
 	if ( $forCalc )
@@ -83,9 +91,8 @@ function fieldReplace( $input, $record, $forCalc )
 	return str_replace( $fieldNames, $values, $input );
 }
 // - Function to recursively process the input, parsing any loop/conditional instructions.
-function parseParts( &$input, $resultItem )
+function parseParts( &$input, $resultItem, $module, $listResults, &$listVars )
 {
-	global $module, $listResults, $listVars;
 	$output = '';
 	while ( !empty( $input ) )
 	{
@@ -102,11 +109,11 @@ function parseParts( &$input, $resultItem )
 			foreach ( $listResults as $infoResult )
 			{
 				$loopInput = $input;
-				$output .= parseParts( $loopInput, $infoResult );
+				$output .= parseParts( $loopInput, $infoResult, $module, $listResults, $listVars );
 			}
 			// Call the function again (discarding output) without copying the input array, so the
 			// array items are now removed ready for the next step.
-			parseParts( $input, $resultItem );
+			parseParts( $input, $resultItem, $module, $listResults, $listVars );
 		}
 		elseif ( substr( $inputItem, 0, 5 ) == '<?if(' )
 		{
@@ -126,7 +133,7 @@ function parseParts( &$input, $resultItem )
 			else
 			{
 				// Perform the field replace on the condition prior to parsing.
-				$condition = fieldReplace( $condition, $resultItem, true );
+				$condition = fieldReplace( $condition, $resultItem, true, $module, $listVars );
 				// Parse and run the logic. Anything which resembles a project variable at this
 				// point will be replaced with the empty string.
 				list( $condFunction, $condParamData ) = $module->parseLogic( $condition );
@@ -135,7 +142,7 @@ function parseParts( &$input, $resultItem )
 				// Always call the function to parse the condition block (to ensure the input array
 				// items are all removed as necessary), but only include the output if the condition
 				// matches.
-				$condOutput = parseParts( $input, $resultItem );
+				$condOutput = parseParts( $input, $resultItem, $module, $listResults, $listVars );
 				if ( $condition )
 				{
 					$output .= $condOutput;
@@ -160,7 +167,7 @@ function parseParts( &$input, $resultItem )
 			else
 			{
 				// Perform the field replace on the logic prior to parsing.
-				$logic = fieldReplace( $logic, $resultItem, true );
+				$logic = fieldReplace( $logic, $resultItem, true, $module, $listVars );
 				// Parse and run the logic. Anything which resembles a project variable at this
 				// point will be replaced with the empty string.
 				list( $condFunction, $condParamData ) = $module->parseLogic( $logic );
@@ -173,12 +180,12 @@ function parseParts( &$input, $resultItem )
 		else
 		{
 			// Not a loop/condition instruction, so just output the data.
-			$output .= fieldReplace( $inputItem, $resultItem, false );
+			$output .= fieldReplace( $inputItem, $resultItem, false, $module, $listVars );
 		}
 	}
 	return $output;
 }
-$inputHTML = parseParts( $inputHTML, $listResults[0] ?? [] );
+$inputHTML = parseParts( $inputHTML, $listResults[0] ?? [], $module, $listResults, $listVars );
 
 
 
@@ -196,13 +203,20 @@ $pdf->setPaper( $reportData['pdf_size'], $reportData['pdf_orientation'] );
 // Load the HTML.
 $pdf->loadHtml( $inputHTML );
 
-// Generate the filename, render the PDF and output.
+// Render the PDF.
+$pdf->render();
+
+// Generate the filename and output the PDF.
+if ( $isInternalRequest )
+{
+	echo $pdf->output( [ 'compress' => 1 ] );
+	return;
+}
 $queryDev = $module->query( 'SELECT value FROM redcap_config WHERE field_name = ?',
                             [ 'is_development_server' ] );
 $isDev = $queryDev->fetch_row();
 $isDev = $isDev[0] == '1';
-$pdf->render();
 $pdf->stream( trim( preg_replace( '/[^A-Za-z0-9-]+/', '_', \REDCap::getProjectTitle() ), '_-' ) .
-		      '_' . preg_replace( '/[^A-Za-z0-9-]+/', '_', $reportID ) . '_' .
-		      gmdate( 'Ymd-His' ) . ( $isDev ? '_dev' : '' ),
-		      [ 'compress' => 1, 'Attachment' => isset( $_GET['download'] ) ] );
+              '_' . preg_replace( '/[^A-Za-z0-9-]+/', '_', $reportID ) . '_' .
+              gmdate( 'Ymd-His' ) . ( $isDev ? '_dev' : '' ),
+              [ 'compress' => 1, 'Attachment' => isset( $_GET['download'] ) ] );

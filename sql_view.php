@@ -7,7 +7,7 @@ namespace Nottingham\AdvancedReports;
 
 
 
-// Verify the report exists, is an SQL report, and is visible.
+// Verify the report exists, and is an SQL report.
 // Redirect to main reports page if not.
 $reportID = $_GET['report_id'];
 $listReports = $module->getReportList();
@@ -20,9 +20,15 @@ $reportConfig = $listReports[$reportID];
 $reportData = $module->getReportData( $reportID );
 
 
+// Determine the request type (normal/csv/api).
+$disableAccessControl = isset( $disableAccessControl ) ? $disableAccessControl : false;
+$isInternalRequest = isset( $isInternalRequest ) ? $isInternalRequest : false;
+$isCsvDownload = ( ! $isApiRequest && isset( $_GET['download'] ) &&
+                   ( $isInternalRequest || $module->isReportDownloadable( $reportID ) ) );
+
 
 // Check user can view this report, redirect to main reports page if not.
-if ( ! $module->isReportAccessible( $reportID ) )
+if ( ! $disableAccessControl && ! $module->isReportAccessible( $reportID ) )
 {
 	header( 'Location: ' . $module->getUrl( 'reports.php' ) );
 	exit;
@@ -76,9 +82,12 @@ if ( $resultType == 'eav' || $resultType == 'eav-id' )
 
 
 // Handle report download.
-if ( isset( $_GET['download'] ) && $module->isReportDownloadable( $reportID ) )
+if ( $isCsvDownload )
 {
-	$module->writeCSVDownloadHeaders( $reportID );
+	if ( ! $isInternalRequest )
+	{
+		$module->writeCSVDownloadHeaders( $reportID );
+	}
 	if ( $resultType == 'eav' || $resultType == 'eav-id' )
 	{
 		$first = true;
@@ -107,6 +116,10 @@ if ( isset( $_GET['download'] ) && $module->isReportDownloadable( $reportID ) )
 				$first = false;
 			}
 		}
+		if ( $isInternalRequest )
+		{
+			return;
+		}
 		exit;
 	}
 	while ( $infoRecord = mysqli_fetch_assoc( $query ) )
@@ -131,6 +144,10 @@ if ( isset( $_GET['download'] ) && $module->isReportDownloadable( $reportID ) )
 			     '"';
 		}
 	}
+	if ( $isInternalRequest )
+	{
+		return;
+	}
 	exit;
 }
 
@@ -139,7 +156,10 @@ if ( isset( $_GET['download'] ) && $module->isReportDownloadable( $reportID ) )
 // Handle retrieve report as image.
 if ( isset( $_GET['as_image']) && $reportConfig['as_image'] )
 {
-	header( 'Content-Type: image/png' );
+	if ( ! $isInternalRequest )
+	{
+		header( 'Content-Type: image/png' );
+	}
 	// Determine the fonts and character sizes for the report.
 	$imgHeaderFont = 5;
 	$imgDataFont = 4;
@@ -222,6 +242,10 @@ if ( isset( $_GET['as_image']) && $reportConfig['as_image'] )
 	}
 	// Output the image as a PNG and exit.
 	imagepng( $img );
+	if ( $isInternalRequest )
+	{
+		return;
+	}
 	exit;
 }
 
@@ -234,9 +258,6 @@ $module->outputViewReportHeader( $reportConfig['label'], 'sql', true );
 // Initialise the row counter.
 $rowCount = 0;
 
-?>
-</p>
-<?php
 
 // If a description is provided, output it here.
 if ( isset( $reportData['sql_desc'] ) && $reportData['sql_desc'] != '' )

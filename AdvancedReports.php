@@ -5,6 +5,8 @@ namespace Nottingham\AdvancedReports;
 class AdvancedReports extends \ExternalModules\AbstractExternalModule
 {
 
+	const SAVEABLE_TYPES = [ 'instrument', 'pdf', 'sql' ];
+
 	// Show the advanced reports link based on whether the user is able to view or edit any
 	// reports. If the user has no access, hide the link.
 	function redcap_module_link_check_display( $project_id, $link )
@@ -287,6 +289,112 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 					return true;
 				});
 			}
+		}
+	}
+
+
+
+	// Upon record save, handle the @ADVANCED-REPORT-SAVE action tag if present.
+	function redcap_save_record( $projectID, $record, $instrument, $eventID, $groupID = null,
+	                             $survey_hash = null, $response_id = null, $instance = 1 )
+	{
+		// Check each field on the instrument.
+		$listFields = \REDCap::getDataDictionary( $projectID, 'array', false, null, $instrument );
+		foreach ( $listFields as $fieldName => $infoField )
+		{
+			// Ignore fields which are not file upload fields.
+			if ( $infoField['field_type'] != 'file' ||
+			     $infoField['text_validation_type_or_show_slider_number'] == 'signature' )
+			{
+				continue;
+			}
+			// Taking into account @IF action tags, look for the @ADVANCED-REPORT-SAVE action tag
+			// and extract the report name and any parameters.
+			$annotation = \Form::replaceIfActionTag( $infoField['field_annotation'], $projectID,
+			                                         $record, $eventID, $instrument, $instance );
+			$reportSaveParams =
+					\Form::getValueInParenthesesActionTag( $annotation, '@ADVANCED-REPORT-SAVE' );
+			if ( trim( $reportSaveParams ) == '' ||
+			     ! preg_match( '/^([\'"]?)([a-z0-9_]+)\g{1}' .
+			                   '(?: *, *([\'"])((?(?=\g{3})|.)*?)\g{3})?$/',
+			                   $reportSaveParams, $reportSaveRegexResult, PREG_UNMATCHED_AS_NULL ) )
+			{
+				continue;
+			}
+			$reportName = $reportSaveRegexResult[2];
+			$reportParamString = $reportSaveRegexResult[4];
+			$listParams = [];
+			if ( $reportParamString !== null )
+			{
+				preg_match_all( '/(?:^|&)([^=&]+)(?:=([^&]+))?/', $reportParamString,
+				                $listTemp, PREG_SET_ORDER );
+				for ( $i = 0; $i < count( $listTemp ); $i++ )
+				{
+					$listTemp[$i][1] =
+						\Piping::replaceVariablesInLabel( $listTemp[$i][1], $record, $eventID,
+						                                  $instance, [], false, $projectID,
+						                                  false, '', 1, false, false, $instrument );
+					$listTemp[$i][2] =
+						\Piping::replaceVariablesInLabel( $listTemp[$i][2], $record, $eventID,
+						                                  $instance, [], false, $projectID,
+						                                  false, '', 1, false, false, $instrument );
+					$listParams[ $listTemp[$i][1] ] = $listTemp[$i][2];
+				}
+			}
+			// Get the report and save to file field.
+			$fnGetReport = function( $reportID, $listParams, $module )
+			{
+				$listReports = $module->getReportList();
+				if ( ! isset( $listReports[ $reportID ] ) ||
+				     ! isset( $listReports[ $reportID ]['saveable'] ) ||
+				     ! $listReports[ $reportID ]['saveable'] ||
+				     ! in_array( $listReports[ $reportID ]['type'], self::SAVEABLE_TYPES ) )
+				{
+					return null;
+				}
+				$disableAccessControl = true;
+				$isInternalRequest = true;
+				$oldGet = $_GET;
+				$oldPost = $_POST;
+				$_GET = $listParams;
+				$_GET['pid'] = $oldGet['pid'];
+				$_GET['report_id'] = $reportID;
+				$_GET['download'] = '1';
+				if ( isset( $listReports[ $reportID ]['as_image'] ) &&
+				     $listReports[ $reportID ]['as_image'] && isset( $_GET['as_image'] ) )
+				{
+					unset( $_GET['download'] );
+				}
+				$_POST = [];
+				ob_start();
+				require $listReports[ $reportID ]['type'] . '_view.php';
+				$data = ob_get_clean();
+				$fileName = $reportID . '_' . date( 'Ymd_His' );
+				if ( $listReports[ $reportID ]['type'] == 'pdf' )
+				{
+					$fileName .= '.pdf';
+				}
+				else
+				{
+					$fileName .= isset( $_GET['download'] ) ? '.csv' : '.png';
+				}
+				$_GET = $oldGet;
+				$_POST = $oldPost;
+				return [ $fileName, $data ];
+			};
+			list( $fileName, $reportData ) = $fnGetReport( $reportName, $listParams, $this );
+			if ( $reportData === null )
+			{
+				continue;
+			}
+			$tempFile = $this->createTempFile();
+			file_put_contents( $tempFile, $reportData );
+			$docID = \REDCap::storeFile( $tempFile, $projectID, $fileName );
+			if ( $docID == 0 )
+			{
+				continue;
+			}
+			\REDCap::addFileToField( $docID, $projectID, $record, $fieldName, $eventID, $instance );
 		}
 	}
 
@@ -580,7 +688,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	// Gets the list of reports, with the configuration data for each report.
 	function getReportList()
 	{
-		$projectID = $this->getProjectID();
+		$projectID = $this->getProjectId();
 		if ( $projectID === null )
 		{
 			return [];
@@ -1805,7 +1913,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		foreach ( $listConfig as $configSetting )
 		{
 			$configValue = $_POST["report_$configSetting"];
-			if ( in_array( $configSetting, [ 'visible', 'download', 'as_image', 'as_api' ] ) )
+			if ( in_array( $configSetting, [ 'visible', 'download', 'as_image', 'as_api',
+			                                 'saveable' ] ) )
 			{
 				$configValue = $configValue == 'Y' ? true : false;
 			}

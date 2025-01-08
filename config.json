@@ -9,7 +9,7 @@
 			"institution": "University of Nottingham"
 		}
 	],
-	"permissions" : [ "redcap_every_page_before_render" ],
+	"permissions" : [ "redcap_every_page_before_render", "redcap_save_record" ],
 	"framework-version" : 11,
 	"compatibility" : {
 		"redcap-version-min" : "12.5.9",
@@ -48,5 +48,11 @@
 		}
 	],
 	"no-auth-pages" : [ "api" ],
+	"action-tags" : [
+		{
+			"tag" : "@ADVANCED-REPORT-SAVE",
+			"description" : "Saves an advanced report to a file upload field upon form submission. Please refer to the module documentation for instructions on using this action tag."
+		}
+	],
 	"no-csrf-pages" : [ "api" ]
 }

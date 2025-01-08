@@ -164,7 +164,7 @@ if ( ! empty( $_POST ) )
 	}
 
 	// Save data
-	$module->submitReportConfig( $reportID, true, [ 'image', 'api' ] );
+	$module->submitReportConfig( $reportID, true, [ 'saveable', 'image', 'api' ] );
 	$reportData = [ 'desc' => $_POST['query_desc'], 'forms' => [], 'where' => $_POST['query_where'],
 	                'orderby' => $_POST['query_orderby'], 'select' => [],
 	                'nomissingdatacodes' => isset( $_POST['query_nomissingdatacodes'] ) ];
@@ -357,7 +357,7 @@ echo $module->escapeHTML( $reportID ), "\n"; ?>
 </p>
 <form method="post" id="queryform">
  <table class="mod-advrep-formtable">
-<?php $module->outputReportConfigOptions( $reportConfig, true, [ 'image', 'api' ] ); ?>
+<?php $module->outputReportConfigOptions( $reportConfig, true, [ 'saveable', 'image', 'api' ] ); ?>
   <tr><th colspan="2">Report Definition</th></tr>
   <tr>
    <td>Description</td>
@@ -510,7 +510,7 @@ echo $reportData['nomissingdatacodes'] ? ' checked' : '';
      {
        return true
      }
-     $.ajax( { url : '<?php echo $module->getUrl( 'instrument_edit.php?report_id=' . $reportID ); ?>',
+     $.ajax( { url : window.location.href,
                method : 'POST',
                data : $('#queryform').serialize(),
                         headers : { 'X-RC-AdvRep-InstQueryChk' : '1' },

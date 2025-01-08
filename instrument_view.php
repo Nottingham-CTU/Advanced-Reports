@@ -8,7 +8,7 @@ const TVALIDSTR = 'text_validation_type_or_show_slider_number';
 
 
 
-// Verify the report exists, and is an instrument query, is visible.
+// Verify the report exists, and is an instrument query.
 // Redirect to main reports page if not.
 $reportID = $_GET['report_id'];
 $listReports = $module->getReportList();
@@ -20,16 +20,17 @@ if ( ! isset( $listReports[$reportID] ) || $listReports[$reportID]['type'] != 'i
 
 
 // Determine the request type (normal/csv/api).
+$disableAccessControl = isset( $disableAccessControl ) ? $disableAccessControl : false;
 $isApiRequest = isset( $isApiRequest ) ? $isApiRequest : false;
 $isInternalRequest = isset( $isInternalRequest ) ? $isInternalRequest : false;
 $isCsvDownload = ( ! $isApiRequest && isset( $_GET['download'] ) &&
-                   $module->isReportDownloadable( $reportID ) );
+                   ( $isInternalRequest || $module->isReportDownloadable( $reportID ) ) );
 $requestType = ( ( $isApiRequest && ! $isInternalRequest )
                  ? 'api' : ( $isCsvDownload ? 'download' : false ) );
 
 
 // Check user can view this report, redirect to main reports page if not.
-if ( ! $isApiRequest && ! $module->isReportAccessible( $reportID ) )
+if ( ! $disableAccessControl && ! $isApiRequest && ! $module->isReportAccessible( $reportID ) )
 {
 	header( 'Location: ' . $module->getUrl( 'reports.php' ) );
 	exit;
@@ -45,6 +46,8 @@ class FieldReference
 	private $instance;
 	private $value;
 	private $label;
+	public static $module;
+	public static $disableAccessControl;
 
 	public function __construct( $record, $fieldName, $event, $instance, $value, $label = '' )
 	{
@@ -58,9 +61,10 @@ class FieldReference
 
 	public function makeUpdateForm()
 	{
-		global $module;
+		$module = self::$module;
 		$fieldType = \REDCap::getFieldType( $this->fieldName );
-		if ( ! in_array( $fieldType,
+		if ( self::$disableAccessControl ||
+		     ! in_array( $fieldType,
 		                 [ 'text', 'notes', 'radio', 'dropdown', 'yesno', 'truefalse' ] ) )
 		{
 			return $module->escapeHTML( $this->value );
@@ -139,10 +143,12 @@ class FieldReference
 		                            (int)($instance ?? 1) ] ) );
 	}
 }
+FieldReference::$module = $module;
+FieldReference::$disableAccessControl = $disableAccessControl;
 
 
 // If a value to be changed has been submitted, check the submission is valid and update the value.
-if ( isset( $_POST['key'] ) &&
+if ( ! $disableAccessControl && isset( $_POST['key'] ) &&
      $_POST['key'] == FieldReference::makeKey( $_POST['csrf_token'], $_POST['record'],
                                                $_POST['field'], $_POST['event'],
                                                $_POST['instance'] ) )
@@ -726,7 +732,10 @@ if ( $isApiRequest )
 // Handle report download.
 if ( $isCsvDownload )
 {
-	$module->writeCSVDownloadHeaders( $reportID );
+	if ( ! $isInternalRequest )
+	{
+		$module->writeCSVDownloadHeaders( $reportID );
+	}
 	$firstRow = true;
 	foreach ( $resultTable as $resultRow )
 	{
@@ -756,15 +765,22 @@ if ( $isCsvDownload )
 			echo '"', str_replace( '"', '""', $module->parseHTML( (string)$value, true ) ), '"';
 		}
 	}
+	if ( $isInternalRequest )
+	{
+		return;
+	}
 	exit;
 }
 
 
 
 // Handle retrieve report as image.
-if ( isset( $_GET['as_image']) && $reportConfig['as_image'] )
+if ( isset( $_GET['as_image'] ) && $reportConfig['as_image'] )
 {
-	header( 'Content-Type: image/png' );
+	if ( ! $isInternalRequest )
+	{
+		header( 'Content-Type: image/png' );
+	}
 	// Determine the fonts and character sizes for the report.
 	$imgHeaderFont = 5;
 	$imgDataFont = 4;
@@ -854,13 +870,16 @@ if ( isset( $_GET['as_image']) && $reportConfig['as_image'] )
 	}
 	// Output the image as a PNG and exit.
 	imagepng( $img );
+	if ( $isInternalRequest )
+	{
+		return;
+	}
 	exit;
 }
 
 
 
 // Display the project header and report navigation links.
-
 require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
 $module->outputViewReportHeader( $reportConfig['label'], 'instrument', true );
 

@@ -52,7 +52,7 @@ if ( ! empty( $_POST ) )
 	}
 
 	// Save data
-	$module->submitReportConfig( $reportID, true, 'image' );
+	$module->submitReportConfig( $reportID, true, [ 'saveable', 'image' ] );
 	$reportData = [ 'sql_desc' => $_POST['sql_desc'], 'sql_query' => $_POST['sql_query'],
 	                'sql_type' => $_POST['sql_type'], 'sql_cols' => $_POST['sql_cols'] ];
 	$module->setReportData( $reportID, $reportData );
@@ -80,7 +80,7 @@ $module->writeStyle();
 </p>
 <form method="post" id="sqlform">
  <table class="mod-advrep-formtable">
-<?php $module->outputReportConfigOptions( $reportConfig, true, 'image' ); ?>
+<?php $module->outputReportConfigOptions( $reportConfig, true, [ 'saveable', 'image' ] ); ?>
   <tr><th colspan="2">Report Definition</th></tr>
   <tr>
    <td>Description</td>

@@ -58,6 +58,9 @@ report. Keep this in mind when setting the user roles which can access each repo
 * **Allow downloads** \* determines whether a download link is provided for this report
 * **Grant downloads to roles** \* apart from users with edit rights, only the users with roles
   listed here will see the download link.
+* **Report can be saved to a field** \* determines whether the report can be saved into a file field
+  on a record using the `@ADVANCED-REPORT-SAVE` action tag. For more information about this, see the
+  section *saving reports to records* below.
 * **Allow retrieval as image** \* determines whether the report can be retrieved as an image file,
   rather than as a REDCap page, which is useful for embedding a report in a data collection
   instrument
@@ -149,6 +152,31 @@ data export rights.
 * **Result Columns** pre-specify column names for EAV datasets
 
 Please refer to the [SQL report instructions](README-SQL.md) for more information.
+
+
+
+## Saving reports to records
+
+It is possible to save an advanced report to a record in the project by creating a file upload field
+and using the `@ADVANCED-REPORT-SAVE` action tag. The chosen report will be saved into the field
+upon form submission. Use the action tag as follows:
+
+`@ADVANCED-REPORT-SAVE('report_name','params')`
+
+Where `report_name` is the unique report name, and `params` are any additional URL query string
+parameters you want to use. The `params` value is optional and can be omitted. If specified,
+`params` should be in the format `param1=value1&param2=value2`.
+
+* `@IF` action tags are supported, so reports can be saved conditionally by placing the
+  `@ADVANCED-REPORT-SAVE` action tag within an `@IF` action tag.
+* The report will be saved to the field on *every* form submission, replacing any previous file. If
+  you want existing files to be retained, use an `@IF` action tag to check if the field is empty.
+* Piping and smart variables are supported in the `params` value.
+* The `report_name` must reference a report which exists, is of a type which can be saved to a
+  field, and has the option for saving to fields enabled. If these conditions are not met, the
+  action tag will have no effect.
+* Report access controls are not applied when saving to file fields and once saved, the report will
+  be accessible to any user with access to that record/field.
 
 
 
