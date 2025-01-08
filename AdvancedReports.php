@@ -1457,7 +1457,29 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
       $(this).addClass( vIsAsc ? 'sorting_desc' : 'sorting_asc' )
       vReportParams.sort.unshift( { col: vColNum, dir: ( vIsAsc ? 'desc' : 'asc' ) } )
       updateURL()
-    })
+    });
+
+
+<?php
+		$userDateFormat = \DateTimeRC::get_user_format_base();
+		if ( $userDateFormat == 'DMY' || $userDateFormat == 'MDY' )
+		{
+			$userDateSubstr = $userDateFormat == 'DMY' ? [ '3,5', '0,2' ] : [ '0,2', '3,5' ];
+?>
+    var vDateParse = Date.parse
+    Date.parse = function ( vDateVal )
+    {
+      if ( /^[0-9]{2}[^0-9][0-9]{2}[^0-9][0-9]{4}([^0-9]|$)/.test( vDateVal ) )
+      {
+        vDateVal = '' + vDateVal.substring(6,10) + vDateVal.substring(5,6) +
+                   vDateVal.substring(<?php echo $userDateSubstr[0]; ?>) + vDateVal.substring(2,3) +
+                   vDateVal.substring(<?php echo $userDateSubstr[1]; ?>) + vDateVal.substring(10)
+      }
+      return vDateParse( vDateVal )
+    };
+<?php
+		}
+?>
 
 
     var vHeader = $('.mod-advrep-datatable thead th')
@@ -1532,27 +1554,6 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
         elemTh.setAttribute('data-type', 'string')
       }
     });
-
-<?php
-		$userDateFormat = \DateTimeRC::get_user_format_base();
-		if ( $userDateFormat == 'DMY' || $userDateFormat == 'MDY' )
-		{
-			$userDateSubstr = $userDateFormat == 'DMY' ? [ '3,5', '0,2' ] : [ '0,2', '3,5' ];
-?>
-    var vDateParse = Date.parse
-    Date.parse = function ( vDateVal )
-    {
-      if ( /^[0-9]{2}[^0-9][0-9]{2}[^0-9][0-9]{4}([^0-9]|$)/.test( vDateVal ) )
-      {
-        vDateVal = '' + vDateVal.substring(6,10) + vDateVal.substring(5,6) +
-                   vDateVal.substring(<?php echo $userDateSubstr[0]; ?>) + vDateVal.substring(2,3) +
-                   vDateVal.substring(<?php echo $userDateSubstr[1]; ?>) + vDateVal.substring(10)
-      }
-      return vDateParse( vDateVal )
-    };
-<?php
-		}
-?>
 
 
     (function()
@@ -1986,6 +1987,10 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			elseif ( trim( $configValue ) === '' )
 			{
 				$configValue = null;
+			}
+			elseif ( in_array( $configSetting, [ 'annotation', 'roles_access', 'roles_download' ] ) )
+			{
+				$configValue = str_replace( "\r\n", "\n", $configValue );
 			}
 			$this->setReportConfig( $reportID, $configSetting, $configValue );
 		}
