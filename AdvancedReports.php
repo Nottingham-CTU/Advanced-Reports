@@ -1489,6 +1489,10 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
       $(elemTr).find('td').each(function(indexTd,elemTd)
       {
         var vText = $(elemTd).text()
+        if ( typeof $(elemTd).attr('data-sortvalue') != 'undefined' )
+        {
+          vText = $(elemTd).attr('data-sortvalue')
+        }
         var vItems = vHeader[indexTd].getAttribute('data-items')
         vItems = JSON.parse( vItems === null ? '[]' : vItems )
         if ( vItems !== false && vText != '' && vItems.indexOf( vText ) == -1 )
@@ -1555,6 +1559,36 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
         elemTh.setAttribute('data-type', 'string')
       }
     });
+
+
+    var vOldRowCompare = RowCompare
+    var vOldRowCompareIntegers = RowCompareIntegers
+    var vOldRowCompareNumbers = RowCompareNumbers
+    var vOldRowCompareDates = RowCompareDates
+    var vFuncCompareStVals = function ( a, b, f )
+    {
+      var vElemA = $(a.getElementsByTagName('td')[lastSort])
+      var vElemB = $(b.getElementsByTagName('td')[lastSort])
+      if ( typeof vElemA.attr('data-sortvalue') == 'undefined' ||
+           typeof vElemB.attr('data-sortvalue') == 'undefined' )
+      {
+        return f( a, b )
+      }
+      vElemA.attr('data-displayvalue',vElemA.html())
+      vElemA.text(vElemA.attr('data-sortvalue'))
+      vElemB.attr('data-displayvalue',vElemB.html())
+      vElemB.text(vElemB.attr('data-sortvalue'))
+      var vCompareResult = f( a, b )
+      vElemA.html(vElemA.attr('data-displayvalue'))
+      vElemA.attr('data-displayvalue',null)
+      vElemB.html(vElemB.attr('data-displayvalue'))
+      vElemB.attr('data-displayvalue',null)
+      return vCompareResult
+    };
+    RowCompare = function(a, b){ return vFuncCompareStVals(a, b, vOldRowCompare) };
+    RowCompareIntegers = function(a, b){ return vFuncCompareStVals(a, b, vOldRowCompareIntegers) };
+    RowCompareNumbers = function(a, b){ return vFuncCompareStVals(a, b, vOldRowCompareNumbers) };
+    RowCompareDates = function(a, b){ return vFuncCompareStVals(a, b, vOldRowCompareDates) };
 
 
     (function()
