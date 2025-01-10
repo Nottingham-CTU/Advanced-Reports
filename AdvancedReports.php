@@ -748,7 +748,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	// Get the list of report types.
 	function getReportTypes()
 	{
-		return [ 'gantt' => 'Gantt',
+		return [ 'accumulation' => 'Accumulation',
+		         'gantt' => 'Gantt',
 		         'instrument' => 'Instrument Query',
 		         'pdf' => 'PDF',
 		         'recordtbl' => 'Record Table',
@@ -1802,6 +1803,33 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			}
 			return $listValues[ floor( $count / 2 ) ];
 		}
+	}
+
+
+
+	// Replace logic vars with values (do a search/replace excluding string values).
+	function replaceLogicVars( $logic, $search, $replace )
+	{
+		$listStr = preg_split('/([\'"])/', $logic, -1, PREG_SPLIT_DELIM_CAPTURE );
+		$quote = '';
+		$logic = '';
+		foreach ( $listStr as $strPart )
+		{
+			if ( $quote == '' && ( $strPart == "'" || $strPart == '"' ) )
+			{
+				$quote = $strPart;
+			}
+			elseif ( $quote != '' && $quote == $strPart )
+			{
+				$quote = '';
+			}
+			elseif ( $quote == '' )
+			{
+				$strPart = str_replace( $search, $replace, $strPart );
+			}
+			$logic .= $strPart;
+		}
+		return $logic;
 	}
 
 
