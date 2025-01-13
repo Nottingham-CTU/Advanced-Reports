@@ -35,11 +35,13 @@ if ( ! $disableAccessControl && ! $module->isReportAccessible( $reportID ) )
 // Get the report data.
 $reportConfig = $listReports[$reportID];
 $reportData = $module->getReportData( $reportID );
+$allowSQLSource = $module->getSystemSetting( 'allow-sql-source' );
 
 
 // Check a valid source is specified, redirect to main reports page if not.
 if ( ! isset( $reportData['source'] ) || ! isset( $listReports[ $reportData['source'] ] ) ||
-     $listReports[ $reportData['source'] ]['type'] != 'instrument' )
+     ( $listReports[ $reportData['source'] ]['type'] != 'instrument' &&
+       ( ! $allowSQLSource || $listReports[ $reportData['source'] ]['type'] != 'sql' ) ) )
 {
 	if ( $isInternalRequest )
 	{

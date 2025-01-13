@@ -36,6 +36,11 @@
 			"key" : "admin-only-editable",
 			"name" : "Only allow administrators to save reports with editable fields",
 			"type" : "checkbox"
+		},
+		{
+			"key" : "allow-sql-source",
+			"name" : "Allow SQL reports to be used as the source for PDF reports",
+			"type" : "checkbox"
 		}
 	],
 	"project-settings" : [

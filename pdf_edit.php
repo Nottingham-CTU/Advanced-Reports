@@ -21,6 +21,7 @@ $reportConfig = $listReports[$reportID];
 $reportData = $module->getReportData( $reportID );
 $canSaveIfPublic = ( ! $module->getSystemSetting( 'admin-only-public' ) ||
                      $module->getUser()->isSuperUser() );
+$allowSQLSource = $module->getSystemSetting( 'allow-sql-source' );
 
 
 
@@ -28,7 +29,7 @@ $canSaveIfPublic = ( ! $module->getSystemSetting( 'admin-only-public' ) ||
 $listDataSources = [];
 foreach ( $listReports as $rID => $rConfig )
 {
-	if ( $rConfig['type'] == 'instrument' )
+	if ( $rConfig['type'] == 'instrument' || ( $allowSQLSource && $rConfig['type'] == 'sql' ) )
 	{
 		$listDataSources[ $rID ] = $rConfig['label'];
 	}
