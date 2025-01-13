@@ -227,15 +227,27 @@ if ( count( $listReports ) > 0 )
    <span style="font-size:90%">
     <b>Name:</b> <?php echo $reportID; ?> &nbsp;|&nbsp;
     <b>Type:</b> <?php echo $module->getReportTypes()[ $infoReport['type'] ]; ?> &nbsp;|&nbsp;
-    <b>Visibility:</b> <?php echo $infoReport['visible'] ? 'visible' : 'hidden', "\n"; ?>
 <?php
-		if ( isset( $infoReport['as_api'] ) && $infoReport['as_api'] == 'Y' &&
-		     $infoReport['api_key'] != '' )
+		echo '    ';
+		echo '<i class="far fa-eye', ( $infoReport['visible'] ? '' : '-slash' ), '" title="';
+		echo ( $infoReport['visible'] ? 'Visible' : 'Hidden' ), ' in reports list"></i>';
+		if ( isset( $infoReport['download'] ) && $infoReport['download'] )
 		{
-?>
-    &nbsp;|&nbsp; <b>API</b>
-<?php
+			echo ' &nbsp;<i class="fas fa-download" title="Downloadable"></i>';
 		}
+		if ( isset( $infoReport['saveable'] ) && $infoReport['saveable'] )
+		{
+			echo ' &nbsp;<i class="far fa-floppy-disk" title="Saveable to field"></i>';
+		}
+		if ( isset( $infoReport['as_api'] ) && $infoReport['as_api'] )
+		{
+			echo ' &nbsp;<i class="fas fa-laptop-code" title="API"></i>';
+		}
+		if ( isset( $infoReport['as_public'] ) && $infoReport['as_public'] )
+		{
+			echo ' &nbsp;<i class="fas fa-earth-americas" title="Public"></i>';
+		}
+		echo "\n";
 		if ( isset( $infoReport['lastupdated_user'] ) )
 		{
 ?>
