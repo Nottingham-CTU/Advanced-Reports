@@ -267,6 +267,49 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 						$definition .= $UITweaker->customReportsEscapeHTML(
 						                str_replace( [ "\r\n", "\r" ], "\n", $reportData['pdf'] ) );
 					}
+					// For accumulation reports...
+					elseif ( $reportConfig['type'] == 'accumulation' )
+					{
+						$definition = '<b>Accumulation range:</b>';
+						$definition .= "\n- Start: " . $UITweaker->customReportsEscapeHTML(
+						                                                 $reportData['acc_start'] );
+						$definition .= "\n- End: " . $UITweaker->customReportsEscapeHTML(
+						                                                   $reportData['acc_end'] );
+						if ( $reportData['acc_step'] != '' )
+						{
+							$definition .= "\n- Step: " . $UITweaker->customReportsEscapeHTML(
+							                                              $reportData['acc_step'] );
+						}
+						$definition .= "\n<b>Accumulation logic:</b>\n";
+						$definition .=
+								$UITweaker->customReportsEscapeHTML( $reportData['acc_logic'] );
+						if ( $reportData['group_logic'] != '' )
+						{
+							$definition .= "\n<b>Group by:</b>\n";
+							$definition .=
+								$UITweaker->customReportsEscapeHTML( $reportData['group_logic'] );
+						}
+						if ( $reportData['col_logic'] != '' )
+						{
+							$definition .= "\n<b>Column label logic:</b>\n";
+							$definition .=
+								$UITweaker->customReportsEscapeHTML( $reportData['col_logic'] );
+						}
+						$options = "<b>Display format:</b>\n" .
+						           $UITweaker->customReportsEscapeHTML( $reportData['display'] );
+						if ( $reportData['group_total'] || $reportData['col_reverse'] )
+						{
+							$options .= "\n<b>Display options:</b>";
+							if ( $reportData['group_total'] )
+							{
+								$options .= "\nAdd a 'Total' row";
+							}
+							if ( $reportData['col_reverse'] )
+							{
+								$options .= "\nColumns in reverse order";
+							}
+						}
+					}
 					// Add the report to the simplified view.
 					$UITweaker->addCustomReport( [ 'title' => $reportConfig['label'],
 					                               'type' => $reportTypes[ $reportConfig['type'] ],
