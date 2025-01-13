@@ -969,7 +969,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 	// Output a drop-down list of instruments for the project.
-	function outputInstrumentDropdown( $dropDownName, $value )
+	function outputInstrumentDropdown( $dropDownName, $value, $extraOptions = null )
 	{
 		echo '<select name="', htmlspecialchars( $dropDownName ), '">';
 		echo '<option value=""', ( $value == '' ? ' selected' : '' ), '></option>';
@@ -978,6 +978,15 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			echo '<option value="', htmlspecialchars( $optValue ), '"',
 			     ( $value == $optValue ? ' selected' : '' ), '>',
 			     htmlspecialchars( $optLabel ), '</option>';
+		}
+		if ( $extraOptions !== null )
+		{
+			foreach ( $extraOptions as $optValue => $optLabel )
+			{
+				echo '<option value="', htmlspecialchars( $optValue ), '"',
+				     ( $value == $optValue ? ' selected' : '' ), '>',
+				     htmlspecialchars( $optLabel ), '</option>';
+			}
 		}
 		echo '</select>';
 	}

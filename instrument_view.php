@@ -267,6 +267,39 @@ foreach ( $reportData['forms'] as $queryForm )
 	}
 }
 
+// Get redcap_users virtual table if required.
+$hasRCUsersTable = false;
+$rcUsersTable = [];
+foreach ( $reportData['forms'] as $queryForm )
+{
+	if ( $queryForm['form'] == 'redcap_users' )
+	{
+		$hasRCUsersTable = true;
+		break;
+	}
+}
+if ( $hasRCUsersTable )
+{
+	$queryRCUsersTable =
+		$module->query( 'SELECT ui.username, ui.user_firstname firstname, ui.user_lastname ' .
+		                'lastname, ui.user_email email, uro.role_name, concat( substring(' .
+		                'le1.added,1,4), \'-\', substring(le1.added,5,2), \'-\', substring(' .
+		                'le1.added,7,2), \' \', substring(le1.added,9,2), \':\', substring(' .
+		                'le1.added,11,2), \':\', substring(le1.added,13,2) ) added, ' .
+		                'uri.expiration ' .
+		                'FROM redcap_user_information ui LEFT JOIN redcap_user_rights uri ' .
+		                'ON ui.username = uri.username AND uri.project_id = ? ' .
+		                'LEFT JOIN redcap_user_roles uro ON uri.role_id = uro.role_id ' .
+		                'JOIN ( SELECT pk username, min(ts) added FROM ' . $logEventTable . ' ' .
+		                'WHERE object_type = \'redcap_user_rights\' AND data_values LIKE ' .
+		                '\'%user = %\' GROUP BY pk ) le1 ON ui.username = le1.username',
+		                $module->getProjectId() );
+	while ( $infoRCUsersTable = $queryRCUsersTable->fetch_assoc() )
+	{
+		$rcUsersTable[] = $infoRCUsersTable;
+	}
+}
+
 // Build the result table.
 $resultTable = [[]];
 foreach ( $reportData['forms'] as $queryForm )
@@ -275,13 +308,24 @@ foreach ( $reportData['forms'] as $queryForm )
 	$form = $queryForm['form'];
 	$alias = $queryForm['alias'] == '' ? $form : $queryForm['alias'];
 	// Get the fields for the form and retrieve the values and value labels for each record.
-	$fields = array_unique( array_merge( [ \REDCap::getRecordIdField() ],
-	                                     \REDCap::getFieldNames( $form ) ) );
-	$fieldMetadata = \REDCap::getDataDictionary( 'array', false, $fields );
-	$formValues = \REDCap::getData( $resultParams +
-	                                [ 'exportAsLabels' => false, 'fields' => $fields ] );
-	$formLabels = \REDCap::getData( $resultParams +
-	                                [ 'exportAsLabels' => true, 'fields' => $fields ] );
+	if ( $form == 'redcap_users' )
+	{
+		$fields = empty( $rcUsersTable ) ? [] : array_keys( $rcUsersTable[0] );
+		$fieldMetadata = [ 'added' => [ 'field_type' => 'text', TVALIDSTR => 'time' ],
+		                   'expiration' => [ 'field_type' => 'text', TVALIDSTR => 'time' ] ];
+		$formValues = $rcUsersTable;
+		$formLabels = $rcUsersTable;
+	}
+	else
+	{
+		$fields = array_unique( array_merge( [ \REDCap::getRecordIdField() ],
+		                                     \REDCap::getFieldNames( $form ) ) );
+		$fieldMetadata = \REDCap::getDataDictionary( 'array', false, $fields );
+		$formValues = \REDCap::getData( $resultParams +
+		                                [ 'exportAsLabels' => false, 'fields' => $fields ] );
+		$formLabels = \REDCap::getData( $resultParams +
+		                                [ 'exportAsLabels' => true, 'fields' => $fields ] );
+	}
 	$dateFields = [];
 	if ( ! $isCsvDownload )
 	{

@@ -234,7 +234,8 @@ function writeInstrumentRow1( $setWidths, $formVal, $aliasVal, $joinVal = '' )
 ?>
       </td>
       <td style="text-align:left;width:<?php echo $setWidths ? '60px' : 'unset'; ?>"><?php
-$module->outputInstrumentDropdown( 'query_form[]', $formVal ?? '' );
+$module->outputInstrumentDropdown( 'query_form[]', $formVal ?? '',
+                                   [ 'redcap_users' => 'redcap_users - Project Users'] );
 ?></td>
       <td style="text-align:left;width:unset">
        <input type="text" name="query_form_alias[]" placeholder="alias (optional)"
@@ -349,6 +350,8 @@ foreach ( array_keys( $module->getInstrumentList() ) as $instrument )
 	                                array_unique( array_merge( $listCommonFormVars,
 	                                                          array_values( $formFieldNames ) ) ) );
 }
+$listFormVars['redcap_users'] = [ 'username', 'firstname', 'lastname', 'email', 'role_name',
+                                  'added', 'expiration' ];
 
 
 
