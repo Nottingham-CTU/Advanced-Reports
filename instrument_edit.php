@@ -206,8 +206,20 @@ if ( ! empty( $_POST ) )
 function writeInstrumentRow1( $setWidths, $formVal, $aliasVal, $joinVal = '' )
 {
 	global $module;
-?>
 
+?>
+      <td style="text-align:center;width:15px;padding-right:0px">
+<?php
+	if ( ! $setWidths )
+	{
+?>
+       <div class="instq-row-from-move" style="cursor:ns-resize">
+        <i class="fas fa-arrows-up-down fs11"></i>
+       </div>
+<?php
+	}
+?>
+      </td>
       <td style="text-align:left;width:<?php echo $setWidths ? '60px' : 'unset'; ?>">
 <?php
 	if ( ! $setWidths )
@@ -239,8 +251,9 @@ function writeInstrumentRow2( $onCondVal, $formVal, $firstFormVal, $aliasVal, $f
 	global $module, $recordIDField;
 	$formVal = ( $aliasVal == '' ) ? $formVal : $aliasVal;
 	$firstFormVal = ( $firstAliasVal == '' ) ? $firstFormVal : $firstAliasVal;
-?>
 
+?>
+      <td style="width:unset"></td>
       <td style="text-align:left;width:unset">On Condition</td>
       <td colspan="2" style="text-align:left;width:unset">
        <input type="text" name="query_form_on[]" placeholder="condition logic"
@@ -261,13 +274,8 @@ function writeSelectRow( $setWidths, $fieldVal, $aliasVal, $groupVal )
 ?>
 
       <td style="text-align:center;width:15px;padding-right:0px">
-       <div style="margin-bottom:-8px;cursor:pointer"
-            onclick="$(this).closest('tr').insertBefore($(this).closest('tr').prev('tr:visible'))">
-        <i class="fas fa-caret-up fs11"></i>
-       </div>
-       <div style="cursor:pointer"
-            onclick="$(this).closest('tr').insertAfter($(this).closest('tr').next('tr:visible'))">
-        <i class="fas fa-caret-down fs11"></i>
+       <div class="instq-row-select-move" style="cursor:ns-resize">
+        <i class="fas fa-arrows-up-down fs11"></i>
        </div>
       </td>
       <td style="text-align:left;width:<?php echo $setWidths ? '50%;max-width:425px' : 'unset'; ?>">
@@ -391,9 +399,11 @@ echo $reportData['desc'] ?? ''; ?></textarea>
    <td>Instruments</td>
    <td>
     <table id="inst-entries-tbl" style="width:95%;max-width:750px">
-     <tr><?php
+     <tbody>
+      <tr><?php
 writeInstrumentRow1( true, $reportData['forms'][0]['form'], $reportData['forms'][0]['alias'] );
 ?></tr>
+     </tbody>
 <?php
 $firstForm = true;
 foreach ( $reportData['forms'] as $formData )
@@ -404,25 +414,29 @@ foreach ( $reportData['forms'] as $formData )
 		continue;
 	}
 ?>
-     <tr><?php
+     <tbody class="instq-row-from">
+      <tr><?php
 	writeInstrumentRow1( false, $formData['form'], $formData['alias'], $formData['join'] );
 ?></tr>
-     <tr><?php
+      <tr><?php
 	writeInstrumentRow2( $formData['on'], $formData['form'], $reportData['forms'][0]['form'],
 	                     $formData['alias'], $reportData['forms'][0]['alias'] );
 ?></tr>
+     </tbody>
 <?php
 }
 ?>
-     <tr style="display:none"><?php writeInstrumentRow1( false, '', '' ); ?></tr>
-     <tr style="display:none"><?php
+     <tbody class="instq-row-from" style="display:none">
+      <tr><?php writeInstrumentRow1( false, '', '' ); ?></tr>
+      <tr><?php
 writeInstrumentRow2( '', '', $reportData['forms'][0]['form'],
                      '', $reportData['forms'][0]['alias'] );
 ?></tr>
+     </tbody>
     </table>
     <span id="inst-entries-link" style="display:none">
-     <a onclick="$('#inst-entries-tbl tr').slice(-2).clone(true).css('display',''
-                    ).insertBefore($('#inst-entries-tbl tr').slice(-2,-1));return false"
+     <a onclick="$('#inst-entries-tbl tbody').last().clone().css('display',''
+                    ).insertBefore($('#inst-entries-tbl tbody').last());return false"
         href="#" class=""><i class="fas fa-plus-circle fs12"></i> Add instrument</a>
      <br>
      <span style="font-size:0.8em">
@@ -453,7 +467,7 @@ writeInstrumentRow2( '', '', $reportData['forms'][0]['form'],
    <td>Fields to display</td>
    <td style="padding:0px">
     <table id="field-entries-tbl" style="width:95%;max-width:750px">
-     <tr><?php
+     <tr class="instq-row-select"><?php
 writeSelectRow( true, $reportData['select'][0]['field'], $reportData['select'][0]['alias'],
                 $reportData['select'][0]['grouping'] );
 ?></tr>
@@ -467,13 +481,13 @@ foreach ( $reportData['select'] as $fieldData )
 		continue;
 	}
 ?>
-     <tr><?php
+     <tr class="instq-row-select"><?php
 	writeSelectRow( false, $fieldData['field'], $fieldData['alias'], $fieldData['grouping'] );
 ?></tr>
 <?php
 }
 ?>
-     <tr style="display:none"><?php
+     <tr class="instq-row-select" style="display:none"><?php
 writeSelectRow( false, '', '', '' );
 ?></tr>
     </table>
@@ -596,6 +610,46 @@ echo $reportData['nomissingdatacodes'] ? ' checked' : '';
      $('[name="query_select_field[]"]:visible').combobox()
    }, 2000 )
    $('[name="query_form[]"]').css( 'max-width', '450px' )
+
+   var vFuncMakeDraggable = function( vClass )
+   {
+     $(vClass).draggable( {
+       axis: 'y',
+       handle: vClass + '-move',
+       revert: true,
+       revertDuration: 0,
+       start: function (ev, ui)
+       {
+         $(vClass).last().css('opacity','0').css('display','')
+       },
+       stop: function (ev, ui)
+       {
+         $(vClass).last().css('opacity','').css('display','none')
+       },
+       zIndex: 1000
+     } )
+     $(vClass).droppable( {
+       accept: vClass,
+       addClasses: false,
+       drop: function (ev, ui)
+       {
+         $(ev.target).css('border-top','')
+         $(ui.draggable).insertBefore($(ev.target))
+       },
+       over: function (ev, ui)
+       {
+         $(ev.target).css('border-top','2px solid #000')
+       },
+       out: function (ev, ui)
+       {
+         $(ev.target).css('border-top','')
+       }
+     } )
+   }
+   vFuncMakeDraggable('.instq-row-from')
+   vFuncMakeDraggable('.instq-row-select')
+   $('#inst-entries-link a').click(function(){vFuncMakeDraggable('.instq-row-from')})
+   $('#field-entries-link a').click(function(){vFuncMakeDraggable('.instq-row-select')})
  })()
 </script>
 <?php
