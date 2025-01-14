@@ -198,6 +198,8 @@ $redcapFields2 = [ 'redcap_form_url', 'redcap_survey_url',
 
 // Get instrument created/updated users/dates and last instance.
 $listEventNames = \REDCap::getEventNames( true );
+$listDAGUniqueNames = \REDCap::getGroupNames( true );
+$listDAGFullNames = \REDCap::getGroupNames( false );
 $dataTable = method_exists( '\REDCap', 'getDataTable' )
                 ? \REDCap::getDataTable( $module->getProjectId() ) : ( 'redcap' . '_data' );
 $logEventTable = \REDCap::getLogEventTable( $module->getProjectId() );
@@ -282,18 +284,28 @@ if ( $hasRCUsersTable )
 {
 	$queryRCUsersTable =
 		$module->query( 'SELECT ui.username, ui.user_firstname firstname, ui.user_lastname ' .
-		                'lastname, ui.user_email email, uro.role_name, concat( substring(' .
-		                'le1.added,1,4), \'-\', substring(le1.added,5,2), \'-\', substring(' .
-		                'le1.added,7,2), \' \', substring(le1.added,9,2), \':\', substring(' .
-		                'le1.added,11,2), \':\', substring(le1.added,13,2) ) added, ' .
-		                'uri.expiration ' .
+		                'lastname, ui.user_email email, uro.role_name, uri.group_id dag, concat( ' .
+		                'substring(le1.added,1,4), \'-\', substring(le1.added,5,2), \'-\', ' .
+		                'substring(le1.added,7,2), \' \', substring(le1.added,9,2), \':\', ' .
+		                'substring(le1.added,11,2), \':\', substring(le1.added,13,2) ) added, ' .
+		                'uri.expiration, concat( substring(le2.min,1,4), \'-\', substring(' .
+		                'le2.min,5,2), \'-\', substring(le2.min,7,2), \' \', substring(le2.min,' .
+		                '9,2), \':\', substring(le2.min,11,2), \':\', substring(le2.min,13,2) ) ' .
+		                'first_activity, concat( substring(le2.max,1,4), \'-\', substring(' .
+		                'le2.max,5,2), \'-\', substring(le2.max,7,2), \' \', substring(le2.max,' .
+		                '9,2), \':\', substring(le2.max,11,2), \':\', substring(le2.max,13,2) ) ' .
+		                'last_activity ' .
 		                'FROM redcap_user_information ui LEFT JOIN redcap_user_rights uri ' .
 		                'ON ui.username = uri.username AND uri.project_id = ? ' .
 		                'LEFT JOIN redcap_user_roles uro ON uri.role_id = uro.role_id ' .
 		                'JOIN ( SELECT pk username, min(ts) added FROM ' . $logEventTable . ' ' .
-		                'WHERE object_type = \'redcap_user_rights\' AND data_values LIKE ' .
-		                '\'%user = %\' GROUP BY pk ) le1 ON ui.username = le1.username',
-		                $module->getProjectId() );
+		                'WHERE project_id = ? AND object_type = \'redcap_user_rights\' AND ' .
+		                'data_values LIKE \'%user = %\' GROUP BY pk ) le1 ON ui.username = ' .
+		                'le1.username LEFT JOIN ( SELECT `user` username, min(ts) min, max(ts) ' .
+		                'max FROM ' . $logEventTable . ' WHERE project_id = ? AND `user` <> \'' .
+		                '[survey respondent]\' GROUP BY `user` ) le2 ON ui.username = le2.username',
+		                [ $module->getProjectId(), $module->getProjectId(),
+		                  $module->getProjectId() ] );
 	while ( $infoRCUsersTable = $queryRCUsersTable->fetch_assoc() )
 	{
 		$rcUsersTable[] = $infoRCUsersTable;
@@ -312,7 +324,9 @@ foreach ( $reportData['forms'] as $queryForm )
 	{
 		$fields = empty( $rcUsersTable ) ? [] : array_keys( $rcUsersTable[0] );
 		$fieldMetadata = [ 'added' => [ 'field_type' => 'text', TVALIDSTR => 'time' ],
-		                   'expiration' => [ 'field_type' => 'text', TVALIDSTR => 'time' ] ];
+		                   'expiration' => [ 'field_type' => 'text', TVALIDSTR => 'time' ],
+		                   'first_activity' => [ 'field_type' => 'text', TVALIDSTR => 'time' ],
+		                   'last_activity' => [ 'field_type' => 'text', TVALIDSTR => 'time' ] ];
 		$formValues = $rcUsersTable;
 		$formLabels = $rcUsersTable;
 	}
@@ -371,6 +385,12 @@ foreach ( $reportData['forms'] as $queryForm )
 				continue;
 			}
 			$formLabelsRow = $formLabels[$i];
+			// For redcap_users virtual table, replace DAG ID with name.
+			if ( $form == 'redcap_users' && $formValuesRow['dag'] !== null )
+			{
+				$formValuesRow['dag'] = $listDAGUniqueNames[ $formValuesRow['dag'] ];
+				$formLabelsRow['dag'] = $listDAGFullNames[ $formLabelsRow['dag'] ];
+			}
 			// Check if the row from this form should be joined with the result table row.
 			$doJoin = true;
 			if ( $queryForm['on'] != '' )

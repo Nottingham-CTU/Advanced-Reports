@@ -350,8 +350,8 @@ foreach ( array_keys( $module->getInstrumentList() ) as $instrument )
 	                                array_unique( array_merge( $listCommonFormVars,
 	                                                          array_values( $formFieldNames ) ) ) );
 }
-$listFormVars['redcap_users'] = [ 'username', 'firstname', 'lastname', 'email', 'role_name',
-                                  'added', 'expiration' ];
+$listFormVars['redcap_users'] = [ 'username', 'firstname', 'lastname', 'email', 'role_name', 'dag',
+                                  'added', 'expiration', 'first_activity', 'last_activity' ];
 
 
 
