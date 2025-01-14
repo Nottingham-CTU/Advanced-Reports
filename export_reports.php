@@ -25,6 +25,10 @@ foreach ( $listReports as $reportName )
 	$reportConfig = json_decode( $module->getSystemSetting("p$projectID-report-config-$reportName"),
 	                             true );
 	unset( $reportConfig['lastupdated_user'], $reportConfig['lastupdated_time'] );
+	if ( isset( $reportConfig['api_key'] ) )
+	{
+		$reportConfig['api_key'] = '';
+	}
 	$data["report-config-$reportName"] = $reportConfig;
 	$data["report-data-$reportName"] =
 		json_decode( $module->getSystemSetting("p$projectID-report-data-$reportName"), true );

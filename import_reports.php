@@ -70,6 +70,10 @@ if ( ! empty( $_FILES ) ) // file is uploaded
 		{
 			$currentConfig = $module->getReportConfig( $reportID );
 			unset( $currentConfig['lastupdated_user'], $currentConfig['lastupdated_time'] );
+			if ( isset( $currentConfig['api_key'] ) )
+			{
+				$data["report-config-$reportID"]['api_key'] = $currentConfig['api_key'];
+			}
 			$identicalConfig = ( $currentConfig == $data["report-config-$reportID"] );
 			$identicalData =
 				( $module->getReportData( $reportID ) == $data["report-data-$reportID"] );
@@ -117,6 +121,11 @@ elseif ( ! empty( $_POST ) ) // normal POST request (confirming import)
 			{
 				// Update report configuration (label, category, access permissions etc.)
 				$reportID = substr( $key, 14 );
+				$currentConfig = $module->getReportConfig( $reportID );
+				if ( isset( $currentConfig['api_key'] ) )
+				{
+					$data["report-config-$reportID"]['api_key'] = $currentConfig['api_key'];
+				}
 				$module->setSystemSetting( "p$projectID-report-config-$reportID",
 				                           json_encode( $data["report-config-$reportID"] ) );
 				$module->setReportConfig( $reportID, 'lastupdated_user', USERID );
