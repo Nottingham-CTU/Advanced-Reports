@@ -38,6 +38,8 @@ appropriate values before the query is run.
 * `$$DATATABLE$$` &ndash; the redcap_data table used by the current project
   * use `$$DATATABLE:pid$$`, where `pid` is a project ID, to get the redcap_data table used by
     that project
+* `$$DATATABLES:(sql)$$`, where `sql` is an SQL query which returns project IDs, to get the UNION of
+  the redcap_data tables used by those projects
 * `$$LOGTABLE$$` &ndash; the redcap_log_event table used by the current project
   * use `$$LOGTABLE:pid$$`, where `pid` is a project ID, to get the redcap_log_event table used by
     that project

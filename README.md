@@ -35,6 +35,7 @@ report list.
 
 The following report types are currently available:
 
+* **Accumulation**
 * **Gantt**
 * **Instrument Query**
 * **PDF**
@@ -45,9 +46,9 @@ The following report types are currently available:
 
 ### Common report options
 
-&#9888;&#65039; Unless otherwise specified, advanced reports do not apply a user's data viewing rights or
-data export rights to the data returned and the user will be able to see all data returned by the
-report. Keep this in mind when setting the user roles which can access each report.
+&#9888;&#65039; Unless otherwise specified, advanced reports do not apply a user's data viewing
+rights or data export rights to the data returned and the user will be able to see all data returned
+by the report. Keep this in mind when setting the user roles which can access each report.
 
 * **Unique Report Name** is the identifier used by the system for your report
 * **Report Label** is what the report is called in the list of reports
@@ -72,8 +73,35 @@ report. Keep this in mind when setting the user roles which can access each repo
   * The API key has to be sent as the value of the `api_key` field in a HTTP POST request.
   * Administrators have the option (in the module system settings) to prohibit non-administrators
     from saving reports where API access is enabled.
+* **Allow public access** \* determines whether the report can be accessed publicly (without a
+  REDCap login)
+  * If the report can be downloaded or retrieved as image, this can be done by all users who access
+    the report at the public URL.
+  * Administrators have the option (in the module system settings) to prohibit non-administrators
+    from saving reports where public access is enabled.
 
 \* only available on some report types
+
+### Accumulation report options
+
+Accumulation reports will loop through a range of *accumulation numbers* and calculate a sum for all
+records for each accumulation number.
+
+* **Description** brief descriptive text to appear above the report
+  * HTML &lt;a&gt; &lt;b&gt; and &lt;i&gt; tags as well as the placeholders `$$PROJECT$$`
+    (project ID) and `$$WEBROOT$$` (REDCap version directory web path) can be used in the
+    description.
+* **Accumulation range** specify the start, end and step for the accumulation numbers
+* **Accumulation logic** logic which is run for each record to obtain a number which is added to the
+  total for each accumulation number
+* **Group by** specify the logic which determines the record's group
+  * There will be a row for each group on the report, the group name is the result of this logic and
+    will be displayed in the left hand column.
+* **Display format** specify how to display the accumulated totals
+* **Column label logic** specify how to label the columns
+* **Display options** choose to add a 'Total' row or show columns in reverse order
+
+Please refer to the [Accumulation report instructions](README-Accumulation.md) for more information.
 
 ### Gantt report options
 
