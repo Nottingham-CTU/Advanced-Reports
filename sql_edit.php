@@ -115,6 +115,8 @@ echo $reportData['sql_query'] ?? ''; ?></textarea>
      (<i>NULL</i> if the user is not in a DAG)<br>
      <tt>$$DATATABLE$$</tt> &#8212; the redcap_data table used by the current project<br>
      <tt>$$DATATABLE:pid$$</tt> &#8212; the redcap_data table used by project <i>pid</i><br>
+     <tt>$$DATATABLES:(sql)$$</tt> &#8212; the redcap_data tables used by the project <i>pid</i>s
+     returned by the <i>sql</i> query<br>
      <tt>$$LOGTABLE$$</tt> &#8212; the redcap_log_event table used by the current project<br>
      <tt>$$LOGTABLE:pid$$</tt> &#8212; the redcap_log_event table used by project <i>pid</i><br>
      <tt>$$PROJECT$$</tt> &#8212; the current project ID<br>

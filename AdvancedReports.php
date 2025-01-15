@@ -2038,11 +2038,13 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		if ( $test )
 		{
 			$sql = str_replace( [ '$$DAG$$', '$$PROJECT$$', '$$ROLE$$' ], '0', $sql );
-			$sql = preg_replace( '/\$\$DATATABLE(\:[1-9][0-9]*)?\$\$/', 'redcap_data', $sql );
+			$sql = preg_replace( '/\$\$DATATABLE(\:[1-9][0-9]*)?\$\$/', 'redcap' . '_data', $sql );
 			$sql = preg_replace( '/\$\$LOGTABLE(\:[1-9][0-9]*)?\$\$/', 'redcap_log_event', $sql );
 			$sql = str_replace( [ '$$USER$$', '$$WEBROOT$$' ], "'text'", $sql );
 			$sql = preg_replace( '/\$\$QINT\:[a-z0-9_]+\$\$/', '0', $sql );
 			$sql = preg_replace( '/\$\$QSTR\:[a-z0-9_]+\$\$/', "'text'", $sql );
+			$sql = preg_replace( '/\$\$DATATABLES:(\((?>[^()]+|(?1))*\))\$\$/',
+			                     '(SELECT * FROM redcap' . '_data)', $sql );
 		}
 		else
 		{
@@ -2064,7 +2066,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			                                  $pid = intval( $m[2] );
 			                                }
 			                                return method_exists( '\REDCap', 'getDataTable' )
-			                                       ? \REDCap::getDataTable( $pid ) : 'redcap_data';
+			                                       ? \REDCap::getDataTable( $pid )
+			                                       : ( 'redcap' . '_data' );
 			                              },
 			                              $sql );
 			$sql = preg_replace_callback( '/\$\$LOGTABLE(\:([1-9][0-9]*))?\$\$/',
@@ -2124,6 +2127,57 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			                          }
 			                          return "'" . mysqli_real_escape_string( $conn,
 			                                                                 $_GET[ $m[1] ] ) . "'";
+			                        },
+			                        $sql );
+			$sql =
+			 preg_replace_callback( '/\$\$DATATABLES:(\((?>[^()]+|(?1))*\))\$\$/',
+			                        function( $m )
+			                        {
+			                          global $conn;
+			                          $subSQL = substr( $m[1], 1, -1 );
+			                          if ( substr( $subSQL, 0, 7 ) != 'SELECT ' )
+			                          {
+			                            return '';
+			                          }
+			                          $subQ = mysqli_query( $conn, $subSQL );
+			                          if ( $subQ === false )
+			                          {
+			                            return '';
+			                          }
+			                          $listPIDs = [];
+			                          while ( $subR = mysqli_fetch_row( $subQ ) )
+			                          {
+			                            if ( count( $subR ) != 1 ||
+			                                 ! preg_match( '/^[1-9][0-9]*$/', $subR[0] ) )
+			                            {
+			                              return '';
+			                            }
+			                            $listPIDs[] = intval( $subR[0] );
+			                          }
+			                          if ( empty( $listPIDs ) )
+			                          {
+			                            return 'redcap' . '_data';
+			                          }
+			                          $condPIDs = 'project_id IN ( ' .
+			                                      implode( ',', $listPIDs ) . ' )';
+			                          $dtQ = mysqli_query( $conn, 'SELECT DISTINCT data_table ' .
+			                                                      'FROM redcap_projects WHERE ' .
+			                                                      $condPIDs );
+			                          $result = '';
+			                          while ( $dtR = mysqli_fetch_row( $dtQ ) )
+			                          {
+			                            if ( $result != '' )
+			                            {
+			                              $result .= ' UNION ';
+			                            }
+			                            $result .= 'SELECT * FROM ' . $dtR[0] .
+			                                       ' WHERE ' . $condPIDs;
+			                          }
+			                          if ( $result == '' )
+			                          {
+			                            return 'redcap' . '_data';
+			                          }
+			                          return '(' . $result . ')';
 			                        },
 			                        $sql );
 		}
