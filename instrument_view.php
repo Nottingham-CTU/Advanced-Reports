@@ -948,8 +948,9 @@ if ( isset( $_GET['as_image'] ) && $reportConfig['as_image'] )
 
 
 
-// Display the project header and report navigation links.
-require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
+// Display the header and report navigation links.
+if ( $disableAccessControl ) ($htmlPage = new \HtmlPage)->PrintHeader( false );
+else require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
 $module->outputViewReportHeader( $reportConfig['label'], 'instrument', true );
 
 // Initialise the row counter.
@@ -1059,5 +1060,6 @@ $('#mod-advrep-table .valedit').submit( function(e)
 </script>
 <?php
 
-// Display the project footer
-require_once APP_PATH_DOCROOT . 'ProjectGeneral/footer.php';
+// Display the footer
+if ( $disableAccessControl ) $htmlPage->PrintFooter();
+else require_once APP_PATH_DOCROOT . 'ProjectGeneral/footer.php';

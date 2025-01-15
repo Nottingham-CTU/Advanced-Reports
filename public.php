@@ -13,7 +13,7 @@ if ( ! isset( $listReports[$reportID] ) || ! isset( $listReports[$reportID]['as_
      ! $listReports[$reportID]['as_public'] )
 {
 	http_response_code( 400 );
-	echo 'false';
+	echo 'Access denied.';
 	exit;
 }
 
@@ -23,7 +23,7 @@ $reportConfig = $listReports[$reportID];
 if ( ! in_array( $reportConfig['type'], AdvancedReports::PUBLIC_TYPES ) )
 {
 	http_response_code( 400 );
-	echo 'false';
+	echo 'Access denied.';
 	exit;
 }
 

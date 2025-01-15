@@ -5,9 +5,9 @@ namespace Nottingham\AdvancedReports;
 class AdvancedReports extends \ExternalModules\AbstractExternalModule
 {
 
-	const API_TYPES = [ 'instrument', 'sql' ];
-	const PUBLIC_TYPES = [ 'instrument', 'pdf', 'sql' ];
-	const SAVEABLE_TYPES = [ 'instrument', 'pdf', 'sql' ];
+	const API_TYPES = [ 'accumulation', 'instrument', 'sql' ];
+	const PUBLIC_TYPES = [ 'accumulation', 'instrument', 'pdf', 'sql' ];
+	const SAVEABLE_TYPES = [ 'accumulation', 'instrument', 'pdf', 'sql' ];
 
 	// Show the advanced reports link based on whether the user is able to view or edit any
 	// reports. If the user has no access, hide the link.
@@ -483,8 +483,9 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			return false;
 		}
 		// Otherwise, if downloads are activated...
-		// Always allow downloads by users who can edit the report.
-		if ( $this->isReportEditable( $reportConfig['type'] ) )
+		// Always allow downloads by users who can edit the report and if the report is public.
+		if ( ( isset( $GLOBALS['disableAccessControl'] ) && $GLOBALS['disableAccessControl'] ) ||
+		     $this->isReportEditable( $reportConfig['type'] ) )
 		{
 			return true;
 		}
@@ -1236,6 +1237,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	// Output the report navigation links.
 	function outputViewReportHeader( $reportLabel, $reportType, $canReset = false )
 	{
+		$isPublic = ( isset($GLOBALS['disableAccessControl']) && $GLOBALS['disableAccessControl'] );
 		$canDownload = $this->isReportDownloadable( $_GET['report_id'] );
 		$this->writeStyle();
 
@@ -1244,9 +1246,18 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
  <?php echo htmlspecialchars( $reportLabel ), "\n"; ?>
 </div>
 <p style="font-size:11px" class="hide_in_print">
+<?php
+
+
+		// Show link to return to Advanced Reports page (unless showing public report).
+		if ( ! $isPublic )
+		{
+?>
  <a href="<?php echo $this->getUrl( 'reports.php' )
 ?>"><i class="fas fa-arrow-circle-left fs11"></i> Back to Advanced Reports</a>
 <?php
+		}
+
 
 		// If report can be downloaded, show the download link.
 		if ( $canDownload )
@@ -1273,7 +1284,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		}
 
 		// If the user can edit the report, show an edit link.
-		if ( $this->isReportEditable( $reportType ) )
+		if ( ! $isPublic && $this->isReportEditable( $reportType ) )
 		{
 
 ?>
@@ -2049,10 +2060,20 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		else
 		{
 			$listLogTables = [];
-			$userRole = $this->getUser()->getRights()['role_id'];
-			$userRole = $userRole == null ? 'NULL' : intval( $userRole );
-			$userDAG = $this->getUser()->getRights()['group_id'];
-			$userDAG = $userDAG == null ? 'NULL' : intval( $userDAG );
+			if ( ! defined( 'USERID' ) || USERID == '' )
+			{
+				$userID = 'NULL';
+				$userRole = 'NULL';
+				$userDAG = 'NULL';
+			}
+			else
+			{
+				$userID = "'" . mysqli_real_escape_string( $conn, USERID ) . "'";
+				$userRole = $this->getUser()->getRights()['role_id'];
+				$userRole = $userRole == null ? 'NULL' : intval( $userRole );
+				$userDAG = $this->getUser()->getRights()['group_id'];
+				$userDAG = $userDAG == null ? 'NULL' : intval( $userDAG );
+			}
 			$sql = str_replace( '$$DAG$$', $userDAG, $sql );
 			$sql = preg_replace_callback( '/\$\$DATATABLE(\:([1-9][0-9]*))?\$\$/',
 			                              function( $m )
@@ -2099,8 +2120,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			                              $sql );
 			$sql = str_replace( '$$PROJECT$$', intval( $this->getProjectId() ), $sql );
 			$sql = str_replace( '$$ROLE$$', $userRole, $sql );
-			$sql = str_replace( '$$USER$$',
-			                    "'" . mysqli_real_escape_string( $conn, USERID ) . "'", $sql );
+			$sql = str_replace( '$$USER$$', $userID, $sql );
 			$sql = str_replace( '$$WEBROOT$$',
 			                    "'" . mysqli_real_escape_string( $conn, APP_PATH_WEBROOT ) . "'",
 			                    $sql );
