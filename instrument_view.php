@@ -69,7 +69,8 @@ class FieldReference
 		{
 			return $module->escapeHTML( $this->value );
 		}
-		$output = '<form method="post" class="valedit"><input type="hidden" name="record" value="' .
+		$output = '<form method="post" class="valedit" style="white-space:nowrap">' .
+		          '<input type="hidden" name="record" value="' .
 		          $module->escapeHTML( $this->record ) .
 		          '"><input type="hidden" name="field" value="' .
 		          $module->escapeHTML( $this->fieldName ) . '">';
@@ -85,12 +86,14 @@ class FieldReference
 		}
 		if ( $fieldType == 'text' )
 		{
-			$output .= '<input onchange="$(this.form).submit()" type="text" name="value" value="' .
+			$output .= '<input onchange="$(this.form).find(\'button\').css(\'display\',\'\')" ' .
+			           'type="text" name="value" value="' .
 			           $module->escapeHTML( $this->value ) . '">';
 		}
 		elseif ( $fieldType == 'notes' )
 		{
-			$output .= '<textarea onchange="$(this.form).submit()" name="value" rows="2">' .
+			$output .= '<textarea onchange="$(this.form).find(\'button\').css(\'display\',\'\')" ' .
+			           'name="value" rows="2">' .
 			           $module->escapeHTML( $this->value ) . '</textarea>';
 		}
 		elseif ( in_array( $fieldType, [ 'radio', 'dropdown', 'yesno', 'truefalse' ] ) )
@@ -109,8 +112,8 @@ class FieldReference
 			{
 				$choices = $module->getChoiceLabels( $this->fieldName );
 			}
-			$output .= '<select onchange="$(this.form).submit()" name="value">' .
-			           '<option value=""></option>';
+			$output .= '<select onchange="$(this.form).find(\'button\').css(\'display\',\'\')" ' .
+			           'name="value"><option value=""></option>';
 			foreach ( $choices as $choiceCode => $choiceLabel )
 			{
 				$output .= '<option' . ( $choiceCode == $this->value ? ' selected' : '' ) .
@@ -119,7 +122,9 @@ class FieldReference
 			}
 			$output .= '</select>';
 		}
-		$output .= '<input type="hidden" name="key" value="' .
+		$output .= '<button type="submit" title="Save" style="display:none" onclick="$(this)' .
+		           '.css(\'display\',\'none\')"><i class="fas fa-floppy-disk"></i></button>' .
+		           '<input type="hidden" name="key" value="' .
 		           self::makeKey( $_SESSION['redcap_csrf_token']
 		                                   [array_key_last($_SESSION['redcap_csrf_token'])],
 		                          $this->record, $this->fieldName, $this->event,
@@ -1035,6 +1040,8 @@ $module->outputViewReportJS();
 $('#mod-advrep-table .valedit').submit( function(e)
 {
   e.preventDefault()
+  var vSubmitBtn = $(this).find('button[type="submit"]')
+  vSubmitBtn.prop('disabled',true).css('display','')
   $(this).find('[name="redcap_csrf_token"]').attr('name','csrf_token')
   $.post( '', $(this).serialize() ).always( function( data )
   {
@@ -1042,6 +1049,11 @@ $('#mod-advrep-table .valedit').submit( function(e)
     {
       alert( 'An error occurred, the data could not be submitted.' )
     }
+    else
+    {
+      vSubmitBtn.css('display','none')
+    }
+    vSubmitBtn.prop('disabled',false)
   } )
 })
 </script>
