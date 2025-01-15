@@ -1317,6 +1317,58 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 <script type="text/javascript">
   $(function()
   {
+<?php
+
+
+		$userDateFormat = \DateTimeRC::get_user_format_base();
+		if ( $userDateFormat == 'DMY' || $userDateFormat == 'MDY' )
+		{
+			$userDateSubstr = $userDateFormat == 'DMY' ? [ '3,5', '0,2' ] : [ '0,2', '3,5' ];
+?>
+    var vDateParse = Date.parse
+    Date.parse = function ( vDateVal )
+    {
+      if ( /^[0-9]{2}[^0-9][0-9]{2}[^0-9][0-9]{4}([^0-9]|$)/.test( vDateVal ) )
+      {
+        vDateVal = '' + vDateVal.substring(6,10) + vDateVal.substring(5,6) +
+                   vDateVal.substring(<?php echo $userDateSubstr[0]; ?>) + vDateVal.substring(2,3) +
+                   vDateVal.substring(<?php echo $userDateSubstr[1]; ?>) + vDateVal.substring(10)
+      }
+      return vDateParse( vDateVal )
+    };
+<?php
+		}
+?>
+
+
+    var vOldRowCompare = RowCompare
+    var vOldRowCompareIntegers = RowCompareIntegers
+    var vOldRowCompareNumbers = RowCompareNumbers
+    var vOldRowCompareDates = RowCompareDates
+    var vFuncCompareStVals = function ( a, b, f )
+    {
+      var vElemA = $(a.getElementsByTagName('td')[lastSort])
+      var vElemB = $(b.getElementsByTagName('td')[lastSort])
+      if ( typeof vElemA.attr('data-sortvalue') == 'undefined' ||
+           typeof vElemB.attr('data-sortvalue') == 'undefined' )
+      {
+        return f( a, b )
+      }
+      vElemA.attr('data-displayvalue',vElemA.html())
+      vElemA.text(vElemA.attr('data-sortvalue'))
+      vElemB.attr('data-displayvalue',vElemB.html())
+      vElemB.text(vElemB.attr('data-sortvalue'))
+      var vCompareResult = f( a, b )
+      vElemA.html(vElemA.attr('data-displayvalue'))
+      vElemA.attr('data-displayvalue',null)
+      vElemB.html(vElemB.attr('data-displayvalue'))
+      vElemB.attr('data-displayvalue',null)
+      return vCompareResult
+    };
+    RowCompare = function(a, b){ return vFuncCompareStVals(a, b, vOldRowCompare) };
+    RowCompareIntegers = function(a, b){ return vFuncCompareStVals(a, b, vOldRowCompareIntegers) };
+    RowCompareNumbers = function(a, b){ return vFuncCompareStVals(a, b, vOldRowCompareNumbers) };
+    RowCompareDates = function(a, b){ return vFuncCompareStVals(a, b, vOldRowCompareDates) };
 
     var vReportParams = {}
     try
@@ -1345,9 +1397,46 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
         $(elemTr).find('td').each(function(indexTd,elemTd)
         {
           var vFilter = vHeader[indexTd].getAttribute('data-filter')
+          if ( vFilter === null )
+          {
+            vFilter = ''
+          }
+          var vOp = vHeader[indexTd].getAttribute('data-filterop')
+          if ( vOp === null )
+          {
+            vOp = ''
+          }
+          var vType = vHeader[indexTd].getAttribute('data-type')
           var vText = $(elemTd).text()
-          if ( vFilter !== null && vFilter != '' &&
-               ! vText.toLowerCase().includes( vFilter.toLowerCase() ) )
+          if ( ( vType == 'int' || vType == 'float' || vType == 'date' ) &&
+               ( vOp == 'lt' || vOp == 'gt' || vOp == 'lte' || vOp == 'gte' ) )
+          {
+            if ( vType == 'date' )
+            {
+              vFilter = Date.parse( vFilter )
+              vText = Date.parse( vText )
+            }
+            else
+            {
+              vFilter -= 0
+              vText -= 0
+            }
+            if ( ( vOp == 'lt' && vText >= vFilter ) ||
+                 ( vOp == 'gt' && vText <= vFilter ) ||
+                 ( vOp == 'lte' && vText > vFilter ) ||
+                 ( vOp == 'gte' && vText < vFilter ) )
+            {
+              vShowRow = false
+            }
+          }
+          else if ( ( vOp == 'eq' && vText.trim() != vFilter ) ||
+                    ( vOp == 'ne' && vText.trim() == vFilter ) ||
+                    ( vOp == 'lt' && vText.trim() >= vFilter ) ||
+                    ( vOp == 'gt' && vText.trim() <= vFilter ) ||
+                    ( vOp == 'lte' && vText.trim() > vFilter ) ||
+                    ( vOp == 'gte' && vText.trim() < vFilter ) ||
+                    ( vOp == '' && vFilter != '' &&
+                      ! vText.toLowerCase().includes( vFilter.toLowerCase() ) ) )
           {
             vShowRow = false
           }
@@ -1419,15 +1508,26 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
         elem.setAttribute('data-filter', vReportParams.filter[elem.getAttribute('data-colnum')])
         $(elem).find('.fas')[0].style.color = '#7a80dd'
       }
+      if ( vReportParams.filterop != undefined &&
+           vReportParams.filterop[elem.getAttribute('data-colnum')] != undefined )
+      {
+        elem.setAttribute('data-filterop', vReportParams.filterop[elem.getAttribute('data-colnum')])
+        $(elem).find('.fas')[0].style.color = '#7a80dd'
+      }
 
       $(elem).find('.fas').click(function(ev)
       {
         ev.stopPropagation()
         var vIcon = this
         var vFilter = elem.getAttribute('data-filter')
+        var vOp = elem.getAttribute('data-filterop')
         if ( vFilter == null )
         {
           vFilter = ''
+        }
+        if ( vOp == null )
+        {
+          vOp = ''
         }
         var vColNum = elem.getAttribute('data-colnum')
         var vItems = JSON.parse( elem.getAttribute('data-items') )
@@ -1439,9 +1539,13 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
             $('#mod-advrep-filterlist').append($('<option></option>').text(vItems[i]))
           }
         }
-        var vDialog = $('<div><input type="text" style="width:350px" ' +
-                        'list="mod-advrep-filterlist"></div>')
+        var vDialog = $('<div><select><option value="">has</option><option value="eq">=</option>' +
+                        '<option value="ne">&#8800;</option><option value="lt">&lt;</option>' +
+                        '<option value="lte">&#8804;</option><option value="gt">&gt;</option>' +
+                        '<option value="gte">&#8805;</option></select>&nbsp;<input type="text" ' +
+                        'style="width:350px" list="mod-advrep-filterlist"></div>')
         vDialog.find('input[type="text"]').val(vFilter)
+        vDialog.find('select').val(vOp)
         vDialog.dialog(
         {
           autoOpen:true,
@@ -1449,18 +1553,21 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
             Reset : function()
             {
               vFilter = ''
+              vOp = ''
               vDialog.dialog('close')
             },
             Filter : function()
             {
               vFilter = vDialog.find('input[type="text"]').val()
+              vOp = vDialog.find('select').val()
               vDialog.dialog('close')
             }
           },
           close: function()
           {
             elem.setAttribute('data-filter', vFilter)
-            if ( vFilter == '' )
+            elem.setAttribute('data-filterop', vOp)
+            if ( vFilter == '' && vOp == '' )
             {
               if ( vReportParams.filter != undefined && vReportParams.filter[vColNum] != undefined )
               {
@@ -1480,19 +1587,39 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
               }
               vReportParams.filter[vColNum] = vFilter
             }
+            if ( vOp == '' )
+            {
+              if ( vReportParams.filterop != undefined &&
+                   vReportParams.filterop[vColNum] != undefined )
+              {
+                delete vReportParams.filterop[vColNum]
+              }
+              if ( vReportParams.filterop != undefined &&
+                   Object.keys(vReportParams.filterop).length == 0 )
+              {
+                delete vReportParams.filterop
+              }
+            }
+            else
+            {
+              if ( vReportParams.filterop == undefined )
+              {
+                vReportParams.filterop = {}
+              }
+              vReportParams.filterop[vColNum] = vOp
+            }
             updateURL()
             filterTable()
-            vIcon.style.color = ( vFilter == '' ) ? '' : '#7a80dd'
+            vIcon.style.color = ( vFilter == '' && vOp == '' ) ? '' : '#7a80dd'
           },
           modal:true,
           resizable:false,
           title:'Enter filter text',
-          width:400
+          width:440
         })
       })
 
-    })
-    filterTable()
+    });
 
 
     $('.sorting').click(function()
@@ -1511,28 +1638,6 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
       vReportParams.sort.unshift( { col: vColNum, dir: ( vIsAsc ? 'desc' : 'asc' ) } )
       updateURL()
     });
-
-
-<?php
-		$userDateFormat = \DateTimeRC::get_user_format_base();
-		if ( $userDateFormat == 'DMY' || $userDateFormat == 'MDY' )
-		{
-			$userDateSubstr = $userDateFormat == 'DMY' ? [ '3,5', '0,2' ] : [ '0,2', '3,5' ];
-?>
-    var vDateParse = Date.parse
-    Date.parse = function ( vDateVal )
-    {
-      if ( /^[0-9]{2}[^0-9][0-9]{2}[^0-9][0-9]{4}([^0-9]|$)/.test( vDateVal ) )
-      {
-        vDateVal = '' + vDateVal.substring(6,10) + vDateVal.substring(5,6) +
-                   vDateVal.substring(<?php echo $userDateSubstr[0]; ?>) + vDateVal.substring(2,3) +
-                   vDateVal.substring(<?php echo $userDateSubstr[1]; ?>) + vDateVal.substring(10)
-      }
-      return vDateParse( vDateVal )
-    };
-<?php
-		}
-?>
 
 
     var vHeader = $('.mod-advrep-datatable thead th')
@@ -1613,34 +1718,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
     });
 
 
-    var vOldRowCompare = RowCompare
-    var vOldRowCompareIntegers = RowCompareIntegers
-    var vOldRowCompareNumbers = RowCompareNumbers
-    var vOldRowCompareDates = RowCompareDates
-    var vFuncCompareStVals = function ( a, b, f )
-    {
-      var vElemA = $(a.getElementsByTagName('td')[lastSort])
-      var vElemB = $(b.getElementsByTagName('td')[lastSort])
-      if ( typeof vElemA.attr('data-sortvalue') == 'undefined' ||
-           typeof vElemB.attr('data-sortvalue') == 'undefined' )
-      {
-        return f( a, b )
-      }
-      vElemA.attr('data-displayvalue',vElemA.html())
-      vElemA.text(vElemA.attr('data-sortvalue'))
-      vElemB.attr('data-displayvalue',vElemB.html())
-      vElemB.text(vElemB.attr('data-sortvalue'))
-      var vCompareResult = f( a, b )
-      vElemA.html(vElemA.attr('data-displayvalue'))
-      vElemA.attr('data-displayvalue',null)
-      vElemB.html(vElemB.attr('data-displayvalue'))
-      vElemB.attr('data-displayvalue',null)
-      return vCompareResult
-    };
-    RowCompare = function(a, b){ return vFuncCompareStVals(a, b, vOldRowCompare) };
-    RowCompareIntegers = function(a, b){ return vFuncCompareStVals(a, b, vOldRowCompareIntegers) };
-    RowCompareNumbers = function(a, b){ return vFuncCompareStVals(a, b, vOldRowCompareNumbers) };
-    RowCompareDates = function(a, b){ return vFuncCompareStVals(a, b, vOldRowCompareDates) };
+    filterTable();
 
 
     (function()
