@@ -335,6 +335,9 @@ if ( ! empty( \REDCap::getGroupNames() ) )
 {
 	$listCommonFormVars[] = 'redcap_data_access_group';
 }
+$listCommonFormVars2 = [ 'redcap_form_url', 'redcap_survey_url', 'redcap_created_by',
+                         'redcap_created_time', 'redcap_updated_by', 'redcap_updated_time',
+                         'redcap_last_instance' ];
 $listFormVars = [];
 foreach ( array_keys( $module->getInstrumentList() ) as $instrument )
 {
@@ -348,7 +351,8 @@ foreach ( array_keys( $module->getInstrumentList() ) as $instrument )
 	}
 	$listFormVars[ $instrument ] = array_values(
 	                                array_unique( array_merge( $listCommonFormVars,
-	                                                          array_values( $formFieldNames ) ) ) );
+	                                                           array_values( $formFieldNames ),
+	                                                           $listCommonFormVars2 ) ) );
 }
 $listFormVars['redcap_users'] = [ 'username', 'firstname', 'lastname', 'email', 'role_name', 'dag',
                                   'added', 'expiration', 'first_activity', 'last_activity' ];
@@ -606,16 +610,21 @@ echo $reportData['nomissingdatacodes'] ? ' checked' : '';
      } )
    }
    vFuncUpdateVars()
-   $('[name="query_form[]"]').change( vFuncUpdateVars )
-   $('[name="query_form_alias[]"]').keyup( vFuncUpdateVars )
+   $('[name="query_form[]"]:visible').change( vFuncUpdateVars )
+   $('[name="query_form_alias[]"]:visible').keyup( vFuncUpdateVars )
    setTimeout( function()
    {
      $('[name="query_select_field[]"]:visible').combobox()
    }, 2000 )
    $('[name="query_form[]"]').css( 'max-width', '450px' )
 
-   var vFuncMakeDraggable = function( vClass )
+   var vFuncMakeDraggable = function( vClass, vFirst = false )
    {
+     if ( vClass == '.instq-row-from' && ! vFirst )
+     {
+       $('[name="query_form[]"]:visible').last().change( vFuncUpdateVars )
+       $('[name="query_form_alias[]"]:visible').last().keyup( vFuncUpdateVars )
+     }
      $(vClass).draggable( {
        axis: 'y',
        handle: vClass + '-move',
@@ -649,8 +658,8 @@ echo $reportData['nomissingdatacodes'] ? ' checked' : '';
        }
      } )
    }
-   vFuncMakeDraggable('.instq-row-from')
-   vFuncMakeDraggable('.instq-row-select')
+   vFuncMakeDraggable('.instq-row-from', true)
+   vFuncMakeDraggable('.instq-row-select', true)
    $('#inst-entries-link a').click(function(){vFuncMakeDraggable('.instq-row-from')})
    $('#field-entries-link a').click(function(){vFuncMakeDraggable('.instq-row-select')})
  })()
