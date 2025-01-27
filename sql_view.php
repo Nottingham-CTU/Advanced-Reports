@@ -38,7 +38,8 @@ if ( ! $disableAccessControl && ! $isApiRequest && ! $module->isReportAccessible
 
 
 // Get the report data.
-$query = mysqli_query( $conn, $module->sqlPlaceholderReplace( $reportData['sql_query'] ) );
+$query = mysqli_query( $GLOBALS['conn'],
+                       $module->sqlPlaceholderReplace( $reportData['sql_query'] ) );
 $resultType = $reportData['sql_type'] ?? 'normal';
 $columns = [];
 
