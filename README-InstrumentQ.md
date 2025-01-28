@@ -43,6 +43,23 @@ There are several virtual fields for each instrument which can be used in an Ins
 * `[redcap_updated_time]`
   * Date/time of when the form was most recently saved
 
+## Virtual Instruments
+
+In addition to the project instruments, Instrument Queries provide an additional virtual instrument.
+This can be used in the Instrument Query like any other instrument.
+
+* `[redcap_users]` - An instrument containing details of all users associated with the project.
+  * `[username]` - REDCap username
+  * `[firstname]` - First name
+  * `[lastname]` - Last name
+  * `[email]` - Primary email address
+  * `[role_name]` - REDCap user role name
+  * `[dag]` - DAG ID (as field value), or name (as field label)
+  * `[added]` - Date/time user added to project
+  * `[expiration]` - Expiry date/time for user in this project
+  * `[first_activity]` - Date/time of first activity by the user in this project
+  * `[last_activity]` - Date/time of most recent activity by the user in this project
+
 ## Using Calculation Logic
 
 In the options which support calculation logic, you can use any REDCap calculation logic/functions.

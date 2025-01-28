@@ -53,6 +53,9 @@ by the report. Keep this in mind when setting the user roles which can access ea
 * **Unique Report Name** is the identifier used by the system for your report
 * **Report Label** is what the report is called in the list of reports
 * **Report Category** *(optional)* is the heading under which the report appears in the list
+* **Report Annotation** *(optional)* is extra text which can be used to explain the report. It is
+  not shown on the report or in the reports list but may be included in simplified overviews of the
+  reports.
 * **Report is visible** determines whether the report is shown in the list
 * **Grant access to roles** apart from users with edit rights, only the users with roles listed here
   can see the report
