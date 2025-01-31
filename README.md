@@ -80,6 +80,8 @@ by the report. Keep this in mind when setting the user roles which can access ea
   REDCap login)
   * If the report can be downloaded or retrieved as image, this can be done by all users who access
     the report at the public URL.
+  * &#9888;&#65039; *It is important to consider the security implications* when making a report
+    public, especially if using features such as query string smart variables or placeholders.
   * Administrators have the option (in the module system settings) to prohibit non-administrators
     from saving reports where public access is enabled.
 
@@ -88,7 +90,8 @@ by the report. Keep this in mind when setting the user roles which can access ea
 ### Accumulation report options
 
 Accumulation reports will loop through a range of *accumulation numbers* and calculate a sum for all
-records for each accumulation number.
+records for each accumulation number. This can be useful for purposes such as showing increasing
+counts over time such as for participant recruits in a clinical study.
 
 * **Description** brief descriptive text to appear above the report
   * HTML &lt;a&gt; &lt;b&gt; and &lt;i&gt; tags as well as the placeholders `$$PROJECT$$`
