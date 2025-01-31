@@ -197,7 +197,7 @@ require __DIR__ . '/vendor/autoload.php';
 // Set up the PDF.
 $pdf = new \Dompdf\Dompdf();
 $pdf->getOptions()->set( [
-                           'allowedProtocols' => [],
+                           'allowedProtocols' => ['data://'],
                            'isPhpEnabled' => false
                          ] );
 $pdf->setPaper( $reportData['pdf_size'], $reportData['pdf_orientation'] );
