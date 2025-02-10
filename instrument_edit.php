@@ -22,6 +22,8 @@ $reportConfig = $listReports[$reportID];
 $reportData = $module->getReportData( $reportID );
 $canSaveIfApi = ( ! $module->getSystemSetting( 'admin-only-api' ) ||
                   $module->getUser()->isSuperUser() );
+$canSaveIfPublic = ( ! $module->getSystemSetting( 'admin-only-public' ) ||
+                     $module->getUser()->isSuperUser() );
 $canSaveIfEditable = ( ! $module->getSystemSetting( 'admin-only-editable' ) ||
                        $module->getUser()->isSuperUser() );
 
@@ -35,6 +37,10 @@ if ( ! empty( $_POST ) )
 	if ( ! $canSaveIfApi && $_POST['report_as_api'] == 'Y' )
 	{
 		$validationMsg = 'Reports with API access can only be saved by an administrator.';
+	}
+	if ( ! $canSaveIfPublic && $_POST['report_as_public'] == 'Y' )
+	{
+		$validationMsg = 'Reports with Public access can only be saved by an administrator.';
 	}
 	// - Check the forms/fields are specified if an alias or join condition is specified.
 	if ( $validationMsg == '' )
@@ -164,7 +170,7 @@ if ( ! empty( $_POST ) )
 	}
 
 	// Save data
-	$module->submitReportConfig( $reportID, true, [ 'image', 'api' ] );
+	$module->submitReportConfig( $reportID, true, [ 'saveable', 'image', 'api', 'public' ] );
 	$reportData = [ 'desc' => $_POST['query_desc'], 'forms' => [], 'where' => $_POST['query_where'],
 	                'orderby' => $_POST['query_orderby'], 'select' => [],
 	                'nomissingdatacodes' => isset( $_POST['query_nomissingdatacodes'] ) ];
@@ -200,8 +206,20 @@ if ( ! empty( $_POST ) )
 function writeInstrumentRow1( $setWidths, $formVal, $aliasVal, $joinVal = '' )
 {
 	global $module;
-?>
 
+?>
+      <td style="text-align:center;width:15px;padding-right:0px">
+<?php
+	if ( ! $setWidths )
+	{
+?>
+       <div class="instq-row-from-move" style="cursor:ns-resize">
+        <i class="fas fa-arrows-up-down fs11"></i>
+       </div>
+<?php
+	}
+?>
+      </td>
       <td style="text-align:left;width:<?php echo $setWidths ? '60px' : 'unset'; ?>">
 <?php
 	if ( ! $setWidths )
@@ -216,7 +234,8 @@ function writeInstrumentRow1( $setWidths, $formVal, $aliasVal, $joinVal = '' )
 ?>
       </td>
       <td style="text-align:left;width:<?php echo $setWidths ? '60px' : 'unset'; ?>"><?php
-$module->outputInstrumentDropdown( 'query_form[]', $formVal ?? '' );
+$module->outputInstrumentDropdown( 'query_form[]', $formVal ?? '',
+                                   [ 'redcap_users' => 'redcap_users - Project Users'] );
 ?></td>
       <td style="text-align:left;width:unset">
        <input type="text" name="query_form_alias[]" placeholder="alias (optional)"
@@ -233,8 +252,9 @@ function writeInstrumentRow2( $onCondVal, $formVal, $firstFormVal, $aliasVal, $f
 	global $module, $recordIDField;
 	$formVal = ( $aliasVal == '' ) ? $formVal : $aliasVal;
 	$firstFormVal = ( $firstAliasVal == '' ) ? $firstFormVal : $firstAliasVal;
-?>
 
+?>
+      <td style="width:unset"></td>
       <td style="text-align:left;width:unset">On Condition</td>
       <td colspan="2" style="text-align:left;width:unset">
        <input type="text" name="query_form_on[]" placeholder="condition logic"
@@ -255,13 +275,8 @@ function writeSelectRow( $setWidths, $fieldVal, $aliasVal, $groupVal )
 ?>
 
       <td style="text-align:center;width:15px;padding-right:0px">
-       <div style="margin-bottom:-8px;cursor:pointer"
-            onclick="$(this).closest('tr').insertBefore($(this).closest('tr').prev('tr:visible'))">
-        <i class="fas fa-caret-up fs11"></i>
-       </div>
-       <div style="cursor:pointer"
-            onclick="$(this).closest('tr').insertAfter($(this).closest('tr').next('tr:visible'))">
-        <i class="fas fa-caret-down fs11"></i>
+       <div class="instq-row-select-move" style="cursor:ns-resize">
+        <i class="fas fa-arrows-up-down fs11"></i>
        </div>
       </td>
       <td style="text-align:left;width:<?php echo $setWidths ? '50%;max-width:425px' : 'unset'; ?>">
@@ -320,6 +335,9 @@ if ( ! empty( \REDCap::getGroupNames() ) )
 {
 	$listCommonFormVars[] = 'redcap_data_access_group';
 }
+$listCommonFormVars2 = [ 'redcap_form_url', 'redcap_survey_url', 'redcap_created_by',
+                         'redcap_created_time', 'redcap_updated_by', 'redcap_updated_time',
+                         'redcap_last_instance' ];
 $listFormVars = [];
 foreach ( array_keys( $module->getInstrumentList() ) as $instrument )
 {
@@ -333,8 +351,11 @@ foreach ( array_keys( $module->getInstrumentList() ) as $instrument )
 	}
 	$listFormVars[ $instrument ] = array_values(
 	                                array_unique( array_merge( $listCommonFormVars,
-	                                                          array_values( $formFieldNames ) ) ) );
+	                                                           array_values( $formFieldNames ),
+	                                                           $listCommonFormVars2 ) ) );
 }
+$listFormVars['redcap_users'] = [ 'username', 'firstname', 'lastname', 'email', 'role_name', 'dag',
+                                  'added', 'expiration', 'first_activity', 'last_activity' ];
 
 
 
@@ -357,7 +378,8 @@ echo $module->escapeHTML( $reportID ), "\n"; ?>
 </p>
 <form method="post" id="queryform">
  <table class="mod-advrep-formtable">
-<?php $module->outputReportConfigOptions( $reportConfig, true, [ 'image', 'api' ] ); ?>
+<?php $module->outputReportConfigOptions( $reportConfig, true,
+                                          [ 'saveable', 'image', 'api', 'public' ] ); ?>
   <tr><th colspan="2">Report Definition</th></tr>
   <tr>
    <td>Description</td>
@@ -384,9 +406,11 @@ echo $reportData['desc'] ?? ''; ?></textarea>
    <td>Instruments</td>
    <td>
     <table id="inst-entries-tbl" style="width:95%;max-width:750px">
-     <tr><?php
+     <tbody>
+      <tr><?php
 writeInstrumentRow1( true, $reportData['forms'][0]['form'], $reportData['forms'][0]['alias'] );
 ?></tr>
+     </tbody>
 <?php
 $firstForm = true;
 foreach ( $reportData['forms'] as $formData )
@@ -397,25 +421,29 @@ foreach ( $reportData['forms'] as $formData )
 		continue;
 	}
 ?>
-     <tr><?php
+     <tbody class="instq-row-from">
+      <tr><?php
 	writeInstrumentRow1( false, $formData['form'], $formData['alias'], $formData['join'] );
 ?></tr>
-     <tr><?php
+      <tr><?php
 	writeInstrumentRow2( $formData['on'], $formData['form'], $reportData['forms'][0]['form'],
 	                     $formData['alias'], $reportData['forms'][0]['alias'] );
 ?></tr>
+     </tbody>
 <?php
 }
 ?>
-     <tr style="display:none"><?php writeInstrumentRow1( false, '', '' ); ?></tr>
-     <tr style="display:none"><?php
+     <tbody class="instq-row-from" style="display:none">
+      <tr><?php writeInstrumentRow1( false, '', '' ); ?></tr>
+      <tr><?php
 writeInstrumentRow2( '', '', $reportData['forms'][0]['form'],
                      '', $reportData['forms'][0]['alias'] );
 ?></tr>
+     </tbody>
     </table>
     <span id="inst-entries-link" style="display:none">
-     <a onclick="$('#inst-entries-tbl tr').slice(-2).clone(true).css('display',''
-                    ).insertBefore($('#inst-entries-tbl tr').slice(-2,-1));return false"
+     <a onclick="$('#inst-entries-tbl tbody').last().clone().css('display',''
+                    ).insertBefore($('#inst-entries-tbl tbody').last());return false"
         href="#" class=""><i class="fas fa-plus-circle fs12"></i> Add instrument</a>
      <br>
      <span style="font-size:0.8em">
@@ -446,7 +474,7 @@ writeInstrumentRow2( '', '', $reportData['forms'][0]['form'],
    <td>Fields to display</td>
    <td style="padding:0px">
     <table id="field-entries-tbl" style="width:95%;max-width:750px">
-     <tr><?php
+     <tr class="instq-row-select"><?php
 writeSelectRow( true, $reportData['select'][0]['field'], $reportData['select'][0]['alias'],
                 $reportData['select'][0]['grouping'] );
 ?></tr>
@@ -460,13 +488,13 @@ foreach ( $reportData['select'] as $fieldData )
 		continue;
 	}
 ?>
-     <tr><?php
+     <tr class="instq-row-select"><?php
 	writeSelectRow( false, $fieldData['field'], $fieldData['alias'], $fieldData['grouping'] );
 ?></tr>
 <?php
 }
 ?>
-     <tr style="display:none"><?php
+     <tr class="instq-row-select" style="display:none"><?php
 writeSelectRow( false, '', '', '' );
 ?></tr>
     </table>
@@ -510,7 +538,7 @@ echo $reportData['nomissingdatacodes'] ? ' checked' : '';
      {
        return true
      }
-     $.ajax( { url : '<?php echo $module->getUrl( 'instrument_edit.php?report_id=' . $reportID ); ?>',
+     $.ajax( { url : window.location.href,
                method : 'POST',
                data : $('#queryform').serialize(),
                         headers : { 'X-RC-AdvRep-InstQueryChk' : '1' },
@@ -582,13 +610,58 @@ echo $reportData['nomissingdatacodes'] ? ' checked' : '';
      } )
    }
    vFuncUpdateVars()
-   $('[name="query_form[]"]').change( vFuncUpdateVars )
-   $('[name="query_form_alias[]"]').keyup( vFuncUpdateVars )
+   $('[name="query_form[]"]:visible').change( vFuncUpdateVars )
+   $('[name="query_form_alias[]"]:visible').keyup( vFuncUpdateVars )
    setTimeout( function()
    {
      $('[name="query_select_field[]"]:visible').combobox()
    }, 2000 )
    $('[name="query_form[]"]').css( 'max-width', '450px' )
+
+   var vFuncMakeDraggable = function( vClass, vFirst = false )
+   {
+     if ( vClass == '.instq-row-from' && ! vFirst )
+     {
+       $('[name="query_form[]"]:visible').last().change( vFuncUpdateVars )
+       $('[name="query_form_alias[]"]:visible').last().keyup( vFuncUpdateVars )
+     }
+     $(vClass).draggable( {
+       axis: 'y',
+       handle: vClass + '-move',
+       revert: true,
+       revertDuration: 0,
+       start: function (ev, ui)
+       {
+         $(vClass).last().css('opacity','0').css('display','')
+       },
+       stop: function (ev, ui)
+       {
+         $(vClass).last().css('opacity','').css('display','none')
+       },
+       zIndex: 1000
+     } )
+     $(vClass).droppable( {
+       accept: vClass,
+       addClasses: false,
+       drop: function (ev, ui)
+       {
+         $(ev.target).css('border-top','')
+         $(ui.draggable).insertBefore($(ev.target))
+       },
+       over: function (ev, ui)
+       {
+         $(ev.target).css('border-top','2px solid #000')
+       },
+       out: function (ev, ui)
+       {
+         $(ev.target).css('border-top','')
+       }
+     } )
+   }
+   vFuncMakeDraggable('.instq-row-from', true)
+   vFuncMakeDraggable('.instq-row-select', true)
+   $('#inst-entries-link a').click(function(){vFuncMakeDraggable('.instq-row-from')})
+   $('#field-entries-link a').click(function(){vFuncMakeDraggable('.instq-row-select')})
  })()
 </script>
 <?php

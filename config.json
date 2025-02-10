@@ -1,7 +1,7 @@
 {
 	"name" : "Advanced Reports",
 	"namespace" : "Nottingham\\AdvancedReports",
-	"description" : "Provides additional report types for use in projects.&nbsp; <a href=\"https://github.com/Nottingham-CTU/Advanced-Reports/blob/main/README.md\" target=\"_blank\"><u>View documentation on GitHub</u></a><br>Report types: Gantt, Instrument Query, PDF, Record Table, SQL*<br>* Only administrators can create/edit SQL reports.",
+	"description" : "Provides additional report types for use in projects.&nbsp; <a href=\"https://github.com/Nottingham-CTU/Advanced-Reports/blob/main/README.md\" target=\"_blank\"><u>View documentation on GitHub</u></a><br>Report types: Accumulation, Gantt, Instrument Query, PDF, Record Table, SQL*<br>* Only administrators can create/edit SQL reports.",
 	"authors": [
 		{
 			"name": "Richard Dooley",
@@ -9,7 +9,7 @@
 			"institution": "University of Nottingham"
 		}
 	],
-	"permissions" : [ "redcap_every_page_before_render" ],
+	"permissions" : [ "redcap_every_page_before_render", "redcap_save_record" ],
 	"framework-version" : 11,
 	"compatibility" : {
 		"redcap-version-min" : "12.5.9",
@@ -23,6 +23,11 @@
 	},
 	"system-settings" : [
 		{
+			"key" : "admin-only-public",
+			"name" : "Only allow administrators to save reports with Public access",
+			"type" : "checkbox"
+		},
+		{
 			"key" : "admin-only-api",
 			"name" : "Only allow administrators to save reports with API access",
 			"type" : "checkbox"
@@ -30,6 +35,11 @@
 		{
 			"key" : "admin-only-editable",
 			"name" : "Only allow administrators to save reports with editable fields",
+			"type" : "checkbox"
+		},
+		{
+			"key" : "allow-sql-source",
+			"name" : "Allow SQL reports to be used as the source for PDF reports",
 			"type" : "checkbox"
 		}
 	],
@@ -47,6 +57,12 @@
 			"super-users-only" : true
 		}
 	],
-	"no-auth-pages" : [ "api" ],
+	"action-tags" : [
+		{
+			"tag" : "@ADVANCED-REPORT-SAVE",
+			"description" : "Saves an advanced report to a file upload field upon form submission. Please refer to the module documentation for instructions on using this action tag."
+		}
+	],
+	"no-auth-pages" : [ "api", "public" ],
 	"no-csrf-pages" : [ "api" ]
 }

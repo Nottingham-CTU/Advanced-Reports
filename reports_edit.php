@@ -227,15 +227,27 @@ if ( count( $listReports ) > 0 )
    <span style="font-size:90%">
     <b>Name:</b> <?php echo $reportID; ?> &nbsp;|&nbsp;
     <b>Type:</b> <?php echo $module->getReportTypes()[ $infoReport['type'] ]; ?> &nbsp;|&nbsp;
-    <b>Visibility:</b> <?php echo $infoReport['visible'] ? 'visible' : 'hidden', "\n"; ?>
 <?php
-		if ( isset( $infoReport['as_api'] ) && $infoReport['as_api'] == 'Y' &&
-		     $infoReport['api_key'] != '' )
+		echo '    ';
+		echo '<i class="far fa-eye', ( $infoReport['visible'] ? '' : '-slash' ), '" title="';
+		echo ( $infoReport['visible'] ? 'Visible' : 'Hidden' ), ' in reports list"></i>';
+		if ( isset( $infoReport['download'] ) && $infoReport['download'] )
 		{
-?>
-    &nbsp;|&nbsp; <b>API</b>
-<?php
+			echo ' &nbsp;<i class="fas fa-download" title="Downloadable"></i>';
 		}
+		if ( isset( $infoReport['saveable'] ) && $infoReport['saveable'] )
+		{
+			echo ' &nbsp;<i class="far fa-floppy-disk" title="Saveable to field"></i>';
+		}
+		if ( isset( $infoReport['as_api'] ) && $infoReport['as_api'] )
+		{
+			echo ' &nbsp;<i class="fas fa-laptop-code" title="API"></i>';
+		}
+		if ( isset( $infoReport['as_public'] ) && $infoReport['as_public'] )
+		{
+			echo ' &nbsp;<i class="fas fa-earth-americas" title="Public"></i>';
+		}
+		echo "\n";
 		if ( isset( $infoReport['lastupdated_user'] ) )
 		{
 ?>
@@ -275,9 +287,9 @@ if ( count( $listReports ) > 0 )
 		{
 ?>
    <a href="" class="fs12" onclick="return mod_advrep_copy( '<?php
-			echo $reportID, "', '";
-			echo addslashes( htmlspecialchars( $infoReport['label'] ) );
-?>')"><i class="fas fa-copy fs14"></i> Copy</a>
+			echo $reportID, "', ";
+			echo $module->escapeHTML( json_encode( $infoReport['label'] ) );
+?>)"><i class="fas fa-copy fs14"></i> Copy</a>
    <form method="post" id="copyreport_<?php echo $reportID; ?>">
     <input type="hidden" name="action" value="copy_report">
     <input type="hidden" name="report_id" value="<?php echo $reportID; ?>">
@@ -293,9 +305,9 @@ if ( count( $listReports ) > 0 )
 		{
 ?>
    <a href="" class="fs12" style="color:#b00" onclick="return mod_advrep_delete( '<?php
-			echo $reportID, "', '";
-			echo addslashes( htmlspecialchars( $infoReport['label'] ) );
-?>')"><i class="fas fa-trash fs14"></i> Delete</a>
+			echo $reportID, "', ";
+			echo $module->escapeHTML( json_encode( $infoReport['label'] ) );
+?>)"><i class="fas fa-trash fs14"></i> Delete</a>
    <form method="post" id="delreport_<?php echo $reportID; ?>">
     <input type="hidden" name="action" value="delete_report">
     <input type="hidden" name="report_id" value="<?php echo $reportID; ?>">

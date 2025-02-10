@@ -35,6 +35,7 @@ report list.
 
 The following report types are currently available:
 
+* **Accumulation**
 * **Gantt**
 * **Instrument Query**
 * **PDF**
@@ -45,19 +46,25 @@ The following report types are currently available:
 
 ### Common report options
 
-&#9888;&#65039; Unless otherwise specified, advanced reports do not apply a user's data viewing rights or
-data export rights to the data returned and the user will be able to see all data returned by the
-report. Keep this in mind when setting the user roles which can access each report.
+&#9888;&#65039; Unless otherwise specified, advanced reports do not apply a user's data viewing
+rights or data export rights to the data returned and the user will be able to see all data returned
+by the report. Keep this in mind when setting the user roles which can access each report.
 
 * **Unique Report Name** is the identifier used by the system for your report
 * **Report Label** is what the report is called in the list of reports
 * **Report Category** *(optional)* is the heading under which the report appears in the list
+* **Report Annotation** *(optional)* is extra text which can be used to explain the report. It is
+  not shown on the report or in the reports list but may be included in simplified overviews of the
+  reports.
 * **Report is visible** determines whether the report is shown in the list
 * **Grant access to roles** apart from users with edit rights, only the users with roles listed here
   can see the report
 * **Allow downloads** \* determines whether a download link is provided for this report
 * **Grant downloads to roles** \* apart from users with edit rights, only the users with roles
   listed here will see the download link.
+* **Report can be saved to a field** \* determines whether the report can be saved into a file field
+  on a record using the `@ADVANCED-REPORT-SAVE` action tag. For more information about this, see the
+  section *saving reports to records* below.
 * **Allow retrieval as image** \* determines whether the report can be retrieved as an image file,
   rather than as a REDCap page, which is useful for embedding a report in a data collection
   instrument
@@ -69,8 +76,38 @@ report. Keep this in mind when setting the user roles which can access each repo
   * The API key has to be sent as the value of the `api_key` field in a HTTP POST request.
   * Administrators have the option (in the module system settings) to prohibit non-administrators
     from saving reports where API access is enabled.
+* **Allow public access** \* determines whether the report can be accessed publicly (without a
+  REDCap login)
+  * If the report can be downloaded or retrieved as image, this can be done by all users who access
+    the report at the public URL.
+  * &#9888;&#65039; *It is important to consider the security implications* when making a report
+    public, especially if using features such as query string smart variables or placeholders.
+  * Administrators have the option (in the module system settings) to prohibit non-administrators
+    from saving reports where public access is enabled.
 
 \* only available on some report types
+
+### Accumulation report options
+
+Accumulation reports will loop through a range of *accumulation numbers* and calculate a sum for all
+records for each accumulation number. This can be useful for purposes such as showing increasing
+counts over time such as for participant recruits in a clinical study.
+
+* **Description** brief descriptive text to appear above the report
+  * HTML &lt;a&gt; &lt;b&gt; and &lt;i&gt; tags as well as the placeholders `$$PROJECT$$`
+    (project ID) and `$$WEBROOT$$` (REDCap version directory web path) can be used in the
+    description.
+* **Accumulation range** specify the start, end and step for the accumulation numbers
+* **Accumulation logic** logic which is run for each record to obtain a number which is added to the
+  total for each accumulation number
+* **Group by** specify the logic which determines the record's group
+  * There will be a row for each group on the report, the group name is the result of this logic and
+    will be displayed in the left hand column.
+* **Display format** specify how to display the accumulated totals
+* **Column label logic** specify how to label the columns
+* **Display options** choose to add a 'Total' row or show columns in reverse order
+
+Please refer to the [Accumulation report instructions](README-Accumulation.md) for more information.
 
 ### Gantt report options
 
@@ -149,6 +186,31 @@ data export rights.
 * **Result Columns** pre-specify column names for EAV datasets
 
 Please refer to the [SQL report instructions](README-SQL.md) for more information.
+
+
+
+## Saving reports to records
+
+It is possible to save an advanced report to a record in the project by creating a file upload field
+and using the `@ADVANCED-REPORT-SAVE` action tag. The chosen report will be saved into the field
+upon form submission. Use the action tag as follows:
+
+`@ADVANCED-REPORT-SAVE('report_name','params')`
+
+Where `report_name` is the unique report name, and `params` are any additional URL query string
+parameters you want to use. The `params` value is optional and can be omitted. If specified,
+`params` should be in the format `param1=value1&param2=value2`.
+
+* `@IF` action tags are supported, so reports can be saved conditionally by placing the
+  `@ADVANCED-REPORT-SAVE` action tag within an `@IF` action tag.
+* The report will be saved to the field on *every* form submission, replacing any previous file. If
+  you want existing files to be retained, use an `@IF` action tag to check if the field is empty.
+* Piping and smart variables are supported in the `params` value.
+* The `report_name` must reference a report which exists, is of a type which can be saved to a
+  field, and has the option for saving to fields enabled. If these conditions are not met, the
+  action tag will have no effect.
+* Report access controls are not applied when saving to file fields and once saved, the report will
+  be accessible to any user with access to that record/field.
 
 
 

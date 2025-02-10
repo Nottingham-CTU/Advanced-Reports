@@ -1,0 +1,20 @@
+# Run selenium tests on a REDCap External Module
+
+name: REDCap External Module Tests
+
+on:
+  pull_request:
+    branches:  # Pull requests targeting these branches will trigger the job.
+      - main
+  workflow_dispatch:
+
+jobs:
+  jobs:
+    name: Jobs
+    uses: Nottingham-CTU/Workflows/.github/workflows/redcap-module-tests.yml@main
+    with:
+      RC_COMMUNITY_USERNAME: ${{ vars.RC_COMMUNITY_USERNAME }}
+      RC_INSTALLED_VERSION: ${{ vars.RC_INSTALLED_VERSION }}
+    secrets:
+      RC_COMMUNITY_PASSWORD: ${{ secrets.RC_COMMUNITY_PASSWORD }}
+

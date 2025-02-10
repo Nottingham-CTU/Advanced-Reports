@@ -5,6 +5,10 @@ namespace Nottingham\AdvancedReports;
 class AdvancedReports extends \ExternalModules\AbstractExternalModule
 {
 
+	const API_TYPES = [ 'accumulation', 'instrument', 'sql' ];
+	const PUBLIC_TYPES = [ 'accumulation', 'instrument', 'pdf', 'sql' ];
+	const SAVEABLE_TYPES = [ 'accumulation', 'instrument', 'pdf', 'sql' ];
+
 	// Show the advanced reports link based on whether the user is able to view or edit any
 	// reports. If the user has no access, hide the link.
 	function redcap_module_link_check_display( $project_id, $link )
@@ -50,14 +54,16 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			$UITweaker = \ExternalModules\ExternalModules::getModuleInstance('redcap_ui_tweaker');
 			// Supply report data to the reports simplified view.
 			if ( method_exists( $UITweaker, 'areCustomReportsExpected' ) &&
-			     $UITweaker->areCustomReportsExpected() )
+			     $UITweaker->areCustomReportsExpected() &&
+			     method_exists( $UITweaker, 'customReportsEscapeHTML' ) )
 			{
 				$listReports = $this->getReportList();
 				$reportTypes = $this->getReportTypes();
 				foreach ( $listReports as $reportID => $reportConfig )
 				{
 					$reportData = $this->getReportData( $reportID );
-					$description = '';
+					$description = $reportConfig['annotation'] == ''
+					               ? '' : ( $reportConfig['annotation'] . "\n\n" );
 					$definition = '';
 					$options = '';
 					// Get report permissions.
@@ -69,27 +75,30 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 					{
 						$reportConfig['roles_download'] = $reportConfig['roles_access'];
 					}
-					$permissions = 'View Access: ' .
-					               str_replace( "\n", ', ', $reportConfig['roles_access'] );
+					$permissions = "<b>View Access:</b>\n" .
+					               $UITweaker->customReportsEscapeHTML(
+					                                                $reportConfig['roles_access'] );
 					if ( array_key_exists('as_image', $reportConfig) && $reportConfig['as_image'] )
 					{
-						$permissions .= "\nCan retrieve as image";
+						$permissions .= "\n<i>Can retrieve as image</i>";
 					}
 					if ( $reportConfig['download'] )
 					{
-						$permissions .= "\nDownload: " .
-						                str_replace( "\n", ', ', $reportConfig['roles_download'] );
+						$permissions .= "\n<b>Download:</b>\n" .
+						                $UITweaker->customReportsEscapeHTML(
+						                                          $reportConfig['roles_download'] );
 					}
 					if ( ! $reportConfig['visible'] )
 					{
-						$permissions = "(hidden)\n$permissions";
+						$permissions = "<i>(hidden)</i>\n$permissions";
 					}
 					// For SQL reports...
 					if ( $reportConfig['type'] == 'sql' )
 					{
 						// Populate description and definition with the report description and SQL.
-						$description = $reportData['sql_desc'];
-						$definition = $reportData['sql_query'];
+						$description .= $reportData['sql_desc'];
+						$definition .=
+								$UITweaker->customReportsEscapeHTML( $reportData['sql_query'] );
 						// Note if the report is EAV format.
 						if ( in_array( $reportData['sql_type'], [ 'eav', 'eav-id' ] ) )
 						{
@@ -100,19 +109,20 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 							}
 							if ( $reportData['sql_cols'] != '' )
 							{
-								$options .= ', columns: ' . $reportData['sql_cols'];
+								$options .= ', columns: ' .
+								     $UITweaker->customReportsEscapeHTML( $reportData['sql_cols'] );
 							}
 						}
 					}
 					// For Instrument Queries...
 					elseif ( $reportConfig['type'] == 'instrument' )
 					{
-						$description = $reportData['desc'];
-						$definition = 'Instruments:';
+						$description .= $reportData['desc'];
+						$definition = '<b>Instruments:</b>';
 						foreach ( $reportData['forms'] as $queryForm )
 						{
-							$definition .= "\n- ";
-							if ( $definition != "Instruments:\n- " )
+							$definition .= "\n";
+							if ( $definition != "<b>Instruments:</b>\n" )
 							{
 								if ( isset( $queryForm['join'] ) )
 								{
@@ -124,38 +134,46 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 								}
 								$definition .= ' JOIN ';
 							}
-							$definition .= $queryForm['form'];
+							$definition .= $UITweaker->customReportsEscapeHTML( $queryForm['form'] );
 							if ( $queryForm['alias'] != '' )
 							{
-								$definition .= ' AS `' . $queryForm['alias'] . '`';
+								$definition .= ' AS `' .
+								   $UITweaker->customReportsEscapeHTML( $queryForm['alias'] ) . '`';
 							}
 							if ( $queryForm['on'] != '' )
 							{
-								$definition .= ' ON ' . $queryForm['on'];
+								$definition .= ' ON ' .
+								            $UITweaker->customReportsEscapeHTML( $queryForm['on'] );
 							}
 						}
 						if ( $reportData['where'] != '' )
 						{
-							$definition .= "\nCondition: " . $reportData['where'];
+							$definition .= "\n<b>Condition:</b>\n" .
+							            $UITweaker->customReportsEscapeHTML( $reportData['where'] );
 						}
 						if ( $reportData['orderby'] != '' )
 						{
-							$definition .= "\nSorting: " . $reportData['orderby'];
+							$definition .= "\n<b>Sorting:</b>" .
+							          $UITweaker->customReportsEscapeHTML( $reportData['orderby'] );
 						}
 						if ( ! empty( $reportData['select'] ) )
 						{
-							$definition .= "\nFields to display:";
+							$definition .= "\n<b>Fields to display:</b>";
 							foreach ( $reportData['select'] as $queryField )
 							{
-								$definition .= "\n- " . $queryField['field'];
+								$definition .= "\n- " .
+								        $UITweaker->customReportsEscapeHTML( $queryField['field'] );
 								if ( $queryField['alias'] != '' )
 								{
-									$definition .= ' AS `' . $queryField['alias'] . '`';
+									$definition .= ' AS `' .
+									   $UITweaker->customReportsEscapeHTML( $queryField['alias'] ) .
+									   '`';
 								}
 								if ( isset( $queryField['grouping'] ) &&
 								     $queryField['grouping'] != '' )
 								{
-									$definition .= ' GROUPING ' . $queryField['grouping'];
+									$definition .= ' GROUPING ' .
+									  $UITweaker->customReportsEscapeHTML( $queryField['grouping'] );
 								}
 							}
 						}
@@ -167,8 +185,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 					// For Record Tables...
 					elseif ( $reportConfig['type'] == 'recordtbl' )
 					{
-						$description = $reportData['desc'];
-						$definition = 'Instruments:';
+						$description .= $reportData['desc'];
+						$definition = '<b>Instruments:</b>';
 						if ( empty( $reportData['forms'] ) )
 						{
 							$definition .= ' ALL';
@@ -178,10 +196,10 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 							foreach ( $reportData['forms'] as $formName )
 							{
 								$definition .= "\n- ";
-								$definition .= $formName;
+								$definition .= $UITweaker->customReportsEscapeHTML( $formName );
 							}
 						}
-						$definition .= "\nEvents:";
+						$definition .= "\n<b>Events:</b>";
 						if ( empty( $reportData['events'] ) )
 						{
 							$definition .= ' ALL';
@@ -191,7 +209,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 							foreach ( $reportData['events'] as $eventName )
 							{
 								$definition .= "\n- ";
-								$definition .= $eventName;
+								$definition .= $UITweaker->customReportsEscapeHTML( $eventName );
 							}
 						}
 						if ( $reportData['nomissingdatacodes'] )
@@ -202,50 +220,103 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 					// For Gantt charts...
 					elseif ( $reportConfig['type'] == 'gantt' )
 					{
-						$definition = 'Labels:';
+						$definition = '<b>Labels:</b>';
 						foreach ( $reportData['labels'] as $infoLabel )
 						{
-							$definition .= "\n- " . $infoLabel['name'] . ': [';
+							$definition .= "\n- " .
+							      $UITweaker->customReportsEscapeHTML( $infoLabel['name'] ) . ': [';
 							if ( $infoLabel['event'] != '' )
 							{
-								$definition .= $infoLabel['event'] . '][';
+								$definition .= $UITweaker->customReportsEscapeHTML(
+								                                       $infoLabel['event'] ) . '][';
 							}
-							$definition .= $infoLabel['field'] . ']';
+							$definition .=
+							       $UITweaker->customReportsEscapeHTML( $infoLabel['field'] ) . ']';
 						}
-						$definition .= "\nCategories:";
+						$definition .= "\n<b>Categories:</b>";
 						foreach ( $reportData['chart_categories'] as $infoCategory )
 						{
-							$definition .= "\n- " . $infoCategory['name'] . ': [';
+							$definition .= "\n- " . $UITweaker->customReportsEscapeHTML(
+							                                        $infoCategory['name'] ) . ': [';
 							if ( $infoCategory['start_event'] != '' )
 							{
-								$definition .= $infoCategory['start_event'] . '][';
+								$definition .= $UITweaker->customReportsEscapeHTML(
+								                              $infoCategory['start_event'] ) . '][';
 							}
-							$definition .= $infoCategory['start_field'] . '] - [';
+							$definition .= $UITweaker->customReportsEscapeHTML(
+							                               $infoCategory['start_field'] ) . '] - [';
 							if ( $infoCategory['end_event'] != '' )
 							{
-								$definition .= $infoCategory['end_event'] . '][';
+								$definition .= $UITweaker->customReportsEscapeHTML(
+								                                $infoCategory['end_event'] ) . '][';
 							}
-							$definition .= $infoCategory['end_field'] . ']';
+							$definition .= $UITweaker->customReportsEscapeHTML(
+							                                     $infoCategory['end_field'] ) . ']';
 						}
 					}
 					// For PDF reports...
 					elseif ( $reportConfig['type'] == 'pdf' )
 					{
-						$definition = 'Source Report: ';
-						$definition .= $reportData['source'];
-						$definition .= "\nPaper Size: ";
-						$definition .= ucfirst( $reportData['pdf_size'] ) . ' ' .
-						               ucfirst( $reportData['pdf_orientation'] );
-						$definition .= "\nHTML Source:\n";
-						$definition .= $reportData['pdf'];
+						$definition = '<b>Source Report:</b> ';
+						$definition .= $UITweaker->customReportsEscapeHTML( $reportData['source'] );
+						$definition .= "\n<b>Paper Size:</b> ";
+						$definition .= $UITweaker->customReportsEscapeHTML(
+						                 ucfirst( $reportData['pdf_size'] ) . ' ' .
+						                 ucfirst( $reportData['pdf_orientation'] ) );
+						$definition .= "\n<b>HTML Source:</b>\n";
+						$definition .= $UITweaker->customReportsEscapeHTML(
+						                str_replace( [ "\r\n", "\r" ], "\n", $reportData['pdf'] ) );
+					}
+					// For accumulation reports...
+					elseif ( $reportConfig['type'] == 'accumulation' )
+					{
+						$definition = '<b>Accumulation range:</b>';
+						$definition .= "\n- Start: " . $UITweaker->customReportsEscapeHTML(
+						                                                 $reportData['acc_start'] );
+						$definition .= "\n- End: " . $UITweaker->customReportsEscapeHTML(
+						                                                   $reportData['acc_end'] );
+						if ( $reportData['acc_step'] != '' )
+						{
+							$definition .= "\n- Step: " . $UITweaker->customReportsEscapeHTML(
+							                                              $reportData['acc_step'] );
+						}
+						$definition .= "\n<b>Accumulation logic:</b>\n";
+						$definition .=
+								$UITweaker->customReportsEscapeHTML( $reportData['acc_logic'] );
+						if ( $reportData['group_logic'] != '' )
+						{
+							$definition .= "\n<b>Group by:</b>\n";
+							$definition .=
+								$UITweaker->customReportsEscapeHTML( $reportData['group_logic'] );
+						}
+						if ( $reportData['col_logic'] != '' )
+						{
+							$definition .= "\n<b>Column label logic:</b>\n";
+							$definition .=
+								$UITweaker->customReportsEscapeHTML( $reportData['col_logic'] );
+						}
+						$options = "<b>Display format:</b>\n" .
+						           $UITweaker->customReportsEscapeHTML( $reportData['display'] );
+						if ( $reportData['group_total'] || $reportData['col_reverse'] )
+						{
+							$options .= "\n<b>Display options:</b>";
+							if ( $reportData['group_total'] )
+							{
+								$options .= "\nAdd a 'Total' row";
+							}
+							if ( $reportData['col_reverse'] )
+							{
+								$options .= "\nColumns in reverse order";
+							}
+						}
 					}
 					// Add the report to the simplified view.
 					$UITweaker->addCustomReport( [ 'title' => $reportConfig['label'],
 					                               'type' => $reportTypes[ $reportConfig['type'] ],
-					                               'description' => $description,
+					                               'description' => trim( $description ),
 					                               'permissions' => $permissions,
 					                               'definition' => $definition,
-					                               'options' => $options ] );
+					                               'options' => $options ], true );
 				}
 			}
 			// Remove module settings from the external modules simplified view (report data will
@@ -263,6 +334,112 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 					return true;
 				});
 			}
+		}
+	}
+
+
+
+	// Upon record save, handle the @ADVANCED-REPORT-SAVE action tag if present.
+	function redcap_save_record( $projectID, $record, $instrument, $eventID, $groupID = null,
+	                             $survey_hash = null, $response_id = null, $instance = 1 )
+	{
+		// Check each field on the instrument.
+		$listFields = \REDCap::getDataDictionary( $projectID, 'array', false, null, $instrument );
+		foreach ( $listFields as $fieldName => $infoField )
+		{
+			// Ignore fields which are not file upload fields.
+			if ( $infoField['field_type'] != 'file' ||
+			     $infoField['text_validation_type_or_show_slider_number'] == 'signature' )
+			{
+				continue;
+			}
+			// Taking into account @IF action tags, look for the @ADVANCED-REPORT-SAVE action tag
+			// and extract the report name and any parameters.
+			$annotation = \Form::replaceIfActionTag( $infoField['field_annotation'], $projectID,
+			                                         $record, $eventID, $instrument, $instance );
+			$reportSaveParams =
+					\Form::getValueInParenthesesActionTag( $annotation, '@ADVANCED-REPORT-SAVE' );
+			if ( trim( $reportSaveParams ) == '' ||
+			     ! preg_match( '/^([\'"]?)([a-z0-9_]+)\g{1}' .
+			                   '(?: *, *([\'"])((?(?=\g{3})|.)*?)\g{3})?$/',
+			                   $reportSaveParams, $reportSaveRegexResult, PREG_UNMATCHED_AS_NULL ) )
+			{
+				continue;
+			}
+			$reportName = $reportSaveRegexResult[2];
+			$reportParamString = $reportSaveRegexResult[4];
+			$listParams = [];
+			if ( $reportParamString !== null )
+			{
+				preg_match_all( '/(?:^|&)([^=&]+)(?:=([^&]+))?/', $reportParamString,
+				                $listTemp, PREG_SET_ORDER );
+				for ( $i = 0; $i < count( $listTemp ); $i++ )
+				{
+					$listTemp[$i][1] =
+						\Piping::replaceVariablesInLabel( $listTemp[$i][1], $record, $eventID,
+						                                  $instance, [], false, $projectID,
+						                                  false, '', 1, false, false, $instrument );
+					$listTemp[$i][2] =
+						\Piping::replaceVariablesInLabel( $listTemp[$i][2], $record, $eventID,
+						                                  $instance, [], false, $projectID,
+						                                  false, '', 1, false, false, $instrument );
+					$listParams[ $listTemp[$i][1] ] = $listTemp[$i][2];
+				}
+			}
+			// Get the report and save to file field.
+			$fnGetReport = function( $reportID, $listParams, $module )
+			{
+				$listReports = $module->getReportList();
+				if ( ! isset( $listReports[ $reportID ] ) ||
+				     ! isset( $listReports[ $reportID ]['saveable'] ) ||
+				     ! $listReports[ $reportID ]['saveable'] ||
+				     ! in_array( $listReports[ $reportID ]['type'], self::SAVEABLE_TYPES ) )
+				{
+					return null;
+				}
+				$disableAccessControl = true;
+				$isInternalRequest = true;
+				$oldGet = $_GET;
+				$oldPost = $_POST;
+				$_GET = $listParams;
+				$_GET['pid'] = $oldGet['pid'];
+				$_GET['report_id'] = $reportID;
+				$_GET['download'] = '1';
+				if ( isset( $listReports[ $reportID ]['as_image'] ) &&
+				     $listReports[ $reportID ]['as_image'] && isset( $_GET['as_image'] ) )
+				{
+					unset( $_GET['download'] );
+				}
+				$_POST = [];
+				ob_start();
+				require $listReports[ $reportID ]['type'] . '_view.php';
+				$data = ob_get_clean();
+				$fileName = $reportID . '_' . date( 'Ymd_His' );
+				if ( $listReports[ $reportID ]['type'] == 'pdf' )
+				{
+					$fileName .= '.pdf';
+				}
+				else
+				{
+					$fileName .= isset( $_GET['download'] ) ? '.csv' : '.png';
+				}
+				$_GET = $oldGet;
+				$_POST = $oldPost;
+				return [ $fileName, $data ];
+			};
+			list( $fileName, $reportData ) = $fnGetReport( $reportName, $listParams, $this );
+			if ( $reportData === null )
+			{
+				continue;
+			}
+			$tempFile = $this->createTempFile();
+			file_put_contents( $tempFile, $reportData );
+			$docID = \REDCap::storeFile( $tempFile, $projectID, $fileName );
+			if ( $docID == 0 )
+			{
+				continue;
+			}
+			\REDCap::addFileToField( $docID, $projectID, $record, $fieldName, $eventID, $instance );
 		}
 	}
 
@@ -306,8 +483,9 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			return false;
 		}
 		// Otherwise, if downloads are activated...
-		// Always allow downloads by users who can edit the report.
-		if ( $this->isReportEditable( $reportConfig['type'] ) )
+		// Always allow downloads by users who can edit the report and if the report is public.
+		if ( ( isset( $GLOBALS['disableAccessControl'] ) && $GLOBALS['disableAccessControl'] ) ||
+		     $this->isReportEditable( $reportConfig['type'] ) )
 		{
 			return true;
 		}
@@ -426,7 +604,13 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	// Use only for e.g. JSON or CSV output.
 	function echoText( $text )
 	{
-		echo array_reduce( str_split( $text ), function( $c, $i ) { return $c . $i; }, '' );
+		$text = htmlspecialchars( $text, ENT_QUOTES | ENT_SUBSTITUTE | ENT_XHTML );
+		$chars = [ '&amp;' => 38, '&quot;' => 34, '&apos;' => 39, '&lt;' => 60, '&gt;' => 62 ];
+		$text = preg_split( '/(&(?>amp|quot|apos|lt|gt);)/', $text, -1, PREG_SPLIT_DELIM_CAPTURE );
+		foreach ( $text as $part )
+		{
+			echo isset( $chars[ $part ] ) ? chr( $chars[ $part ] ) : $part;
+		}
 	}
 
 
@@ -435,6 +619,34 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	function escapeHTML( $text )
 	{
 		return htmlspecialchars( $text, ENT_QUOTES );
+	}
+
+
+
+	// Provide the report data for settings exports.
+	function exportProjectSettings()
+	{
+		$projectID = $this->getProjectID();
+		//$listSettings = $this->getProjectSettings();
+		//unset( $listSettings['enabled'] );
+		$listReportIDs = json_decode( $this->getSystemSetting( "p$projectID-report-list" ) ?? '[]',
+		                              true ) ?? [];
+		sort( $listReportIDs );
+		$listSettings[] = [ 'key' => 'report-list', 'value' => $listReportIDs ];
+		foreach ( $listReportIDs as $reportID )
+		{
+			$reportConfig = $this->getSystemSetting( "p$projectID-report-config-$reportID" );
+			$reportConfig = json_decode( $reportConfig, true );
+			unset( $reportConfig['lastupdated_user'], $reportConfig['lastupdated_time'],
+			       $reportConfig['api_key'] );
+			$reportConfig = json_encode( $reportConfig );
+			$listSettings[] =
+				[ 'key' => "report-config-$reportID", 'type' => 'json', 'value' => $reportConfig ];
+			$listSettings[] =
+				[ 'key' => "report-data-$reportID", 'type' => 'json',
+				  'value' => $this->getSystemSetting( "p$projectID-report-data-$reportID" ) ];
+		}
+		return $listSettings;
 	}
 
 
@@ -550,7 +762,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	// Gets the list of reports, with the configuration data for each report.
 	function getReportList()
 	{
-		$projectID = $this->getProjectID();
+		$projectID = $this->getProjectId();
 		if ( $projectID === null )
 		{
 			return [];
@@ -580,7 +792,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	// Get the list of report types.
 	function getReportTypes()
 	{
-		return [ 'gantt' => 'Gantt',
+		return [ 'accumulation' => 'Accumulation',
+		         'gantt' => 'Gantt',
 		         'instrument' => 'Instrument Query',
 		         'pdf' => 'PDF',
 		         'recordtbl' => 'Record Table',
@@ -757,7 +970,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 	// Output a drop-down list of instruments for the project.
-	function outputInstrumentDropdown( $dropDownName, $value )
+	function outputInstrumentDropdown( $dropDownName, $value, $extraOptions = null )
 	{
 		echo '<select name="', htmlspecialchars( $dropDownName ), '">';
 		echo '<option value=""', ( $value == '' ? ' selected' : '' ), '></option>';
@@ -766,6 +979,15 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			echo '<option value="', htmlspecialchars( $optValue ), '"',
 			     ( $value == $optValue ? ' selected' : '' ), '>',
 			     htmlspecialchars( $optLabel ), '</option>';
+		}
+		if ( $extraOptions !== null )
+		{
+			foreach ( $extraOptions as $optValue => $optLabel )
+			{
+				echo '<option value="', htmlspecialchars( $optValue ), '"',
+				     ( $value == $optValue ? ' selected' : '' ), '>',
+				     htmlspecialchars( $optLabel ), '</option>';
+			}
 		}
 		echo '</select>';
 	}
@@ -795,14 +1017,25 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
    <td>Report Label</td>
    <td>
     <input type="text" name="report_label" required
-           value="<?php echo htmlspecialchars( $reportConfig['label'] ); ?>">
+           value="<?php echo $this->escapeHTML( $reportConfig['label'] ); ?>">
    </td>
   </tr>
   <tr>
    <td>Report Category</td>
    <td>
     <input type="text" name="report_category"
-           value="<?php echo htmlspecialchars( $reportConfig['category'] ); ?>">
+           value="<?php echo $this->escapeHTML( $reportConfig['category'] ); ?>">
+   </td>
+  </tr>
+  <tr>
+   <td>Report Annotation</td>
+   <td>
+    <textarea name="report_annotation"><?php
+		echo $this->escapeHTML( $reportConfig['annotation'] ?? '' ); ?></textarea>
+    <br>
+    <span class="field-desc">
+     The report annotation will not be shown on the report.
+    </span>
    </td>
   </tr>
   <tr><th colspan="2">Access Permissions</th></tr>
@@ -829,7 +1062,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
   <tr>
    <td>Grant access to roles</td>
    <td>
-    <textarea name="report_roles_access"><?php echo $reportConfig['roles_access']; ?></textarea>
+    <textarea name="report_roles_access"><?php
+		echo $this->escapeHTML( $reportConfig['roles_access'] ); ?></textarea>
     <br>
     <span class="field-desc">
      Enter each role name on a separate line.
@@ -849,19 +1083,20 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
    <td>
     <label>
      <input type="radio" name="report_download" value="Y" required<?php
-		echo $reportConfig['download'] ? ' checked' : ''; ?>> Yes
+			echo $reportConfig['download'] ? ' checked' : ''; ?>> Yes
     </label>
     <br>
     <label>
      <input type="radio" name="report_download" value="N" required<?php
-		echo $reportConfig['download'] ? '' : ' checked'; ?>> No
+			echo $reportConfig['download'] ? '' : ' checked'; ?>> No
     </label>
    </td>
   </tr>
   <tr>
    <td>Grant downloads to roles</td>
    <td>
-    <textarea name="report_roles_download"><?php echo $reportConfig['roles_download']; ?></textarea>
+    <textarea name="report_roles_download"><?php
+			echo $this->escapeHTML( $reportConfig['roles_download'] ); ?></textarea>
     <br>
     <span class="field-desc">
      Enter each role name on a separate line. Reports can only be downloaded by users with access.
@@ -869,6 +1104,34 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
      If left blank, the report can be downloaded by users with edit access.
      <br>
      Enter * to allow downloads by all users with access.
+    </span>
+   </td>
+  </tr>
+<?php
+		}
+
+		if ( in_array( 'saveable', $includeAdditional ) )
+		{
+?>
+  <tr>
+   <td>Report can be saved to a field</td>
+   <td>
+    <label>
+     <input type="radio" name="report_saveable" value="Y" required<?php
+			echo $reportConfig['saveable'] ? ' checked' : ''; ?>> Yes
+    </label>
+    <br>
+    <label>
+     <input type="radio" name="report_saveable" value="N" required<?php
+			echo $reportConfig['saveable'] ? '' : ' checked'; ?>> No
+    </label>
+    <br>
+    <span class="field-desc">
+     If set to <i>yes</i>, this report can be saved to a file field using the @ADVANCED-REPORT-SAVE
+     action tag.
+     <br>
+     Once a report is saved to a field, it will be accessible by anyone with access to the record
+     and instrument.
     </span>
    </td>
   </tr>
@@ -883,12 +1146,12 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
    <td>
     <label>
      <input type="radio" name="report_as_image" value="Y" required<?php
-		echo $reportConfig['as_image'] ? ' checked' : ''; ?>> Yes
+			echo $reportConfig['as_image'] ? ' checked' : ''; ?>> Yes
     </label>
     <br>
     <label>
      <input type="radio" name="report_as_image" value="N" required<?php
-		echo $reportConfig['as_image'] ? '' : ' checked'; ?>> No
+			echo $reportConfig['as_image'] ? '' : ' checked'; ?>> No
     </label>
     <br>
     <span class="field-desc">
@@ -907,12 +1170,12 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
    <td>
     <label>
      <input type="radio" name="report_as_api" value="Y" required<?php
-		echo $reportConfig['as_api'] ? ' checked' : ''; ?>> Yes
+			echo $reportConfig['as_api'] ? ' checked' : ''; ?>> Yes
     </label>
     <br>
     <label>
      <input type="radio" name="report_as_api" value="N" required<?php
-		echo $reportConfig['as_api'] ? '' : ' checked'; ?>> No
+			echo $reportConfig['as_api'] ? '' : ' checked'; ?>> No
     </label>
     <br>
     <span class="field-desc">
@@ -932,6 +1195,41 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
   </tr>
 <?php
 		}
+
+		if ( in_array( 'public', $includeAdditional ) )
+		{
+?>
+  <tr>
+   <td>Allow public access</td>
+   <td>
+    <label>
+     <input type="radio" name="report_as_public" value="Y" required<?php
+			echo $reportConfig['as_public'] ? ' checked' : ''; ?>> Yes
+    </label>
+    <br>
+    <label>
+     <input type="radio" name="report_as_public" value="N" required<?php
+			echo $reportConfig['as_public'] ? '' : ' checked'; ?>> No
+    </label>
+    <br>
+    <span class="field-desc">
+     If enabled, the report can be accessed publicly at the following URL:<br>
+     <?php echo $this->getUrl( 'public.php?report_id=' . $_GET['report_id'], true, true ), "\n"; ?>
+<?php
+			if ( $includeDownload )
+			{
+?>
+     <br>
+     If report downloads are enabled, the report can be downloaded by all users who view the report
+     at the public URL.
+<?php
+			}
+?>
+    </span>
+   </td>
+  </tr>
+<?php
+		}
 	}
 
 
@@ -939,6 +1237,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	// Output the report navigation links.
 	function outputViewReportHeader( $reportLabel, $reportType, $canReset = false )
 	{
+		$isPublic = ( isset($GLOBALS['disableAccessControl']) && $GLOBALS['disableAccessControl'] );
 		$canDownload = $this->isReportDownloadable( $_GET['report_id'] );
 		$this->writeStyle();
 
@@ -947,9 +1246,18 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
  <?php echo htmlspecialchars( $reportLabel ), "\n"; ?>
 </div>
 <p style="font-size:11px" class="hide_in_print">
+<?php
+
+
+		// Show link to return to Advanced Reports page (unless showing public report).
+		if ( ! $isPublic )
+		{
+?>
  <a href="<?php echo $this->getUrl( 'reports.php' )
 ?>"><i class="fas fa-arrow-circle-left fs11"></i> Back to Advanced Reports</a>
 <?php
+		}
+
 
 		// If report can be downloaded, show the download link.
 		if ( $canDownload )
@@ -976,7 +1284,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		}
 
 		// If the user can edit the report, show an edit link.
-		if ( $this->isReportEditable( $reportType ) )
+		if ( ! $isPublic && $this->isReportEditable( $reportType ) )
 		{
 
 ?>
@@ -1020,6 +1328,58 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 <script type="text/javascript">
   $(function()
   {
+<?php
+
+
+		$userDateFormat = \DateTimeRC::get_user_format_base();
+		if ( $userDateFormat == 'DMY' || $userDateFormat == 'MDY' )
+		{
+			$userDateSubstr = $userDateFormat == 'DMY' ? [ '3,5', '0,2' ] : [ '0,2', '3,5' ];
+?>
+    var vDateParse = Date.parse
+    Date.parse = function ( vDateVal )
+    {
+      if ( /^[0-9]{2}[^0-9][0-9]{2}[^0-9][0-9]{4}([^0-9]|$)/.test( vDateVal ) )
+      {
+        vDateVal = '' + vDateVal.substring(6,10) + vDateVal.substring(5,6) +
+                   vDateVal.substring(<?php echo $userDateSubstr[0]; ?>) + vDateVal.substring(2,3) +
+                   vDateVal.substring(<?php echo $userDateSubstr[1]; ?>) + vDateVal.substring(10)
+      }
+      return vDateParse( vDateVal )
+    };
+<?php
+		}
+?>
+
+
+    var vOldRowCompare = RowCompare
+    var vOldRowCompareIntegers = RowCompareIntegers
+    var vOldRowCompareNumbers = RowCompareNumbers
+    var vOldRowCompareDates = RowCompareDates
+    var vFuncCompareStVals = function ( a, b, f )
+    {
+      var vElemA = $(a.getElementsByTagName('td')[lastSort])
+      var vElemB = $(b.getElementsByTagName('td')[lastSort])
+      if ( typeof vElemA.attr('data-sortvalue') == 'undefined' ||
+           typeof vElemB.attr('data-sortvalue') == 'undefined' )
+      {
+        return f( a, b )
+      }
+      vElemA.attr('data-displayvalue',vElemA.html())
+      vElemA.text(vElemA.attr('data-sortvalue'))
+      vElemB.attr('data-displayvalue',vElemB.html())
+      vElemB.text(vElemB.attr('data-sortvalue'))
+      var vCompareResult = f( a, b )
+      vElemA.html(vElemA.attr('data-displayvalue'))
+      vElemA.attr('data-displayvalue',null)
+      vElemB.html(vElemB.attr('data-displayvalue'))
+      vElemB.attr('data-displayvalue',null)
+      return vCompareResult
+    };
+    RowCompare = function(a, b){ return vFuncCompareStVals(a, b, vOldRowCompare) };
+    RowCompareIntegers = function(a, b){ return vFuncCompareStVals(a, b, vOldRowCompareIntegers) };
+    RowCompareNumbers = function(a, b){ return vFuncCompareStVals(a, b, vOldRowCompareNumbers) };
+    RowCompareDates = function(a, b){ return vFuncCompareStVals(a, b, vOldRowCompareDates) };
 
     var vReportParams = {}
     try
@@ -1048,9 +1408,46 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
         $(elemTr).find('td').each(function(indexTd,elemTd)
         {
           var vFilter = vHeader[indexTd].getAttribute('data-filter')
+          if ( vFilter === null )
+          {
+            vFilter = ''
+          }
+          var vOp = vHeader[indexTd].getAttribute('data-filterop')
+          if ( vOp === null )
+          {
+            vOp = ''
+          }
+          var vType = vHeader[indexTd].getAttribute('data-type')
           var vText = $(elemTd).text()
-          if ( vFilter !== null && vFilter != '' &&
-               ! vText.toLowerCase().includes( vFilter.toLowerCase() ) )
+          if ( ( vType == 'int' || vType == 'float' || vType == 'date' ) &&
+               ( vOp == 'lt' || vOp == 'gt' || vOp == 'lte' || vOp == 'gte' ) )
+          {
+            if ( vType == 'date' )
+            {
+              vFilter = Date.parse( vFilter )
+              vText = Date.parse( vText )
+            }
+            else
+            {
+              vFilter -= 0
+              vText -= 0
+            }
+            if ( ( vOp == 'lt' && vText >= vFilter ) ||
+                 ( vOp == 'gt' && vText <= vFilter ) ||
+                 ( vOp == 'lte' && vText > vFilter ) ||
+                 ( vOp == 'gte' && vText < vFilter ) )
+            {
+              vShowRow = false
+            }
+          }
+          else if ( ( vOp == 'eq' && vText.trim() != vFilter ) ||
+                    ( vOp == 'ne' && vText.trim() == vFilter ) ||
+                    ( vOp == 'lt' && vText.trim() >= vFilter ) ||
+                    ( vOp == 'gt' && vText.trim() <= vFilter ) ||
+                    ( vOp == 'lte' && vText.trim() > vFilter ) ||
+                    ( vOp == 'gte' && vText.trim() < vFilter ) ||
+                    ( vOp == '' && vFilter != '' &&
+                      ! vText.toLowerCase().includes( vFilter.toLowerCase() ) ) )
           {
             vShowRow = false
           }
@@ -1122,15 +1519,26 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
         elem.setAttribute('data-filter', vReportParams.filter[elem.getAttribute('data-colnum')])
         $(elem).find('.fas')[0].style.color = '#7a80dd'
       }
+      if ( vReportParams.filterop != undefined &&
+           vReportParams.filterop[elem.getAttribute('data-colnum')] != undefined )
+      {
+        elem.setAttribute('data-filterop', vReportParams.filterop[elem.getAttribute('data-colnum')])
+        $(elem).find('.fas')[0].style.color = '#7a80dd'
+      }
 
       $(elem).find('.fas').click(function(ev)
       {
         ev.stopPropagation()
         var vIcon = this
         var vFilter = elem.getAttribute('data-filter')
+        var vOp = elem.getAttribute('data-filterop')
         if ( vFilter == null )
         {
           vFilter = ''
+        }
+        if ( vOp == null )
+        {
+          vOp = ''
         }
         var vColNum = elem.getAttribute('data-colnum')
         var vItems = JSON.parse( elem.getAttribute('data-items') )
@@ -1142,9 +1550,13 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
             $('#mod-advrep-filterlist').append($('<option></option>').text(vItems[i]))
           }
         }
-        var vDialog = $('<div><input type="text" style="width:350px" ' +
-                        'list="mod-advrep-filterlist"></div>')
+        var vDialog = $('<div><select><option value="">has</option><option value="eq">=</option>' +
+                        '<option value="ne">&#8800;</option><option value="lt">&lt;</option>' +
+                        '<option value="lte">&#8804;</option><option value="gt">&gt;</option>' +
+                        '<option value="gte">&#8805;</option></select>&nbsp;<input type="text" ' +
+                        'style="width:350px" list="mod-advrep-filterlist"></div>')
         vDialog.find('input[type="text"]').val(vFilter)
+        vDialog.find('select').val(vOp)
         vDialog.dialog(
         {
           autoOpen:true,
@@ -1152,18 +1564,21 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
             Reset : function()
             {
               vFilter = ''
+              vOp = ''
               vDialog.dialog('close')
             },
             Filter : function()
             {
               vFilter = vDialog.find('input[type="text"]').val()
+              vOp = vDialog.find('select').val()
               vDialog.dialog('close')
             }
           },
           close: function()
           {
             elem.setAttribute('data-filter', vFilter)
-            if ( vFilter == '' )
+            elem.setAttribute('data-filterop', vOp)
+            if ( vFilter == '' && vOp == '' )
             {
               if ( vReportParams.filter != undefined && vReportParams.filter[vColNum] != undefined )
               {
@@ -1183,19 +1598,39 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
               }
               vReportParams.filter[vColNum] = vFilter
             }
+            if ( vOp == '' )
+            {
+              if ( vReportParams.filterop != undefined &&
+                   vReportParams.filterop[vColNum] != undefined )
+              {
+                delete vReportParams.filterop[vColNum]
+              }
+              if ( vReportParams.filterop != undefined &&
+                   Object.keys(vReportParams.filterop).length == 0 )
+              {
+                delete vReportParams.filterop
+              }
+            }
+            else
+            {
+              if ( vReportParams.filterop == undefined )
+              {
+                vReportParams.filterop = {}
+              }
+              vReportParams.filterop[vColNum] = vOp
+            }
             updateURL()
             filterTable()
-            vIcon.style.color = ( vFilter == '' ) ? '' : '#7a80dd'
+            vIcon.style.color = ( vFilter == '' && vOp == '' ) ? '' : '#7a80dd'
           },
           modal:true,
           resizable:false,
           title:'Enter filter text',
-          width:400
+          width:440
         })
       })
 
-    })
-    filterTable()
+    });
 
 
     $('.sorting').click(function()
@@ -1213,7 +1648,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
       $(this).addClass( vIsAsc ? 'sorting_desc' : 'sorting_asc' )
       vReportParams.sort.unshift( { col: vColNum, dir: ( vIsAsc ? 'desc' : 'asc' ) } )
       updateURL()
-    })
+    });
 
 
     var vHeader = $('.mod-advrep-datatable thead th')
@@ -1222,6 +1657,10 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
       $(elemTr).find('td').each(function(indexTd,elemTd)
       {
         var vText = $(elemTd).text()
+        if ( typeof $(elemTd).attr('data-sortvalue') != 'undefined' )
+        {
+          vText = $(elemTd).attr('data-sortvalue')
+        }
         var vItems = vHeader[indexTd].getAttribute('data-items')
         vItems = JSON.parse( vItems === null ? '[]' : vItems )
         if ( vItems !== false && vText != '' && vItems.indexOf( vText ) == -1 )
@@ -1289,26 +1728,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
       }
     });
 
-<?php
-		$userDateFormat = \DateTimeRC::get_user_format_base();
-		if ( $userDateFormat == 'DMY' || $userDateFormat == 'MDY' )
-		{
-			$userDateSubstr = $userDateFormat == 'DMY' ? [ '3,5', '0,2' ] : [ '0,2', '3,5' ];
-?>
-    var vDateParse = Date.parse
-    Date.parse = function ( vDateVal )
-    {
-      if ( /^[0-9]{2}[^0-9][0-9]{2}[^0-9][0-9]{4}([^0-9]|$)/.test( vDateVal ) )
-      {
-        vDateVal = '' + vDateVal.substring(6,10) + vDateVal.substring(5,6) +
-                   vDateVal.substring(<?php echo $userDateSubstr[0]; ?>) + vDateVal.substring(2,3) +
-                   vDateVal.substring(<?php echo $userDateSubstr[1]; ?>) + vDateVal.substring(10)
-      }
-      return vDateParse( vDateVal )
-    };
-<?php
-		}
-?>
+
+    filterTable();
 
 
     (function()
@@ -1350,7 +1771,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	{
 		$str = str_replace( '$$PROJECT$$', intval( $this->getProjectId() ), $str );
 		$str = str_replace( '$$WEBROOT$$', APP_PATH_WEBROOT, $str );
-		return nl2br( $this->parseHTML( $str ) );
+		return $this->parseHTML( $str );
 	}
 
 
@@ -1373,10 +1794,11 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			                              ( $m[4] == '' ? '' : ' target="_blank"' ) ) ) .
 			       '>' . $m[6] . '</' . $m[7] . '>';
 		};
-		return preg_replace_callback( '/&lt;((?<t1>a) href=&quot;((?(?=&quot;)|.)*)&quot;( ' .
-		                              'target=&quot;_blank&quot;)?|(?<t2>b|i))&gt;(.*?)&lt;\/' .
-		                              '((?P=t1)|(?P=t2))&gt;/',
-		                              $fnParse, htmlspecialchars( $str, ENT_QUOTES ) );
+		return nl2br(
+		        preg_replace_callback( '/&lt;((?<t1>a) href=&quot;((?(?=&quot;)|.)*)&quot;( ' .
+		                               'target=&quot;_blank&quot;)?|(?<t2>b|i))&gt;(.*?)&lt;\/' .
+		                               '((?P=t1)|(?P=t2))&gt;/',
+		                               $fnParse, htmlspecialchars( $str, ENT_QUOTES ) ) );
 	}
 
 
@@ -1560,6 +1982,33 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Replace logic vars with values (do a search/replace excluding string values).
+	function replaceLogicVars( $logic, $search, $replace )
+	{
+		$listStr = preg_split('/([\'"])/', $logic, -1, PREG_SPLIT_DELIM_CAPTURE );
+		$quote = '';
+		$logic = '';
+		foreach ( $listStr as $strPart )
+		{
+			if ( $quote == '' && ( $strPart == "'" || $strPart == '"' ) )
+			{
+				$quote = $strPart;
+			}
+			elseif ( $quote != '' && $quote == $strPart )
+			{
+				$quote = '';
+			}
+			elseif ( $quote == '' )
+			{
+				$strPart = str_replace( $search, $replace, $strPart );
+			}
+			$logic .= $strPart;
+		}
+		return $logic;
+	}
+
+
+
 	// Sets the specified configuration option for a report to the specified value.
 	function setReportConfig( $reportID, $configName, $configValue )
 	{
@@ -1600,19 +2049,31 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		if ( $test )
 		{
 			$sql = str_replace( [ '$$DAG$$', '$$PROJECT$$', '$$ROLE$$' ], '0', $sql );
-			$sql = preg_replace( '/\$\$DATATABLE(\:[1-9][0-9]*)?\$\$/', 'redcap_data', $sql );
+			$sql = preg_replace( '/\$\$DATATABLE(\:[1-9][0-9]*)?\$\$/', 'redcap' . '_data', $sql );
 			$sql = preg_replace( '/\$\$LOGTABLE(\:[1-9][0-9]*)?\$\$/', 'redcap_log_event', $sql );
 			$sql = str_replace( [ '$$USER$$', '$$WEBROOT$$' ], "'text'", $sql );
 			$sql = preg_replace( '/\$\$QINT\:[a-z0-9_]+\$\$/', '0', $sql );
 			$sql = preg_replace( '/\$\$QSTR\:[a-z0-9_]+\$\$/', "'text'", $sql );
+			$sql = preg_replace( '/\$\$DATATABLES:(\((?>[^()]+|(?1))*\))\$\$/',
+			                     '(SELECT * FROM redcap' . '_data)', $sql );
 		}
 		else
 		{
 			$listLogTables = [];
-			$userRole = $this->getUser()->getRights()['role_id'];
-			$userRole = $userRole == null ? 'NULL' : intval( $userRole );
-			$userDAG = $this->getUser()->getRights()['group_id'];
-			$userDAG = $userDAG == null ? 'NULL' : intval( $userDAG );
+			if ( ! defined( 'USERID' ) || USERID == '' )
+			{
+				$userID = 'NULL';
+				$userRole = 'NULL';
+				$userDAG = 'NULL';
+			}
+			else
+			{
+				$userID = "'" . mysqli_real_escape_string( $conn, USERID ) . "'";
+				$userRole = $this->getUser()->getRights()['role_id'];
+				$userRole = $userRole == null ? 'NULL' : intval( $userRole );
+				$userDAG = $this->getUser()->getRights()['group_id'];
+				$userDAG = $userDAG == null ? 'NULL' : intval( $userDAG );
+			}
 			$sql = str_replace( '$$DAG$$', $userDAG, $sql );
 			$sql = preg_replace_callback( '/\$\$DATATABLE(\:([1-9][0-9]*))?\$\$/',
 			                              function( $m )
@@ -1626,7 +2087,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			                                  $pid = intval( $m[2] );
 			                                }
 			                                return method_exists( '\REDCap', 'getDataTable' )
-			                                       ? \REDCap::getDataTable( $pid ) : 'redcap_data';
+			                                       ? \REDCap::getDataTable( $pid )
+			                                       : ( 'redcap' . '_data' );
 			                              },
 			                              $sql );
 			$sql = preg_replace_callback( '/\$\$LOGTABLE(\:([1-9][0-9]*))?\$\$/',
@@ -1658,8 +2120,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			                              $sql );
 			$sql = str_replace( '$$PROJECT$$', intval( $this->getProjectId() ), $sql );
 			$sql = str_replace( '$$ROLE$$', $userRole, $sql );
-			$sql = str_replace( '$$USER$$',
-			                    "'" . mysqli_real_escape_string( $conn, USERID ) . "'", $sql );
+			$sql = str_replace( '$$USER$$', $userID, $sql );
 			$sql = str_replace( '$$WEBROOT$$',
 			                    "'" . mysqli_real_escape_string( $conn, APP_PATH_WEBROOT ) . "'",
 			                    $sql );
@@ -1688,6 +2149,57 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			                                                                 $_GET[ $m[1] ] ) . "'";
 			                        },
 			                        $sql );
+			$sql =
+			 preg_replace_callback( '/\$\$DATATABLES:(\((?>[^()]+|(?1))*\))\$\$/',
+			                        function( $m )
+			                        {
+			                          global $conn;
+			                          $subSQL = substr( $m[1], 1, -1 );
+			                          if ( substr( $subSQL, 0, 7 ) != 'SELECT ' )
+			                          {
+			                            return '';
+			                          }
+			                          $subQ = mysqli_query( $conn, $subSQL );
+			                          if ( $subQ === false )
+			                          {
+			                            return '';
+			                          }
+			                          $listPIDs = [];
+			                          while ( $subR = mysqli_fetch_row( $subQ ) )
+			                          {
+			                            if ( count( $subR ) != 1 ||
+			                                 ! preg_match( '/^[1-9][0-9]*$/', $subR[0] ) )
+			                            {
+			                              return '';
+			                            }
+			                            $listPIDs[] = intval( $subR[0] );
+			                          }
+			                          if ( empty( $listPIDs ) )
+			                          {
+			                            return 'redcap' . '_data';
+			                          }
+			                          $condPIDs = 'project_id IN ( ' .
+			                                      implode( ',', $listPIDs ) . ' )';
+			                          $dtQ = mysqli_query( $conn, 'SELECT DISTINCT data_table ' .
+			                                                      'FROM redcap_projects WHERE ' .
+			                                                      $condPIDs );
+			                          $result = '';
+			                          while ( $dtR = mysqli_fetch_row( $dtQ ) )
+			                          {
+			                            if ( $result != '' )
+			                            {
+			                              $result .= ' UNION ';
+			                            }
+			                            $result .= 'SELECT * FROM ' . $dtR[0] .
+			                                       ' WHERE ' . $condPIDs;
+			                          }
+			                          if ( $result == '' )
+			                          {
+			                            return 'redcap' . '_data';
+			                          }
+			                          return '(' . $result . ')';
+			                        },
+			                        $sql );
 		}
 		return $sql;
 	}
@@ -1711,12 +2223,17 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		}
 		if ( $includeDownload )
 		{
-			$listConfig =
-				[ 'label', 'category', 'visible', 'download', 'roles_access', 'roles_download' ];
+			$listConfig = [ 'label', 'category', 'annotation', 'visible',
+			                'download', 'roles_access', 'roles_download' ];
 		}
 		else
 		{
-			$listConfig = [ 'label', 'category', 'visible', 'roles_access' ];
+			$listConfig = [ 'label', 'category', 'annotation', 'visible', 'roles_access' ];
+		}
+		if ( in_array( 'saveable', $includeAdditional ) )
+		{
+			$listConfig[] = 'saveable';
+			unset( $includeAdditional[ array_search( 'saveable', $includeAdditional ) ] );
 		}
 		foreach ( $includeAdditional as $additionalItem )
 		{
@@ -1729,13 +2246,18 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		foreach ( $listConfig as $configSetting )
 		{
 			$configValue = $_POST["report_$configSetting"];
-			if ( in_array( $configSetting, [ 'visible', 'download', 'as_image', 'as_api' ] ) )
+			if ( in_array( $configSetting, [ 'visible', 'download', 'as_image', 'as_api',
+			                                 'saveable', 'as_public' ] ) )
 			{
 				$configValue = $configValue == 'Y' ? true : false;
 			}
 			elseif ( trim( $configValue ) === '' )
 			{
 				$configValue = null;
+			}
+			elseif ( in_array( $configSetting, [ 'annotation', 'roles_access', 'roles_download' ] ) )
+			{
+				$configValue = str_replace( "\r\n", "\n", $configValue );
 			}
 			$this->setReportConfig( $reportID, $configSetting, $configValue );
 		}

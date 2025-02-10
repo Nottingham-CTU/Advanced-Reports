@@ -304,7 +304,7 @@ if ( isset( $_GET['as_image']) && $reportConfig['as_image'] )
 		foreach ( $listColumns as $columnName )
 		{
 			$imgParsedData = isset( $resultRow[$columnName] )
-			                    ? $module->parseHTML( $resultRow[$columnName], true ) : '';
+			                    ? $module->escapeHTML( $resultRow[$columnName] ) : '';
 			$thisWidth = ( strlen( $imgParsedData ) * $imgDataCharW ) + 5;
 			if ( $imgColumnWidths[$columnName] < $thisWidth )
 			{

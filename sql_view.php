@@ -7,7 +7,7 @@ namespace Nottingham\AdvancedReports;
 
 
 
-// Verify the report exists, is an SQL report, and is visible.
+// Verify the report exists, and is an SQL report.
 // Redirect to main reports page if not.
 $reportID = $_GET['report_id'];
 $listReports = $module->getReportList();
@@ -20,9 +20,16 @@ $reportConfig = $listReports[$reportID];
 $reportData = $module->getReportData( $reportID );
 
 
+// Determine the request type (normal/csv/api).
+$disableAccessControl = isset( $disableAccessControl ) ? $disableAccessControl : false;
+$isApiRequest = isset( $isApiRequest ) ? $isApiRequest : false;
+$isInternalRequest = isset( $isInternalRequest ) ? $isInternalRequest : false;
+$isCsvDownload = ( ! $isApiRequest && isset( $_GET['download'] ) &&
+                   ( $isInternalRequest || $module->isReportDownloadable( $reportID ) ) );
+
 
 // Check user can view this report, redirect to main reports page if not.
-if ( ! $module->isReportAccessible( $reportID ) )
+if ( ! $disableAccessControl && ! $isApiRequest && ! $module->isReportAccessible( $reportID ) )
 {
 	header( 'Location: ' . $module->getUrl( 'reports.php' ) );
 	exit;
@@ -31,7 +38,8 @@ if ( ! $module->isReportAccessible( $reportID ) )
 
 
 // Get the report data.
-$query = mysqli_query( $conn, $module->sqlPlaceholderReplace( $reportData['sql_query'] ) );
+$query = mysqli_query( $GLOBALS['conn'],
+                       $module->sqlPlaceholderReplace( $reportData['sql_query'] ) );
 $resultType = $reportData['sql_type'] ?? 'normal';
 $columns = [];
 
@@ -74,11 +82,30 @@ if ( $resultType == 'eav' || $resultType == 'eav-id' )
 
 
 
+// Return the result table for API requests.
+if ( $isApiRequest )
+{
+	if ( $resultType != 'eav' && $resultType != 'eav-id' )
+	{
+		$resultData = [];
+		while ( $infoRecord = mysqli_fetch_assoc( $query ) )
+		{
+			$resultData[] = $infoRecord;
+		}
+	}
+	return $resultData;
+}
+
+
+
 
 // Handle report download.
-if ( isset( $_GET['download'] ) && $module->isReportDownloadable( $reportID ) )
+if ( $isCsvDownload )
 {
-	$module->writeCSVDownloadHeaders( $reportID );
+	if ( ! $isInternalRequest )
+	{
+		$module->writeCSVDownloadHeaders( $reportID );
+	}
 	if ( $resultType == 'eav' || $resultType == 'eav-id' )
 	{
 		$first = true;
@@ -107,6 +134,10 @@ if ( isset( $_GET['download'] ) && $module->isReportDownloadable( $reportID ) )
 				$first = false;
 			}
 		}
+		if ( $isInternalRequest )
+		{
+			return;
+		}
 		exit;
 	}
 	while ( $infoRecord = mysqli_fetch_assoc( $query ) )
@@ -131,6 +162,10 @@ if ( isset( $_GET['download'] ) && $module->isReportDownloadable( $reportID ) )
 			     '"';
 		}
 	}
+	if ( $isInternalRequest )
+	{
+		return;
+	}
 	exit;
 }
 
@@ -139,7 +174,10 @@ if ( isset( $_GET['download'] ) && $module->isReportDownloadable( $reportID ) )
 // Handle retrieve report as image.
 if ( isset( $_GET['as_image']) && $reportConfig['as_image'] )
 {
-	header( 'Content-Type: image/png' );
+	if ( ! $isInternalRequest )
+	{
+		header( 'Content-Type: image/png' );
+	}
 	// Determine the fonts and character sizes for the report.
 	$imgHeaderFont = 5;
 	$imgDataFont = 4;
@@ -222,21 +260,23 @@ if ( isset( $_GET['as_image']) && $reportConfig['as_image'] )
 	}
 	// Output the image as a PNG and exit.
 	imagepng( $img );
+	if ( $isInternalRequest )
+	{
+		return;
+	}
 	exit;
 }
 
 
 
-// Display the project header and report navigation links.
-require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
+// Display the header and report navigation links.
+if ( $disableAccessControl ) ($htmlPage = new \HtmlPage)->PrintHeader( false );
+else require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
 $module->outputViewReportHeader( $reportConfig['label'], 'sql', true );
 
 // Initialise the row counter.
 $rowCount = 0;
 
-?>
-</p>
-<?php
 
 // If a description is provided, output it here.
 if ( isset( $reportData['sql_desc'] ) && $reportData['sql_desc'] != '' )
@@ -369,5 +409,6 @@ if ( $rowCount > 0 )
 $module->outputViewReportJS();
 
 
-// Display the project footer
-require_once APP_PATH_DOCROOT . 'ProjectGeneral/footer.php';
+// Display the footer
+if ( $disableAccessControl ) $htmlPage->PrintFooter();
+else require_once APP_PATH_DOCROOT . 'ProjectGeneral/footer.php';

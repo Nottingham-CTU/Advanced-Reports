@@ -23,7 +23,7 @@ $zoomLevels = [ 1 => 'ultra', 2 => 'more', 3 => 'compact', 4 => 'standard', 5 =>
 
 
 
-// Verify the report exists, is a Gantt report, and is visible.
+// Verify the report exists and is a Gantt report.
 // Redirect to main reports page if not.
 $reportID = $_GET['report_id'];
 $listReports = $module->getReportList();

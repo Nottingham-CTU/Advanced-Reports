@@ -31,6 +31,7 @@ if ( ! empty( $_POST ) )
 	{
 		exit;
 	}
+	$_POST['sql_query'] = str_replace( "\r\n", "\n", $_POST['sql_query'] );
 	$validQuery = ( mysqli_query( $conn, $module->sqlPlaceholderReplace( $_POST['sql_query'],
 	                                                                     true ) ) !== false );
 	if ( isset( $_SERVER['HTTP_X_RC_ADVREP_SQLCHK'] ) )
@@ -52,7 +53,7 @@ if ( ! empty( $_POST ) )
 	}
 
 	// Save data
-	$module->submitReportConfig( $reportID, true, 'image' );
+	$module->submitReportConfig( $reportID, true, [ 'saveable', 'image', 'api', 'public' ] );
 	$reportData = [ 'sql_desc' => $_POST['sql_desc'], 'sql_query' => $_POST['sql_query'],
 	                'sql_type' => $_POST['sql_type'], 'sql_cols' => $_POST['sql_cols'] ];
 	$module->setReportData( $reportID, $reportData );
@@ -80,7 +81,8 @@ $module->writeStyle();
 </p>
 <form method="post" id="sqlform">
  <table class="mod-advrep-formtable">
-<?php $module->outputReportConfigOptions( $reportConfig, true, 'image' ); ?>
+<?php $module->outputReportConfigOptions( $reportConfig, true,
+                                          [ 'saveable', 'image', 'api', 'public' ] ); ?>
   <tr><th colspan="2">Report Definition</th></tr>
   <tr>
    <td>Description</td>
@@ -113,6 +115,8 @@ echo $reportData['sql_query'] ?? ''; ?></textarea>
      (<i>NULL</i> if the user is not in a DAG)<br>
      <tt>$$DATATABLE$$</tt> &#8212; the redcap_data table used by the current project<br>
      <tt>$$DATATABLE:pid$$</tt> &#8212; the redcap_data table used by project <i>pid</i><br>
+     <tt>$$DATATABLES:(sql)$$</tt> &#8212; the redcap_data tables used by the project <i>pid</i>s
+     returned by the <i>sql</i> query<br>
      <tt>$$LOGTABLE$$</tt> &#8212; the redcap_log_event table used by the current project<br>
      <tt>$$LOGTABLE:pid$$</tt> &#8212; the redcap_log_event table used by project <i>pid</i><br>
      <tt>$$PROJECT$$</tt> &#8212; the current project ID<br>
@@ -194,7 +198,7 @@ echo $module->escapeHTML( $reportData['sql_cols'] ?? '' ); ?>">
      {
        return true
      }
-     $.ajax( { url : '<?php echo $module->getUrl( 'sql_edit.php?report_id=' . $reportID ); ?>',
+     $.ajax( { url : window.location.href,
                method : 'POST',
                data : { sql_query : $('[name=sql_query')[0].value },
                         headers : { 'X-RC-AdvRep-SQLChk' : '1' },
