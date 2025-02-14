@@ -459,6 +459,28 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Format a date to the requested format. If the value is not a date just return it.
+	function formatDate( $value, $format )
+	{
+		if ( $format == '' ||
+		     ! preg_match( '/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])' .
+		                   '( ([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?)?$/', $value ) )
+		{
+			return $value;
+		}
+		if ( $format == 'upf' ) // user's preferred format
+		{
+			return \DateTimeRC::format_ts_from_ymd( $value, false, true );
+		}
+		if ( $format == 'dmy' || $format == 'mdy' )
+		{
+			return \DateTimeRC::datetimeConvert( $value, 'ymd', $format );
+		}
+		return $value;
+	}
+
+
+
 	// Check if the specified report is accessible by the current user,
 	// as determined by the specified access roles.
 	function isReportAccessible( $reportID )
