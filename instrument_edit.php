@@ -173,7 +173,8 @@ if ( ! empty( $_POST ) )
 	$module->submitReportConfig( $reportID, true, [ 'saveable', 'image', 'api', 'public' ] );
 	$reportData = [ 'desc' => $_POST['query_desc'], 'forms' => [], 'where' => $_POST['query_where'],
 	                'orderby' => $_POST['query_orderby'], 'select' => [],
-	                'nomissingdatacodes' => isset( $_POST['query_nomissingdatacodes'] ) ];
+	                'nomissingdatacodes' => isset( $_POST['query_nomissingdatacodes'] ),
+	                'dateformat' => $_POST['query_dateformat'] ];
 	foreach ( $_POST['query_form'] as $i => $formName )
 	{
 		if ( $formName == '' )
@@ -513,6 +514,25 @@ writeSelectRow( false, '', '', '' );
     <input type="checkbox" name="query_nomissingdatacodes"<?php
 echo $reportData['nomissingdatacodes'] ? ' checked' : '';
 ?>>
+   </td>
+  </tr>
+  <tr>
+   <td>Date display format</td>
+   <td>
+    <select name="query_dateformat">
+     <option value=""<?php echo $reportData['dateformat'] ?? '' == '' ? ' selected' : ''?>>
+      Date fields (labels) in user's preferred format
+     </option>
+     <option value="upf"<?php echo $reportData['dateformat'] ?? '' == 'upf' ? ' selected' : ''?>>
+      All date values in user's preferred format
+     </option>
+     <option value="dmy"<?php echo $reportData['dateformat'] ?? '' == 'dmy' ? ' selected' : ''?>>
+      All date values in D-M-Y format
+     </option>
+     <option value="mdy"<?php echo $reportData['dateformat'] ?? '' == 'mdy' ? ' selected' : ''?>>
+      All date values in M-D-Y format
+     </option>
+    </select>
    </td>
   </tr>
   <tr><td colspan="2">&nbsp;</td></tr>

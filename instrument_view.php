@@ -495,7 +495,7 @@ foreach ( $reportData['forms'] as $queryForm )
 	// If this isn't a CSV download, identify the date fields. The 'label' of any date fields will
 	// be set to the date transformed into the user's preferred format.
 	$dateFields = [];
-	if ( ! $isCsvDownload )
+	if ( ! $isCsvDownload && $reportData['dateformat'] ?? '' == '' )
 	{
 		foreach ( $fieldMetadata as $fieldName => $fieldParams )
 		{
@@ -516,8 +516,7 @@ foreach ( $reportData['forms'] as $queryForm )
 			{
 				if ( in_array( $fieldName, $dateFields ) )
 				{
-					$formLabels[ $i ][ $fieldName ] =
-							\DateTimeRC::format_ts_from_ymd( $value, false, true );
+					$formLabels[ $i ][ $fieldName ] = $module->formatDate( $value, 'upf' );
 				}
 			}
 		}
@@ -988,8 +987,12 @@ if ( $isApiRequest )
 	{
 		foreach ( $resultRow as $fieldName => $value )
 		{
-			$resultTable[ $resultIndex ][ $fieldName ] = is_array( $value ) ? $value['value']
-			                                                                : (string)$value;
+			$value = is_array( $value ) ? $value['value'] : (string)$value;
+			if ( $isInternalRequest )
+			{
+				$value = $module->formatDate( $value, $reportData['dateformat'] ?? '' );
+			}
+			$resultTable[ $resultIndex ][ $fieldName ] = $value;
 		}
 	}
 	return $resultTable;
@@ -1126,8 +1129,10 @@ if ( isset( $_GET['as_image'] ) && $reportConfig['as_image'] )
 			{
 				$resultRow[$columnName] = $resultRow[$columnName]['label'];
 			}
+			$resultRow[$columnName] = $module->formatDate( (string)$resultRow[$columnName],
+			                                               $reportData['dateformat'] ?? '' );
 			$imgParsedData = isset( $resultRow[$columnName] )
-			                    ? $module->parseHTML( (string)$resultRow[$columnName], true ) : '';
+			                        ? $module->parseHTML( $resultRow[$columnName], true ) : '';
 			$thisWidth = $imgColumnWidths[$columnName];
 			imagerectangle( $img, $posW, $posH, $posW + $thisWidth, $posH + $imgDataH, $imgBlack );
 			imagestring( $img, $imgDataFont, $posW + 2, $posH + 1, $imgParsedData, $imgBlack );
@@ -1206,6 +1211,7 @@ foreach ( $resultTable as $resultRow )
 		{
 			$value = $value['label'];
 		}
+		$value = $module->formatDate( $value, $reportData['dateformat'] ?? '' );
 ?>
    <td><?php echo $module->parseHTML( $value ); ?></td>
 <?php

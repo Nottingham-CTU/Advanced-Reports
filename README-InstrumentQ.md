@@ -67,6 +67,11 @@ Smart variables which do not require a record context are also supported. Smart 
 require a record context cannot be supported, for this functionality please refer to the virtual
 instrument fields.
 
+In addition to the documented REDCap functions, you can use `calcdate` in the calculation logic.
+This is used in the same way as in the action tag (but without the `@` sign), and will return a date
+or datetime in Y-M-D format. See the *date display format* option if you want to change the date
+format of calculations.
+
 ### Report Specific Smart Variables
 
 Instrument Query reports support the following smart variables: `[is-download]` (which has a value
@@ -168,3 +173,15 @@ function is equivalent to the **mean** function, but the result is multiplied by
 with a percent sign.
 
 If grouping is selected, it must be selected for all fields.
+
+### Date display format
+
+If you use the value label of a date field, this will display the date in the user's preferred date
+format. The date display format can be used to override this so that *any output which resembles a
+date* (in Y-M-D format) will be formatted as specified here. This will therefore force date fields,
+datetime fields and calculations which return a date (e.g. using `calcdate`) to the specified format
+(either the user's preferred format, D-M-Y, or M-D-Y).
+
+The date display format only affects the report when it is viewed normally or as an image, or if the
+output is used as part of another report (e.g. PDF reports). For CSV file downloads or API requests,
+the dates will be output in Y-M-D format.

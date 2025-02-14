@@ -145,6 +145,7 @@ smart variables.
 * **Fields to display** specify each field or calculation logic for display in the report, with
   optional alias for the field heading
 * **Hide missing data codes** if selected will show blank values instead of missing data codes
+* **Date display format** choose how dates are displayed on the report
 
 Please refer to the [Instrument Query report instructions](README-InstrumentQ.md) for more
 information.
