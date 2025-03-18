@@ -659,6 +659,18 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Escapes text string for inclusion in JavaScript.
+	function escapeJSString( $text )
+	{
+		return '"' . $this->escape( substr( json_encode( (string)$text,
+		                                                 JSON_HEX_QUOT | JSON_HEX_APOS |
+		                                                 JSON_HEX_TAG | JSON_HEX_AMP |
+		                                                 JSON_UNESCAPED_SLASHES ),
+		                                    1, -1 ) ) . '"';
+	}
+
+
+
 	// Provide the report data for settings exports.
 	function exportProjectSettings()
 	{
@@ -1281,7 +1293,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 <div class="projhdr">
  <?php echo htmlspecialchars( $reportLabel ), "\n"; ?>
 </div>
-<p style="font-size:11px" class="hide_in_print">
+<p style="font-size:11px;display:flex;flex-wrap:wrap;gap:10px 35px" class="hide_in_print">
 <?php
 
 
@@ -1310,7 +1322,6 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			}
 
 ?>
- &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
  <a href="<?php
 			echo $this->getUrl( $reportType . '_view.php?report_id=' . $_GET['report_id'] .
 			                    $extraVarsDL . '&download=1' );
@@ -1324,7 +1335,6 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		{
 
 ?>
- &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
  <a href="<?php
 			echo $this->getUrl( $reportType . '_edit.php?report_id=' . $_GET['report_id'] );
 ?>"><i class="fas fa-pencil-alt fs11"></i> Edit report</a>
@@ -1337,13 +1347,12 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		{
 
 ?>
- <span id="mod-advrep-resetstate" style="display:none">
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  <a href="<?php
-			echo $this->escapeHTML( preg_replace( '/&report_state=[^&]+/', '',
-			                                      $_SERVER['REQUEST_URI'] ) );
+ <a id="mod-advrep-resetstate" style="display:none" href="<?php
+			echo $this->escapeHTML( preg_replace( '/([?&])page=' . $reportType . '_view/',
+			                                      '$1page=view',
+			                                      preg_replace( '/&report_state=[^&]+/', '',
+			                                                    $_SERVER['REQUEST_URI'] ) ) );
 ?>"><i class="fas fa-rotate-left fs11"></i> Reset</a>
- </span>
 <?php
 
 		}
@@ -2321,6 +2330,40 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Write the REDCap page header for a report.
+	function writePageHeader( $systemHeader = false )
+	{
+		if ( ! isset( $_SERVER['HTTP_ADVANCED_REPORTS_AJAX'] ) )
+		{
+			// REDCap headers require some global variables, so bring globals into function scope.
+			foreach ( array_keys( $GLOBALS ) as $var )
+			{
+				if ( ! in_array( $var, [ 'GLOBALS', '_SERVER', '_GET', '_POST', '_FILES',
+				                         '_COOKIE', '_SESSION', '_REQUEST', '_ENV',
+				                         'systemHeader', 'var' ] ) )
+				{
+					global $$var;
+				}
+			}
+			if ( $systemHeader ) ($this->htmlPage = new \HtmlPage)->PrintHeader( false );
+			else require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
+		}
+	}
+
+
+
+	// Write the REDCap page footer for a report.
+	function writePageFooter()
+	{
+		if ( ! isset( $_SERVER['HTTP_ADVANCED_REPORTS_AJAX'] ) )
+		{
+			if ( is_object( $this->htmlPage ) ) $this->htmlPage->PrintFooter();
+			else require_once APP_PATH_DOCROOT . 'ProjectGeneral/footer.php';
+		}
+	}
+
+
+
 	// CSS style for advanced report pages.
 	function writeStyle()
 	{
@@ -2615,5 +2658,6 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			 'document.getElementsByTagName(\'head\')[0].appendChild(el)})()</script>';
 	}
 
+	private $htmlPage;
 
 }

@@ -270,8 +270,7 @@ if ( isset( $_GET['as_image']) && $reportConfig['as_image'] )
 
 
 // Display the header and report navigation links.
-if ( $disableAccessControl ) ($htmlPage = new \HtmlPage)->PrintHeader( false );
-else require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
+$module->writePageHeader( $disableAccessControl );
 $module->outputViewReportHeader( $reportConfig['label'], 'sql', true );
 
 // Initialise the row counter.
@@ -410,5 +409,4 @@ $module->outputViewReportJS();
 
 
 // Display the footer
-if ( $disableAccessControl ) $htmlPage->PrintFooter();
-else require_once APP_PATH_DOCROOT . 'ProjectGeneral/footer.php';
+$module->writePageFooter();

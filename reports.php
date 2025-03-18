@@ -71,7 +71,7 @@ foreach ( $listReports as $reportID => $infoReport )
 	}
 ?>
  <li><a href="<?php
-	echo $module->getUrl( $infoReport['type'] . '_view.php?report_id=' . $reportID ); ?>"><?php
+	echo $module->getUrl( 'view.php?report_id=' . $reportID ); ?>"><?php
 	echo htmlspecialchars( $infoReport['label'] ); ?></a></li>
 <?php
 }
