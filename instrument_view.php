@@ -1153,8 +1153,7 @@ if ( isset( $_GET['as_image'] ) && $reportConfig['as_image'] )
 
 
 // Display the header and report navigation links.
-if ( $disableAccessControl ) ($htmlPage = new \HtmlPage)->PrintHeader( false );
-else require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
+$module->writePageHeader( $disableAccessControl );
 $module->outputViewReportHeader( $reportConfig['label'], 'instrument', true );
 
 // Initialise the row counter.
@@ -1266,5 +1265,4 @@ $('#mod-advrep-table .valedit').submit( function(e)
 <?php
 
 // Display the footer
-if ( $disableAccessControl ) $htmlPage->PrintFooter();
-else require_once APP_PATH_DOCROOT . 'ProjectGeneral/footer.php';
+$module->writePageFooter();

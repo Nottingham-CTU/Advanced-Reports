@@ -353,8 +353,7 @@ if ( isset( $_GET['as_image']) && $reportConfig['as_image'] )
 
 
 // Display the project header and report navigation links.
-
-require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
+$module->writePageHeader();
 $module->outputViewReportHeader( $reportConfig['label'], 'recordtbl', true );
 
 // Initialise the row counter.
@@ -429,4 +428,4 @@ $module->outputViewReportJS();
 
 
 // Display the project footer
-require_once APP_PATH_DOCROOT . 'ProjectGeneral/footer.php';
+$module->writePageFooter();

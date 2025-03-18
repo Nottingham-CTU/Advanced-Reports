@@ -264,7 +264,7 @@ if ( count( $listReports ) > 0 )
 		if ( $module->isReportEditable( $infoReport['type'] ) )
 		{
 ?>
-   <a href="<?php echo $module->getUrl( $infoReport['type'] . '_view.php?report_id=' . $reportID );
+   <a href="<?php echo $module->getUrl( 'view.php?report_id=' . $reportID );
 ?>" class="fs12"><i class="far fa-file-alt fs14"></i> View</a>
 <?php
 		}
