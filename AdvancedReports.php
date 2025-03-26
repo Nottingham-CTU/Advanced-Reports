@@ -445,6 +445,20 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Function to run \REDCap::getSurveyLink and cache the results for subsequent runs.
+	function getSurveyLink( ...$params )
+	{
+		static $listResults = [];
+		$token = json_encode( $params );
+		if ( ! isset( $listResults[ $token ] ) )
+		{
+			$listResults[ $token ] = \REDCap::getSurveyLink( ...$params );
+		}
+		return $listResults[ $token ];
+	}
+
+
+
 	// Check if the specified report is accessible by the current user,
 	// as determined by the specified access roles.
 	function isReportAccessible( $reportID )
