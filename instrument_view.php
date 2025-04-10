@@ -219,6 +219,8 @@ while ( $infoSurvey = $querySurveys->fetch_assoc() )
 // which are not used will be able to be disregarded later for efficiency.
 $hasRCUsersTable = false;
 $rcUsersTable = [];
+$hasRCAlertsTable = false;
+$rcAlertsTable = [];
 $listAliasForms = [];
 $listReferencedFields = [];
 foreach ( $reportData['forms'] as $queryForm )
@@ -227,6 +229,11 @@ foreach ( $reportData['forms'] as $queryForm )
 	if ( $queryForm['form'] == 'redcap_users' )
 	{
 		$hasRCUsersTable = true;
+		continue;
+	}
+	elseif ( $queryForm['form'] == 'redcap_alerts' )
+	{
+		$hasRCAlertsTable = true;
 		continue;
 	}
 	// Map the form alias to the instrument name.
@@ -295,6 +302,7 @@ if ( ! empty( $reportData['select'] ) )
 
 // Get event names, DAG names, redcap_data table and redcap_log_event table for the project.
 $listEventNames = \REDCap::getEventNames( true );
+$listEventLabels = \REDCap::getEventNames( false, true );
 $listDAGUniqueNames = \REDCap::getGroupNames( true );
 $listDAGFullNames = \REDCap::getGroupNames( false );
 $dataTable = method_exists( '\REDCap', 'getDataTable' )
@@ -404,6 +412,32 @@ foreach ( $reportData['forms'] as $queryForm )
 
 
 
+// If the instrument query makes use of the redcap_alerts virtual table, query the database for this
+// data and store in an array for use later.
+if ( $hasRCAlertsTable )
+{
+	// This query returns a table of all sent alerts for each record/event/instance. It includes the
+	// alert number (sort order), alert title, alert type, record_id, event, instance, instrument,
+	// date/time first sent, date/time last sent, and number of times sent.
+	$queryRCAlertsTable =
+		$module->query( 'SELECT ra.alert_order alert_num, ra.alert_title, ra.alert_type, ' .
+		                'ras.record record_id, ras.event_id event_name, ' .
+		                'ras.instance repeat_instance, ras.instrument, (SELECT time_sent FROM ' .
+		                'redcap_alerts_sent_log rasl WHERE rasl.alert_sent_id = ras.alert_sent_id' .
+		                ' ORDER BY time_sent LIMIT 1) first_sent, ras.last_sent, (SELECT count(*)' .
+		                ' FROM redcap_alerts_sent_log rasl WHERE rasl.alert_sent_id = ' .
+		                'ras.alert_sent_id) sent_count FROM redcap_alerts ra ' .
+		                'JOIN redcap_alerts_sent ras ON ra.alert_id = ras.alert_id ' .
+		                'WHERE ra.project_id = ?', [ $module->getProjectId() ] );
+	// Store the alerts table.
+	while ( $infoRCAlertsTable = $queryRCAlertsTable->fetch_assoc() )
+	{
+		$rcAlertsTable[] = $infoRCAlertsTable;
+	}
+}
+
+
+
 // If the instrument query makes use of the redcap_users virtual table, query the database for this
 // data and store in an array for use later.
 if ( $hasRCUsersTable )
@@ -455,7 +489,17 @@ foreach ( $reportData['forms'] as $queryForm )
 	$alias = $queryForm['alias'] == '' ? $form : $queryForm['alias'];
 
 	// Get the fields for the form and retrieve the values and value labels for each record.
-	if ( $form == 'redcap_users' )
+	if ( $form == 'redcap_alerts' )
+	{
+		// If using the redcap_alerts virtual table, get the values saved earlier. Mark any datetime
+		// fields as such so format transformations can be applied.
+		$fields = empty( $rcAlertsTable ) ? [] : array_keys( $rcAlertsTable[0] );
+		$fieldMetadata = [ 'first_sent' => [ 'field_type' => 'text', TVALIDSTR => 'time' ],
+		                   'last_sent' => [ 'field_type' => 'text', TVALIDSTR => 'time' ] ];
+		$formValues = $rcAlertsTable;
+		$formLabels = $rcAlertsTable;
+	}
+	elseif ( $form == 'redcap_users' )
 	{
 		// If using the redcap_users virtual table, get the values saved earlier. Mark any datetime
 		// fields as such so format transformations can be applied.
@@ -546,8 +590,22 @@ foreach ( $reportData['forms'] as $queryForm )
 				continue;
 			}
 			$formLabelsRow = $formLabels[$i];
+			// For redcap_alerts virtual table, replace event ID with name.
+			if ( $form == 'redcap_alerts' )
+			{
+				if ( $listEventNames === false )
+				{
+					$formValuesRow['event_name'] = '';
+					$formLabelsRow['event_name'] = '';
+				}
+				elseif ( $formValuesRow['event_name'] !== null )
+				{
+					$formValuesRow['event_name'] = $listEventNames[ $formValuesRow['event_name'] ];
+					$formLabelsRow['event_name'] = $listEventLabels[ $formLabelsRow['event_name'] ];
+				}
+			}
 			// For redcap_users virtual table, replace DAG ID with name.
-			if ( $form == 'redcap_users' )
+			elseif ( $form == 'redcap_users' )
 			{
 				if ( $formValuesRow['dag'] !== null )
 				{
