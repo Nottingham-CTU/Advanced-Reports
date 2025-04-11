@@ -6,13 +6,15 @@
 namespace Nottingham\AdvancedReports;
 
 
-if ( ! $module->framework->getUser()->isSuperUser() )
+// Check user can edit reports.
+if ( ! $module->isReportEditable() )
 {
 	exit;
 }
 
 
 $projectID = $module->getProjectID();
+$singleReport = false;
 
 
 $mode = 'upload';
@@ -30,7 +32,7 @@ if ( ! empty( $_FILES ) ) // file is uploaded
 		$fileData = file_get_contents( $_FILES['import_file']['tmp_name'] );
 		$data = json_decode( $fileData, true );
 		if ( $data == null || ! is_array( $data ) || ! isset( $data['report-list'] ) ||
-			 ! is_array( $data['report-list'] ) )
+			 ( ! is_array( $data['report-list'] ) && ! is_string( $data['report-list'] ) ) )
 		{
 			$mode = 'error';
 			$error = 'The uploaded file is not a valid Advanced Reports export.';
@@ -38,6 +40,11 @@ if ( ! empty( $_FILES ) ) // file is uploaded
 	}
 	if ( $mode == 'verify' ) // no error
 	{
+		if ( is_string( $data['report-list'] ) )
+		{
+			$data['report-list'] = [ $data['report-list'] ];
+			$singleReport = true;
+		}
 		foreach ( $data['report-list'] as $reportID )
 		{
 			if ( preg_match( '/[^a-z0-9_-]/', $reportID ) )
@@ -59,11 +66,13 @@ if ( ! empty( $_FILES ) ) // file is uploaded
 	// within the file. The user will be asked to confirm the changes.
 	if ( $mode == 'verify' ) // no error
 	{
+		$_SESSION['mod-advrep-import-hash'] = hash( 'sha256', $fileData );
 		$listCurrent = json_decode( $module->getSystemSetting( "p$projectID-report-list" ),
 		                            true ) ?? [];
 		$listImported = $data['report-list'] ?? [];
+		$listSkipped = $data['report-skip'] ?? [];
 		$listNew = array_diff( $listImported, $listCurrent );
-		$listDeleted = array_diff( $listCurrent, $listImported );
+		$listDeleted = $singleReport ? [] : array_diff( $listCurrent, $listImported, $listSkipped );
 		$listIdentical = [];
 		$listChanged = [];
 		foreach ( array_intersect( $listCurrent, $listImported ) as $reportID )
@@ -77,7 +86,12 @@ if ( ! empty( $_FILES ) ) // file is uploaded
 			$identicalConfig = ( $currentConfig == $data["report-config-$reportID"] );
 			$identicalData =
 				( $module->getReportData( $reportID ) == $data["report-data-$reportID"] );
-			if ( $identicalConfig && $identicalData )
+			if ( ! $module->isReportEditable( $currentConfig['type'] ) ||
+			     ! $module->isReportEditable( $data["report-config-$reportID"]['type'] ) )
+			{
+				$listSkipped[] = $reportID;
+			}
+			elseif ( $identicalConfig && $identicalData )
 			{
 				$listIdentical[] = $reportID;
 			}
@@ -97,11 +111,14 @@ elseif ( ! empty( $_POST ) ) // normal POST request (confirming import)
 	$fileData = $_POST['import_data'];
 	$data = json_decode( $fileData, true );
 	if ( $data == null || ! is_array( $data ) || ! isset( $data['report-list'] ) ||
-		 ! is_array( $data['report-list'] ) )
+		 ( ! is_array( $data['report-list'] ) && ! is_string( $data['report-list'] ) ) ||
+		 ! isset( $_SESSION['mod-advrep-import-hash'] ) ||
+		 $_SESSION['mod-advrep-import-hash'] != hash( 'sha256', $fileData ) )
 	{
 		$mode = 'error';
 		$error = 'The uploaded file data is not valid.';
 	}
+	unset( $_SESSION['mod-advrep-import-hash'] );
 	if ( $mode == 'complete' ) // no error
 	{
 		foreach ( $_POST as $key => $val )
@@ -111,44 +128,67 @@ elseif ( ! empty( $_POST ) ) // normal POST request (confirming import)
 				// Add new report into project from file.
 				$reportID = substr( $key, 11 );
 				$reportType = $data["report-config-$reportID"]['type'];
-				$reportLabel = $data["report-config-$reportID"]['label'];
-				$module->addReport( $reportID, $reportType, $reportLabel );
-				$module->setSystemSetting( "p$projectID-report-config-$reportID",
-				                           json_encode( $data["report-config-$reportID"] ) );
-				$module->setReportConfig( $reportID, 'lastupdated_user', USERID );
-				$module->setReportConfig( $reportID, 'lastupdated_time', time() );
-				$module->setReportData( $reportID, $data["report-data-$reportID"] );
+				if ( $module->isReportEditable( $reportType ) )
+				{
+					$reportLabel = $data["report-config-$reportID"]['label'];
+					$module->addReport( $reportID, $reportType, $reportLabel );
+					$module->setSystemSetting( "p$projectID-report-config-$reportID",
+					                           json_encode( $data["report-config-$reportID"] ) );
+					$module->setReportConfig( $reportID, 'lastupdated_user', USERID );
+					$module->setReportConfig( $reportID, 'lastupdated_time', time() );
+					$module->setReportData( $reportID, $data["report-data-$reportID"] );
+				}
 			}
 			elseif ( substr( $key, 0, 14 ) == 'report-config-' )
 			{
 				// Update report configuration (label, category, access permissions etc.)
 				$reportID = substr( $key, 14 );
 				$currentConfig = $module->getReportConfig( $reportID );
-				if ( isset( $currentConfig['api_key'] ) )
+				$reportType = $currentConfig['type'];
+				$reportType = ( $reportType == $data["report-config-$reportID"]['type'] )
+				              ? $reportType : null;
+				if ( $reportType !== null && $module->isReportEditable( $reportType ) )
 				{
-					$data["report-config-$reportID"]['api_key'] = $currentConfig['api_key'];
+					if ( isset( $currentConfig['api_key'] ) )
+					{
+						$data["report-config-$reportID"]['api_key'] = $currentConfig['api_key'];
+					}
+					$module->setSystemSetting( "p$projectID-report-config-$reportID",
+					                           json_encode( $data["report-config-$reportID"] ) );
+					$module->setReportConfig( $reportID, 'lastupdated_user', USERID );
+					$module->setReportConfig( $reportID, 'lastupdated_time', time() );
 				}
-				$module->setSystemSetting( "p$projectID-report-config-$reportID",
-				                           json_encode( $data["report-config-$reportID"] ) );
-				$module->setReportConfig( $reportID, 'lastupdated_user', USERID );
-				$module->setReportConfig( $reportID, 'lastupdated_time', time() );
 			}
 			elseif ( substr( $key, 0, 12 ) == 'report-data-' )
 			{
 				// Update report definition.
 				$reportID = substr( $key, 12 );
-				$module->setReportData( $reportID, $data["report-data-$reportID"] );
-				$module->setReportConfig( $reportID, 'lastupdated_user', USERID );
-				$module->setReportConfig( $reportID, 'lastupdated_time', time() );
+				$reportType = $module->getReportConfig( $reportID, 'type' );
+				$reportType = ( $reportType == $data["report-config-$reportID"]['type'] )
+				              ? $reportType : null;
+				if ( $reportType !== null && $module->isReportEditable( $reportType ) )
+				{
+					$module->setReportData( $reportID, $data["report-data-$reportID"] );
+					$module->setReportConfig( $reportID, 'lastupdated_user', USERID );
+					$module->setReportConfig( $reportID, 'lastupdated_time', time() );
+				}
 			}
 			elseif ( substr( $key, 0, 14 ) == 'report-delete-' )
 			{
 				// Remove report from project.
 				$reportID = substr( $key, 14 );
-				$module->deleteReport( $reportID );
+				$reportType = $module->getReportConfig( $reportID, 'type' );
+				if ( $module->isReportEditable( $reportType ) )
+				{
+					$module->deleteReport( $reportID );
+				}
 			}
 		}
 	}
+}
+else
+{
+	unset( $_SESSION['mod-advrep-import-hash'] );
 }
 
 
@@ -203,6 +243,30 @@ elseif ( $mode == 'verify' )
 <form method="post">
  <table class="mod-advrep-formtable">
 <?php
+	if ( count( $listSkipped ) > 0 )
+	{
+?>
+  <tr>
+   <th colspan="2">Skipped Reports</th>
+  </tr>
+  <tr>
+   <td colspan="2" style="text-align:left">
+    <ul>
+<?php
+		foreach ( $listSkipped as $reportID )
+		{
+			$reportLabel = $module->getReportConfig( $reportID, 'label' );
+			echo '     <li>', $module->escapeHTML( $reportID ), ' &nbsp;',
+			     ( $reportLabel == '' ? '' :
+			       '<i>(' . $module->escapeHTML( $reportLabel ) . ')</i>' ), "</li>\n";
+		}
+?>
+    </ul>
+   </td>
+  </tr>
+<?php
+	}
+
 	if ( count( $listIdentical ) > 0 )
 	{
 ?>
@@ -216,8 +280,8 @@ elseif ( $mode == 'verify' )
 		foreach ( $listIdentical as $reportID )
 		{
 ?>
-     <li><?php echo htmlspecialchars( $reportID ); ?> &nbsp;<i>(<?php
-			echo htmlspecialchars( $data["report-config-$reportID"]['label'] ); ?>)</i></li>
+     <li><?php echo $module->escapeHTML( $reportID ); ?> &nbsp;<i>(<?php
+			echo $module->escapeHTML( $data["report-config-$reportID"]['label'] ); ?>)</i></li>
 <?php
 		}
 ?>
@@ -238,10 +302,10 @@ elseif ( $mode == 'verify' )
 		{
 ?>
   <tr>
-   <td><?php echo htmlspecialchars( $reportID ); ?></td>
+   <td><?php echo $module->escapeHTML( $reportID ); ?></td>
    <td>
     <input type="checkbox" name="report-add-<?php
-			echo htmlspecialchars( $reportID ); ?>" value="1" checked>
+			echo $module->escapeHTML( $reportID ); ?>" value="1" checked>
     Add this report
     <ul>
 <?php
@@ -298,14 +362,14 @@ elseif ( $mode == 'verify' )
 			$changedData = $reportChange['data'];
 ?>
   <tr>
-   <td><?php echo htmlspecialchars( $reportID ); ?></td>
+   <td><?php echo $module->escapeHTML( $reportID ); ?></td>
    <td>
 <?php
 			if ( $changedConfig )
 			{
 ?>
     <input type="checkbox" name="report-config-<?php
-			echo htmlspecialchars( $reportID ); ?>" value="1" checked>
+			echo $module->escapeHTML( $reportID ); ?>" value="1" checked>
     Update report configuration (changes highlighted below)
     <br>
 <?php
@@ -314,7 +378,7 @@ elseif ( $mode == 'verify' )
 			{
 ?>
     <input type="checkbox" name="report-data-<?php
-			echo htmlspecialchars( $reportID ); ?>" value="1" checked>
+			echo $module->escapeHTML( $reportID ); ?>" value="1" checked>
     Update report definition
 <?php
 			}
@@ -345,7 +409,7 @@ elseif ( $mode == 'verify' )
 					}
 					elseif ( is_string( $configValue[$configVer] ) )
 					{
-						$configValue[$configVer] = htmlspecialchars( $configValue[$configVer] );
+						$configValue[$configVer] = $module->escapeHTML( $configValue[$configVer] );
 						if ( strpos( $configValue[$configVer], "\n" ) !== false )
 						{
 							$configValue[$configVer] = str_replace( [ "\r\n", "\n" ], '</li><li>',
@@ -391,10 +455,10 @@ elseif ( $mode == 'verify' )
 		{
 ?>
   <tr>
-   <td><?php echo htmlspecialchars( $reportID ); ?></td>
+   <td><?php echo $module->escapeHTML( $reportID ); ?></td>
    <td>
     <input type="checkbox" name="report-delete-<?php
-			echo htmlspecialchars( $reportID ); ?>" value="1">
+			echo $module->escapeHTML( $reportID ); ?>" value="1">
     Delete this report
     <ul>
 <?php
@@ -407,7 +471,7 @@ elseif ( $mode == 'verify' )
 				{
 					continue;
 				}
-				$configValue = htmlspecialchars( $configValue );
+				$configValue = $module->escapeHTML( $configValue );
 ?>
      <li><b><?php echo $configLabel; ?>:</b> <?php echo $configValue; ?></li>
 <?php
@@ -424,7 +488,7 @@ elseif ( $mode == 'verify' )
    <td></td>
    <td>
     <input type="submit" value="Update Selected Reports">
-    <input type="hidden" name="import_data" value="<?php echo htmlspecialchars( $fileData ); ?>">
+    <input type="hidden" name="import_data" value="<?php echo $module->escapeHTML( $fileData ); ?>">
    </td>
   </tr>
  </table>
@@ -439,7 +503,7 @@ elseif ( $mode == 'error' )
 
 
 ?>
-<p style="font-size:14px;color:#f00"><?php echo htmlspecialchars( $error ); ?></p>
+<p style="font-size:14px;color:#f00"><?php echo $module->escapeHTML( $error ); ?></p>
 <?php
 
 
