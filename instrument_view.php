@@ -211,92 +211,207 @@ while ( $infoSurvey = $querySurveys->fetch_assoc() )
 	$listSurveys[] = $infoSurvey['form_name'];
 }
 
-// Get instrument created/updated users/dates and last instance.
+
+
+// Before getting any data for the report, check the instrument names for virtual tables such as
+// 'redcap_users', and check all the logic fields for the variables which are used. Create a list of
+// all the fields and their corresponding instruments which are used. Fields and virtual tables
+// which are not used will be able to be disregarded later for efficiency.
+$hasRCUsersTable = false;
+$rcUsersTable = [];
+$listAliasForms = [];
+$listReferencedFields = [];
+foreach ( $reportData['forms'] as $queryForm )
+{
+	// If the form is a virtual table, flag that we need it.
+	if ( $queryForm['form'] == 'redcap_users' )
+	{
+		$hasRCUsersTable = true;
+		continue;
+	}
+	// Map the form alias to the instrument name.
+	$listAliasForms[ $queryForm['alias'] == '' ? $queryForm['form']
+	                                           : $queryForm['alias'] ] = $queryForm['form'];
+}
+// If there are no fields to display specified, all fields will be returned, so no need to check
+// them. Otherwise, proceed with checking which fields are used...
+if ( ! empty( $reportData['select'] ) )
+{
+	$refParams = [];
+	foreach ( $reportData['forms'] as $queryForm )
+	{
+		// Always include the record ID and formname_complete fields.
+		$listReferencedFields[ $queryForm['alias'] == ''
+		                       ? $queryForm['form']
+		                       : $queryForm['alias'] ][ $recordIDField ] = true;
+		$listReferencedFields[ $queryForm['alias'] == ''
+		                       ? $queryForm['form']
+		                       : $queryForm['alias'] ][ $queryForm['form'] . '_complete' ] = true;
+		// Check the form's join on logic for field references.
+		if ( $queryForm['on'] != '' )
+		{
+			$refParams = array_merge( $refParams,
+			                          $module->parseLogic( $queryForm['on'], $requestType )[1] );
+		}
+	}
+	// Check the where logic for field references.
+	if ( $reportData['where'] != '' )
+	{
+		$refParams = array_merge( $refParams,
+								  $module->parseLogic( $reportData['where'], $requestType )[1] );
+	}
+	// Check the order by logic for field references.
+	if ( $reportData['orderby'] != '' )
+	{
+		$refOrderby = $reportData['orderby'];
+		if ( strtolower( substr( rtrim( $reportData['orderby'] ), -5 ) ) == ' desc' )
+		{
+			$refOrderby = substr( rtrim( $refOrderby ), 0, -5 );
+		}
+		$refParams = array_merge( $refParams, $module->parseLogic( $refOrderby, $requestType )[1] );
+	}
+	// Check each field to display for field references. Note that a field to display is not
+	// necessarily a single field, it can contain logic.
+	foreach ( $reportData['select'] as $selectField )
+	{
+		$refParams = array_merge( $refParams,
+								  $module->parseLogic( $selectField['field'], $requestType )[1] );
+	}
+	// Each returned $refParam has the instrument alias at index 0 and the field name at index 1.
+	// Use this to build a list of the referenced fields grouped by instrument alias.
+	foreach ( $refParams as $refParam )
+	{
+		if ( in_array( $refParam[1], $redcapFields2 ) )
+		{
+			// Virtual fields added by instrument queries are listed under the instrument name
+			// rather than the alias.
+			$refParam[0] = $listAliasForms[ $refParam[0] ];
+		}
+		$listReferencedFields[ $refParam[0] ][ $refParam[1] ] = true;
+	}
+}
+
+
+
+// Get event names, DAG names, redcap_data table and redcap_log_event table for the project.
 $listEventNames = \REDCap::getEventNames( true );
 $listDAGUniqueNames = \REDCap::getGroupNames( true );
 $listDAGFullNames = \REDCap::getGroupNames( false );
 $dataTable = method_exists( '\REDCap', 'getDataTable' )
                 ? \REDCap::getDataTable( $module->getProjectId() ) : ( 'redcap' . '_data' );
 $logEventTable = \REDCap::getLogEventTable( $module->getProjectId() );
+
+
+
+// For each instrument used in the query, get the virtual fields for the form created by/time, form
+// updated by/time and last instance. The field values are associated with the instrument name
+// rather than the alias and are skipped where they are not needed.
 $listFormCreateUpdate = [];
 $listFormLastInstance = [];
 foreach ( $reportData['forms'] as $queryForm )
 {
-	$infoFormCreateUpdate = [];
-	$qFormDates = $module->query( "WITH logevent AS ( SELECT concat( substring(le.ts, 1, 4), " .
-	                              "'-', substring(le.ts, 5, 2), '-', substring(le.ts, 7, 2), " .
-	                              "' ', substring(le.ts, 9, 2), ':', substring(le.ts, 11, 2), " .
-	                              "':', substring(le.ts, 13, 2) ) ts, le.user, " .
-	                              "ifnull( concat( ui.user_firstname, ' ', ui.user_lastname ), " .
-	                              "le.user ) user_fullname, le.pk, le.event_id, " .
-	                              "if( le.data_values NOT LIKE '[%', 1, regexp_substr( " .
-	                              "le.data_values, '[0-9]+', 1, 1 ) ) `instance` FROM " .
-	                              "$logEventTable le LEFT JOIN redcap_user_information ui ON " .
-	                              "le.user = ui.username WHERE le.project_id = ? AND " .
-	                              "object_type = 'redcap" . "_data' AND le.description NOT LIKE " .
-	                              "'%(Auto calculation)%' AND regexp_like( le.data_values, " .
-	                              "concat('^(',(SELECT group_concat( field_name SEPARATOR '|' ) " .
-	                              "FROM redcap_metadata WHERE project_id = le.project_id AND " .
-	                              "field_order > 1 AND element_type <> 'descriptive' AND " .
-	                              "form_name = ?),')'), 'cm' ) ) " .
-	                              "SELECT * FROM logevent WHERE ts IN ( SELECT min(ts) FROM " .
-	                              "logevent GROUP BY pk, event_id, instance ) OR ts IN ( SELECT " .
-	                              "max(ts) FROM logevent GROUP BY pk, event_id, instance ) " .
-	                              "ORDER BY ts", [ $module->getProjectId(), $queryForm['form'] ] );
-	while ( $infoFormDates = $qFormDates->fetch_assoc() )
+	if ( isset( $listFormCreateUpdate[ $queryForm['form'] ] ) ||
+	     isset( $listFormLastInstance[ $queryForm['form'] ] ) )
 	{
-		$formCreateUpdateEvent = ( $listEventNames === false )
-		                         ? '' : $listEventNames[ $infoFormDates['event_id'] ];
-		if ( isset( $infoFormCreateUpdate[ $infoFormDates['pk'] ][ $formCreateUpdateEvent ]
-		                                                          [ $infoFormDates['instance'] ] ) )
+		// Skip the instrument if we have data for it already.
+		continue;
+	}
+	// Get the created/updated by/time fields if required.
+	if ( empty( $listReferencedFields ) ||
+	     isset( $listReferencedFields[ $queryForm['form'] ]['redcap_created_by'] ) ||
+	     isset( $listReferencedFields[ $queryForm['form'] ]['redcap_created_time'] ) ||
+	     isset( $listReferencedFields[ $queryForm['form'] ]['redcap_updated_by'] ) ||
+	     isset( $listReferencedFields[ $queryForm['form'] ]['redcap_updated_time'] ) )
+	{
+		$infoFormCreateUpdate = [];
+		// This query will look up, for each record/event/instance combination, the user who first
+		// saved data on the form and the time (created by/time) and the user who most recently
+		// saved data on the form and the time (updated by/time). This is done by checking the log
+		// table for the project for updates to the fields on the form. Updates which are solely
+		// calculated field changes are excluded.
+		$qFormDates =
+				$module->query( "SELECT concat( substring(ts_user_c, 1, 4), '-', substring(" .
+				                "ts_user_c, 5, 2), '-', substring(ts_user_c, 7, 2), ' ', " .
+				                "substring(ts_user_c, 9, 2), ':', substring(ts_user_c, 11, 2), " .
+				                "':', substring(ts_user_c, 13, 2) ) ts_c, substring(ts_user_c, " .
+				                "15) user_c, ifnull( concat( uic.user_firstname, ' ', " .
+				                "uic.user_lastname ), substring(ts_user_c, 15) ) name_c, " .
+				                "concat( substring(ts_user_u, 1, 4), '-', substring(ts_user_u, " .
+				                "5, 2), '-', substring(ts_user_u, 7, 2), ' ', substring(" .
+				                "ts_user_u, 9, 2), ':', substring(ts_user_u, 11, 2), ':', " .
+				                "substring(ts_user_u, 13, 2) ) ts_u, substring(ts_user_u, 15) " .
+				                "user_u, ifnull( concat( uiu.user_firstname, ' ', " .
+				                "uiu.user_lastname ), substring(ts_user_u, 15) ) name_u, pk, " .
+				                "event_id, `instance` FROM ( SELECT min( concat( ts, user ) ) " .
+				                "ts_user_c, max( concat( ts, user ) ) ts_user_u, pk, event_id, " .
+				                "if( data_values NOT LIKE '[%', 1, regexp_substr( data_values, " .
+				                "'[0-9]+' ) ) `instance` FROM $logEventTable WHERE " .
+				                "project_id = ? AND object_type = 'redcap_data' AND description " .
+				                "NOT LIKE '%(Auto calculation)%' AND data_values RLIKE concat(" .
+				                "'(?m)^(',(SELECT group_concat( field_name SEPARATOR '|' ) " .
+				                "FROM redcap_metadata WHERE project_id = ? AND field_order > 1 " .
+				                "AND element_type <> 'descriptive' AND form_name = ?),')') " .
+				                "GROUP BY pk, event_id, instance ) log LEFT JOIN " .
+				                "redcap_user_information uic ON substring(ts_user_c, 15) = " .
+				                "uic.username LEFT JOIN redcap_user_information uiu ON " .
+				                "substring(ts_user_u, 15) = uiu.username",
+				                [ $module->getProjectId(),
+				                  $module->getProjectId(), $queryForm['form'] ] );
+		while ( $infoFormDates = $qFormDates->fetch_assoc() )
 		{
-			$infoFormCreateUpdate[ $infoFormDates['pk'] ][ $formCreateUpdateEvent ]
-			                                             [ $infoFormDates['instance'] ]['updated'] =
-					               [ 'ts' => $infoFormDates['ts'], 'user' => $infoFormDates['user'],
-					                 'user_fullname' => $infoFormDates['user_fullname'] ];
-		}
-		else
-		{
+			// For each record/event/instance combination, add the user and time created/updated to
+			// the list for this form.
+			$formCreateUpdateEvent = ( $listEventNames === false )
+			                         ? '' : $listEventNames[ $infoFormDates['event_id'] ];
 			$infoFormCreateUpdate[ $infoFormDates['pk'] ][ $formCreateUpdateEvent ]
 			                                             [ $infoFormDates['instance'] ] =
-					[ 'created' => [ 'ts' => $infoFormDates['ts'], 'user' => $infoFormDates['user'],
-					                 'user_fullname' => $infoFormDates['user_fullname'] ],
-					  'updated' => [ 'ts' => $infoFormDates['ts'], 'user' => $infoFormDates['user'],
-					                 'user_fullname' => $infoFormDates['user_fullname'] ] ];
+					[ 'created' => [ 'ts' => $infoFormDates['ts_c'],
+					                 'user' => $infoFormDates['user_c'],
+					                 'user_fullname' => $infoFormDates['name_c'] ],
+					  'updated' => [ 'ts' => $infoFormDates['ts_u'],
+					                 'user' => $infoFormDates['user_u'],
+					                 'user_fullname' => $infoFormDates['name_u'] ] ];
 		}
+		// Add the list for this form to the main list of this data.
+		$listFormCreateUpdate[ $queryForm['form'] ] = $infoFormCreateUpdate;
+		unset( $infoFormCreateUpdate );
 	}
-	$listFormCreateUpdate[ $queryForm['form'] ] = $infoFormCreateUpdate;
-	unset( $infoFormCreateUpdate );
-	$qFormInstance = $module->query( "SELECT d.record, d.event_id, if(exists(SELECT 1 FROM " .
-	                                 "redcap_events_repeat WHERE event_id = d.event_id), " .
-	                                 "max(ifnull(d.instance,1)), '') last_instance " .
-	                                 "FROM $dataTable d JOIN redcap_metadata md ON d.field_name " .
-	                                 "= md.field_name AND d.project_id = md.project_id " .
-	                                 "WHERE d.project_id = ? AND element_type <> 'descriptive' " .
-	                                 "AND form_name = ? GROUP BY d.record, d.event_id",
-	                                 [ $module->getProjectId(), $queryForm['form'] ] );
-	while ( $infoFormInstance = $qFormInstance->fetch_assoc() )
+	// Get the redcap_last_instance field data if required.
+	if ( empty( $listReferencedFields ) ||
+	     isset( $listReferencedFields[ $queryForm['form'] ]['redcap_last_instance'] ) )
 	{
-		$formLastInstanceEvent = ( $listEventNames === false )
-		                         ? '' : $listEventNames[ $infoFormInstance['event_id'] ];
-		$listFormLastInstance[ $queryForm['form'] ][ $infoFormInstance['record'] ]
-		                     [ $formLastInstanceEvent ] = $infoFormInstance['last_instance'];
+		// This query will look up, for each record/event combination, the highest instance number
+		// for this form.
+		$qFormInstance =
+				$module->query( "SELECT d.record, d.event_id, if(exists(SELECT 1 FROM " .
+				                "redcap_events_repeat WHERE event_id = d.event_id), " .
+				                "max(ifnull(d.instance,1)), '') last_instance " .
+				                "FROM $dataTable d JOIN redcap_metadata md ON d.field_name " .
+				                "= md.field_name AND d.project_id = md.project_id " .
+				                "WHERE d.project_id = ? AND element_type <> 'descriptive' " .
+				                "AND form_name = ? GROUP BY d.record, d.event_id",
+				                [ $module->getProjectId(), $queryForm['form'] ] );
+		while ( $infoFormInstance = $qFormInstance->fetch_assoc() )
+		{
+			// For each record/event combination, add the highest instance number to the list.
+			$formLastInstanceEvent = ( $listEventNames === false )
+			                         ? '' : $listEventNames[ $infoFormInstance['event_id'] ];
+			$listFormLastInstance[ $queryForm['form'] ][ $infoFormInstance['record'] ]
+			                     [ $formLastInstanceEvent ] = $infoFormInstance['last_instance'];
+		}
 	}
 }
 
-// Get redcap_users virtual table if required.
-$hasRCUsersTable = false;
-$rcUsersTable = [];
-foreach ( $reportData['forms'] as $queryForm )
-{
-	if ( $queryForm['form'] == 'redcap_users' )
-	{
-		$hasRCUsersTable = true;
-		break;
-	}
-}
+
+
+// If the instrument query makes use of the redcap_users virtual table, query the database for this
+// data and store in an array for use later.
 if ( $hasRCUsersTable )
 {
+	// This query returns a table of the users for this project. It includes the username, first
+	// name, last name, primary email address, role name, current DAG, date added to the project,
+	// expiration date (from the project), first activity on the project, most recent activity on
+	// the project.
 	$queryRCUsersTable =
 		$module->query( 'SELECT ui.username, ui.user_firstname firstname, ui.user_lastname ' .
 		                'lastname, ui.user_email email, uro.role_name, uri.group_id dag, concat( ' .
@@ -321,22 +436,29 @@ if ( $hasRCUsersTable )
 		                '[survey respondent]\' GROUP BY `user` ) le2 ON ui.username = le2.username',
 		                [ $module->getProjectId(), $module->getProjectId(),
 		                  $module->getProjectId() ] );
+	// Store the users table.
 	while ( $infoRCUsersTable = $queryRCUsersTable->fetch_assoc() )
 	{
 		$rcUsersTable[] = $infoRCUsersTable;
 	}
 }
 
-// Build the result table.
+
+
+// Build the result table for the instrument query.
 $resultTable = [[]];
+// For each instrument in the query...
 foreach ( $reportData['forms'] as $queryForm )
 {
 	// Get the form name and alias (use form name for alias if not defined).
 	$form = $queryForm['form'];
 	$alias = $queryForm['alias'] == '' ? $form : $queryForm['alias'];
+
 	// Get the fields for the form and retrieve the values and value labels for each record.
 	if ( $form == 'redcap_users' )
 	{
+		// If using the redcap_users virtual table, get the values saved earlier. Mark any datetime
+		// fields as such so format transformations can be applied.
 		$fields = empty( $rcUsersTable ) ? [] : array_keys( $rcUsersTable[0] );
 		$fieldMetadata = [ 'added' => [ 'field_type' => 'text', TVALIDSTR => 'time' ],
 		                   'expiration' => [ 'field_type' => 'text', TVALIDSTR => 'time' ],
@@ -345,16 +467,33 @@ foreach ( $reportData['forms'] as $queryForm )
 		$formValues = $rcUsersTable;
 		$formLabels = $rcUsersTable;
 	}
-	else
+	else // a normal instrument in the project
 	{
+		// Get a list of the fields for this instrument.
 		$fields = array_unique( array_merge( [ $recordIDField ],
 		                                     \REDCap::getFieldNames( $form ) ) );
 		$fieldMetadata = \REDCap::getDataDictionary( 'array', false, $fields );
+		foreach ( $fieldMetadata as $fieldName => $fieldParams )
+		{
+			// Exclude any descriptive fields. If we have pre-checked which fields are referenced
+			// by this query for this form alias, exclude any which are not referenced.
+			if ( $fieldParams['field_type'] == 'descriptive' ||
+			     ( ! empty( $listReferencedFields ) &&
+			       ! isset( $listReferencedFields[ $alias ][ $fieldName ] ) ) )
+			{
+				unset( $fields[ array_search( $fieldName, $fields ) ] );
+			}
+		}
+		// Run \REDCap::getData() twice, once to get the raw values and once to get the
+		// corresponding value labels (i.e. for multiple choice fields).
 		$formValues = \REDCap::getData( $resultParams +
 		                                [ 'exportAsLabels' => false, 'fields' => $fields ] );
 		$formLabels = \REDCap::getData( $resultParams +
 		                                [ 'exportAsLabels' => true, 'fields' => $fields ] );
 	}
+
+	// If this isn't a CSV download, identify the date fields. The 'label' of any date fields will
+	// be set to the date transformed into the user's preferred format.
 	$dateFields = [];
 	if ( ! $isCsvDownload )
 	{
@@ -383,18 +522,26 @@ foreach ( $reportData['forms'] as $queryForm )
 			}
 		}
 	}
+
+	// Parse the join on logic. If blank, a full cross join is performed.
 	if ( $queryForm['on'] != '' )
 	{
 		list( $joinFunction, $joinParamData ) =
 			$module->parseLogic( $queryForm['on'], $requestType );
 	}
+	// Initialise the new result table to be populated with the existing result joined with this
+	// instrument.
 	$newResultTable = [];
+	// For each row of the existing result...
 	foreach ( $resultTable as $resultRow )
 	{
 		$joinCount = 0;
 		$formHasRedcapFields = [];
+		// For each row of the instrument being processed...
 		foreach ( $formValues as $i => $formValuesRow )
 		{
+			// Treat a blank formname_complete field as though there is no data on this form for
+			// this record and thus skip it.
 			if ( $formValuesRow[ $form . '_complete' ] === '' )
 			{
 				continue;
@@ -409,100 +556,129 @@ foreach ( $reportData['forms'] as $queryForm )
 					$formLabelsRow['dag'] = $listDAGFullNames[ $formLabelsRow['dag'] ];
 				}
 			}
-			// For project instruments, add the virtual fields.
+			// For project instruments, add the virtual fields where required.
 			else
 			{
 				// Insert redcap_form_url virtual field.
-				$formValuesRow['redcap_form_url'] =
-					APP_PATH_WEBROOT_FULL . 'redcap_v' . REDCAP_VERSION .
-					'/DataEntry/index.php?pid=' . $module->getProjectId() . '&page=' . $form .
-					'&id=' . $formValuesRow[ $recordIDField ] .
-					( isset( $formValuesRow['redcap_event_name'] )
-					  ? '&event_id=' .
-					    array_search( $formValuesRow['redcap_event_name'], $listEventNames )
-					  : '' ) .
-					( isset( $formValuesRow['redcap_repeat_instance'] ) &&
-					  $formValuesRow['redcap_repeat_instance'] != ''
-					  ? '&instance=' . $formValuesRow['redcap_repeat_instance'] : '' );
-				$formLabelsRow['redcap_form_url'] = $formValuesRow['redcap_form_url'];
-				$formHasRedcapFields['redcap_form_url'] = true;
+				if ( empty( $listReferencedFields ) ||
+				     isset( $listReferencedFields[ $form ]['redcap_form_url'] ) )
+				{
+					$formValuesRow['redcap_form_url'] =
+						APP_PATH_WEBROOT_FULL . 'redcap_v' . REDCAP_VERSION .
+						'/DataEntry/index.php?pid=' . $module->getProjectId() . '&page=' . $form .
+						'&id=' . $formValuesRow[ $recordIDField ] .
+						( isset( $formValuesRow['redcap_event_name'] )
+						  ? '&event_id=' .
+						    array_search( $formValuesRow['redcap_event_name'], $listEventNames )
+						  : '' ) .
+						( isset( $formValuesRow['redcap_repeat_instance'] ) &&
+						  $formValuesRow['redcap_repeat_instance'] != ''
+						  ? '&instance=' . $formValuesRow['redcap_repeat_instance'] : '' );
+					$formLabelsRow['redcap_form_url'] = $formValuesRow['redcap_form_url'];
+					$formHasRedcapFields['redcap_form_url'] = true;
+				}
 				// Insert redcap_survey_url virtual field.
-				$formValuesRow['redcap_survey_url'] =
-					in_array( $form, $listSurveys )
-					? \REDCap::getSurveyLink( $formValuesRow[ $recordIDField ], $form,
-					   ( isset( $formValuesRow['redcap_event_name'] )
-					     ? \REDCap::getEventIdFromUniqueEvent( $formValuesRow['redcap_event_name'] )
-					     : null ),
-					   $formValuesRow['redcap_repeat_instance'] ?? 1 )
-					: '';
-				$formLabelsRow['redcap_survey_url'] = $formValuesRow['redcap_survey_url'];
-				$formHasRedcapFields['redcap_survey_url'] = true;
+				if ( empty( $listReferencedFields ) ||
+				     isset( $listReferencedFields[ $form ]['redcap_survey_url'] ) )
+				{
+					$formValuesRow['redcap_survey_url'] =
+						in_array( $form, $listSurveys )
+						? $module->getSurveyLink( $formValuesRow[ $recordIDField ], $form,
+						   ( isset( $formValuesRow['redcap_event_name'] )
+						     ? \REDCap::getEventIdFromUniqueEvent(
+						                                       $formValuesRow['redcap_event_name'] )
+						     : null ),
+						   $formValuesRow['redcap_repeat_instance'] ?? 1 )
+						: '';
+					$formLabelsRow['redcap_survey_url'] = $formValuesRow['redcap_survey_url'];
+					$formHasRedcapFields['redcap_survey_url'] = true;
+				}
 				// Insert redcap_created_by virtual field.
-				$formValuesRow['redcap_created_by'] =
-					$listFormCreateUpdate[ $form ]
-						[ $formValuesRow[ $recordIDField ] ]
-						[ $formValuesRow['redcap_event_name'] != ''
-						  ? $formValuesRow['redcap_event_name'] : '' ]
-						[ $formValuesRow['redcap_repeat_instance'] != ''
-						  ? $formValuesRow['redcap_repeat_instance'] : 1 ]['created']['user'];
-				$formLabelsRow['redcap_created_by'] =
-					$listFormCreateUpdate[ $form ]
-						[ $formValuesRow[ $recordIDField ] ]
-						[ $formValuesRow['redcap_event_name'] != ''
-						  ? $formValuesRow['redcap_event_name'] : '' ]
-						[ $formValuesRow['redcap_repeat_instance'] != ''
-						  ? $formValuesRow['redcap_repeat_instance'] : 1 ]
-						['created']['user_fullname'];
-				$formHasRedcapFields['redcap_created_by'] = true;
+				if ( empty( $listReferencedFields ) ||
+				     isset( $listReferencedFields[ $form ]['redcap_created_by'] ) )
+				{
+					$formValuesRow['redcap_created_by'] =
+						$listFormCreateUpdate[ $form ]
+							[ $formValuesRow[ $recordIDField ] ]
+							[ $formValuesRow['redcap_event_name'] != ''
+							  ? $formValuesRow['redcap_event_name'] : '' ]
+							[ $formValuesRow['redcap_repeat_instance'] != ''
+							  ? $formValuesRow['redcap_repeat_instance'] : 1 ]['created']['user'];
+					$formLabelsRow['redcap_created_by'] =
+						$listFormCreateUpdate[ $form ]
+							[ $formValuesRow[ $recordIDField ] ]
+							[ $formValuesRow['redcap_event_name'] != ''
+							  ? $formValuesRow['redcap_event_name'] : '' ]
+							[ $formValuesRow['redcap_repeat_instance'] != ''
+							  ? $formValuesRow['redcap_repeat_instance'] : 1 ]
+							['created']['user_fullname'];
+					$formHasRedcapFields['redcap_created_by'] = true;
+				}
 				// Insert redcap_created_time virtual field.
-				$formValuesRow['redcap_created_time'] =
-					$listFormCreateUpdate[ $form ]
-						[ $formValuesRow[ $recordIDField ] ]
-						[ $formValuesRow['redcap_event_name'] != ''
-						  ? $formValuesRow['redcap_event_name'] : '' ]
-						[ $formValuesRow['redcap_repeat_instance'] != ''
-						  ? $formValuesRow['redcap_repeat_instance'] : 1 ]['created']['ts'];
-				$formLabelsRow['redcap_created_time'] =
-					\DateTimeRC::format_ts_from_ymd( $formValuesRow['redcap_created_time'],
-					                                 false, true );
-				$formHasRedcapFields['redcap_created_time'] = true;
+				if ( empty( $listReferencedFields ) ||
+				     isset( $listReferencedFields[ $form ]['redcap_created_time'] ) )
+				{
+					$formValuesRow['redcap_created_time'] =
+						$listFormCreateUpdate[ $form ]
+							[ $formValuesRow[ $recordIDField ] ]
+							[ $formValuesRow['redcap_event_name'] != ''
+							  ? $formValuesRow['redcap_event_name'] : '' ]
+							[ $formValuesRow['redcap_repeat_instance'] != ''
+							  ? $formValuesRow['redcap_repeat_instance'] : 1 ]['created']['ts'];
+					$formLabelsRow['redcap_created_time'] =
+						\DateTimeRC::format_ts_from_ymd( $formValuesRow['redcap_created_time'],
+						                                 false, true );
+					$formHasRedcapFields['redcap_created_time'] = true;
+				}
 				// Insert redcap_updated_by virtual field.
-				$formValuesRow['redcap_updated_by'] =
-					$listFormCreateUpdate[ $form ]
-						[ $formValuesRow[ $recordIDField ] ]
-						[ $formValuesRow['redcap_event_name'] != ''
-						  ? $formValuesRow['redcap_event_name'] : '' ]
-						[ $formValuesRow['redcap_repeat_instance'] != ''
-						  ? $formValuesRow['redcap_repeat_instance'] : 1 ]['updated']['user'];
-				$formLabelsRow['redcap_updated_by'] =
-					$listFormCreateUpdate[ $form ]
-						[ $formValuesRow[ $recordIDField ] ]
-						[ $formValuesRow['redcap_event_name'] != ''
-						  ? $formValuesRow['redcap_event_name'] : '' ]
-						[ $formValuesRow['redcap_repeat_instance'] != ''
-						  ? $formValuesRow['redcap_repeat_instance'] : 1 ]
-						['updated']['user_fullname'];
-				$formHasRedcapFields['redcap_updated_by'] = true;
+				if ( empty( $listReferencedFields ) ||
+				     isset( $listReferencedFields[ $form ]['redcap_updated by'] ) )
+				{
+					$formValuesRow['redcap_updated_by'] =
+						$listFormCreateUpdate[ $form ]
+							[ $formValuesRow[ $recordIDField ] ]
+							[ $formValuesRow['redcap_event_name'] != ''
+							  ? $formValuesRow['redcap_event_name'] : '' ]
+							[ $formValuesRow['redcap_repeat_instance'] != ''
+							  ? $formValuesRow['redcap_repeat_instance'] : 1 ]['updated']['user'];
+					$formLabelsRow['redcap_updated_by'] =
+						$listFormCreateUpdate[ $form ]
+							[ $formValuesRow[ $recordIDField ] ]
+							[ $formValuesRow['redcap_event_name'] != ''
+							  ? $formValuesRow['redcap_event_name'] : '' ]
+							[ $formValuesRow['redcap_repeat_instance'] != ''
+							  ? $formValuesRow['redcap_repeat_instance'] : 1 ]
+							['updated']['user_fullname'];
+					$formHasRedcapFields['redcap_updated_by'] = true;
+				}
 				// Insert redcap_updated_time virtual field.
-				$formValuesRow['redcap_updated_time'] =
-					$listFormCreateUpdate[ $form ]
-						[ $formValuesRow[ $recordIDField ] ]
-						[ $formValuesRow['redcap_event_name'] != ''
-						  ? $formValuesRow['redcap_event_name'] : '' ]
-						[ $formValuesRow['redcap_repeat_instance'] != ''
-						  ? $formValuesRow['redcap_repeat_instance'] : 1 ]['updated']['ts'];
-				$formLabelsRow['redcap_updated_time'] =
-					\DateTimeRC::format_ts_from_ymd( $formValuesRow['redcap_updated_time'],
-					                                 false, true );
-				$formHasRedcapFields['redcap_updated_time'] = true;
+				if ( empty( $listReferencedFields ) ||
+				     isset( $listReferencedFields[ $form ]['redcap_updated_time'] ) )
+				{
+					$formValuesRow['redcap_updated_time'] =
+						$listFormCreateUpdate[ $form ]
+							[ $formValuesRow[ $recordIDField ] ]
+							[ $formValuesRow['redcap_event_name'] != ''
+							  ? $formValuesRow['redcap_event_name'] : '' ]
+							[ $formValuesRow['redcap_repeat_instance'] != ''
+							  ? $formValuesRow['redcap_repeat_instance'] : 1 ]['updated']['ts'];
+					$formLabelsRow['redcap_updated_time'] =
+						\DateTimeRC::format_ts_from_ymd( $formValuesRow['redcap_updated_time'],
+						                                 false, true );
+					$formHasRedcapFields['redcap_updated_time'] = true;
+				}
 				// Insert redcap_last_instance virtual field.
-				$formValuesRow['redcap_last_instance'] =
-					$listFormLastInstance[ $form ]
-						[ $formValuesRow[ $recordIDField ] ]
-						[ $formValuesRow['redcap_event_name'] != ''
-						  ? $formValuesRow['redcap_event_name'] : '' ];
-				$formLabelsRow['redcap_last_instance'] = $formValuesRow['redcap_last_instance'];
-				$formHasRedcapFields['redcap_last_instance'] = true;
+				if ( empty( $listReferencedFields ) ||
+				     isset( $listReferencedFields[ $form ]['redcap_last_instance'] ) )
+				{
+					$formValuesRow['redcap_last_instance'] =
+						$listFormLastInstance[ $form ]
+							[ $formValuesRow[ $recordIDField ] ]
+							[ $formValuesRow['redcap_event_name'] != ''
+							  ? $formValuesRow['redcap_event_name'] : '' ];
+					$formLabelsRow['redcap_last_instance'] = $formValuesRow['redcap_last_instance'];
+					$formHasRedcapFields['redcap_last_instance'] = true;
+				}
 			}
 			// Check if the row from this form should be joined with the result table row.
 			$doJoin = true;
