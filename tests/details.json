@@ -54,7 +54,7 @@
 		"scenario" : "Check CSV download. Check report download rights are correctly enforced. Ensure any HTML is correctly stripped/escaped."
 	},
 	{
-		"file" : "test_t10InstrumentQueryasimage",
+		"file" : "test_t10InstrumentQueryasimage.py",
 		"name" : "Instrument Query as image",
 		"expected" : "Report is rendered as image",
 		"scenario" : "Check that Instrument Query reports are rendered as image correctly. Check report viewing rights are correctly enforced. Ensure any HTML is correctly stripped/escaped."

@@ -315,121 +315,34 @@ if ( isset( $_GET['as_image'] ) && $reportConfig['as_image'] )
 	{
 		header( 'Content-Type: image/png' );
 	}
-	// Determine the fonts and character sizes for the report.
-	$imgHeaderFont = 5;
-	$imgDataFont = 4;
-	$imgHeaderCharW = imagefontwidth( $imgHeaderFont );
-	$imgHeaderCharH = imagefontheight( $imgHeaderFont );
-	$imgDataCharW = imagefontwidth( $imgDataFont );
-	$imgDataCharH = imagefontheight( $imgDataFont );
-	$imgHeaderH = $imgHeaderCharH + 2;
-	$imgDataH = $imgDataCharH + 2;
-	// Calculate column widths based on column name string lengths.
-	$imgColumnWidths = [];
-	$imgExtraRows = 0;
-	if ( $hasGroups )
+	$img = $module->reportImageCreate();
+	foreach ( [ 'reportImageRowPrepare', 'reportImageRowWrite' ] as $imageRowFunc )
 	{
-		$imgColumnWidths[0] = ( strlen( 'Group' ) * $imgHeaderCharW ) + 5;
-		if ( $reportData['group_total'] )
+		// Prepare/draw the header row.
+		$module->$imageRowFunc( $img, array_merge( $hasGroups ? [ 'Group' ] : [], $listColNames ) );
+		// Prepare/draw each row of data.
+		foreach ( $listGroups as $groupName )
 		{
-			$thisWidth = ( strlen( 'Total' ) * $imgHeaderCharW ) + 5;
-			if ( $imgColumnWidths[0] < $thisWidth )
+			$imgRow = $hasGroups ? [ $groupName ] : [];
+			foreach ( $listColNames as $accStr => $colName )
 			{
-				$imgColumnWidths[0] = $thisWidth;
+				$imgRow[] = formatForOutput( $resultTable[ $accStr ][ $groupName ],
+				                             $reportData['display'] );
 			}
-			$imgExtraRows++;
+			$module->$imageRowFunc( $img, $imgRow );
 		}
-	}
-	foreach ( $listColNames as $accStr => $colName )
-	{
-		$imgColumnWidths[ $accStr ] = ( strlen( $colName ) * $imgHeaderCharW ) + 5;
-	}
-	// Check the data in each column for each record, increase the column widths if necessary.
-	foreach ( $listGroups as $groupName )
-	{
-		if ( $hasGroups )
+		if ( $hasGroups && $reportData['group_total'] )
 		{
-			$thisWidth = ( strlen( $groupName ) * $imgHeaderCharW ) + 5;
-			if ( $imgColumnWidths[0] < $thisWidth )
+			$imgRow = [ 'Total' ];
+			foreach ( $listColNames as $accStr => $colName )
 			{
-				$imgColumnWidths[0] = $thisWidth;
+				$imgRow[] = formatForOutput( $listTotals[ $accStr ], $reportData['display'] );
 			}
-		}
-		foreach ( $listColNames as $accStr => $colName )
-		{
-			$imgParsedData = formatForOutput( $resultTable[ $accStr ][ $groupName ],
-			                                  $reportData['display'] );
-			$thisWidth = ( strlen( $imgParsedData ) * $imgDataCharW ) + 5;
-			if ( $imgColumnWidths[ $accStr ] < $thisWidth )
-			{
-				$imgColumnWidths[ $accStr ] = $thisWidth;
-			}
-		}
-	}
-	// Calculate the image dimensions, create the image, and set the colours (black/white).
-	$imgWidth = array_sum( $imgColumnWidths ) + 1;
-	$imgHeight = $imgHeaderH + ( ( count( $listGroups ) + $imgExtraRows ) * ( $imgDataH ) ) + 1;
-	$img = imagecreate( $imgWidth, $imgHeight );
-	imagecolorallocate( $img, 255, 255, 255 );
-	$imgBlack = imagecolorallocate( $img, 0, 0, 0 );
-	// Draw the column headers.
-	$posW = 0;
-	$posH = 0;
-	if ( $hasGroups )
-	{
-		$thisWidth = $imgColumnWidths[0];
-		imagerectangle( $img, $posW, $posH, $posW + $thisWidth, $posH + $imgHeaderH, $imgBlack );
-		imagestring( $img, $imgHeaderFont, $posW + 2, $posH + 1, 'Group', $imgBlack );
-		$posW += $thisWidth;
-	}
-	foreach ( $listColNames as $accStr => $colName )
-	{
-		$thisWidth = $imgColumnWidths[ $accStr ];
-		imagerectangle( $img, $posW, $posH, $posW + $thisWidth, $posH + $imgHeaderH, $imgBlack );
-		imagestring( $img, $imgHeaderFont, $posW + 2, $posH + 1, $colName, $imgBlack );
-		$posW += $thisWidth;
-	}
-	// Draw each row of data.
-	$posW = 0;
-	$posH += $imgHeaderH;
-	foreach ( $listGroups as $groupName )
-	{
-		if ( $hasGroups )
-		{
-			$thisWidth = $imgColumnWidths[0];
-			imagerectangle( $img, $posW, $posH, $posW + $thisWidth, $posH + $imgDataH, $imgBlack );
-			imagestring( $img, $imgDataFont, $posW + 2, $posH + 1, $groupName, $imgBlack );
-			$posW += $thisWidth;
-		}
-		foreach ( $listColNames as $accStr => $colName )
-		{
-			$imgParsedData = formatForOutput( $resultTable[ $accStr ][ $groupName ],
-			                                  $reportData['display'] );
-			$thisWidth = $imgColumnWidths[ $accStr ];
-			imagerectangle( $img, $posW, $posH, $posW + $thisWidth, $posH + $imgDataH, $imgBlack );
-			imagestring( $img, $imgDataFont, $posW + 2, $posH + 1, $imgParsedData, $imgBlack );
-			$posW += $thisWidth;
-		}
-		$posW = 0;
-		$posH += $imgDataH;
-	}
-	if ( $hasGroups && $reportData['group_total'] )
-	{
-		$thisWidth = $imgColumnWidths[0];
-		imagerectangle( $img, $posW, $posH, $posW + $thisWidth, $posH + $imgDataH, $imgBlack );
-		imagestring( $img, $imgDataFont, $posW + 2, $posH + 1, 'Total', $imgBlack );
-		$posW += $thisWidth;
-		foreach ( $listColNames as $accStr => $colName )
-		{
-			$imgParsedData = formatForOutput( $listTotals[ $accStr ], $reportData['display'] );
-			$thisWidth = $imgColumnWidths[ $accStr ];
-			imagerectangle( $img, $posW, $posH, $posW + $thisWidth, $posH + $imgDataH, $imgBlack );
-			imagestring( $img, $imgDataFont, $posW + 2, $posH + 1, $imgParsedData, $imgBlack );
-			$posW += $thisWidth;
+			$module->$imageRowFunc( $img, $imgRow );
 		}
 	}
 	// Output the image as a PNG and exit.
-	imagepng( $img );
+	$module->reportImageOutput( $img );
 	if ( $isInternalRequest )
 	{
 		return;
@@ -441,7 +354,8 @@ if ( isset( $_GET['as_image'] ) && $reportConfig['as_image'] )
 
 // Display the header and report navigation links.
 $module->writePageHeader( $disableAccessControl );
-$module->outputViewReportHeader( $reportConfig['label'], 'accumulation', true );
+$module->outputViewReportHeader( $reportConfig['label'], 'accumulation',
+                                 [ 'canReset' => true, 'asImage' => $reportConfig['as_image'] ] );
 
 // Initialise the row counter.
 $rowCount = 0;

@@ -1283,10 +1283,30 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 	// Output the report navigation links.
-	function outputViewReportHeader( $reportLabel, $reportType, $canReset = false )
+	function outputViewReportHeader( $reportLabel, $reportType, $listOptions = false )
 	{
+		if ( is_bool( $listOptions ) )
+		{
+			$listOptions = [ 'canReset' => $listOptions, 'asImage' => false ];
+		}
+
 		$isPublic = ( isset($GLOBALS['disableAccessControl']) && $GLOBALS['disableAccessControl'] );
 		$canDownload = $this->isReportDownloadable( $_GET['report_id'] );
+		$canEdit = ( $isPublic ? false : $this->isReportEditable( $reportType ) );
+
+		$reportURL = '';
+		parse_str( $_SERVER['QUERY_STRING'], $getVars );
+		foreach ( $getVars as $getVar => $getVal )
+		{
+			if ( ! in_array( $getVar, [ 'as_image', 'download', 'page', 'pid', 'prefix',
+			                            'report_id', 'report_state' ] ) )
+			{
+				$reportURL .= '&' . $getVar . '=' . rawurlencode( $getVal );
+			}
+		}
+		$reportURL = $this->getURL( $reportType . '_view.php?report_id=' . $_GET['report_id'] .
+		                    $reportURL );
+
 		$this->writeStyle();
 
 ?>
@@ -1310,28 +1330,26 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		// If report can be downloaded, show the download link.
 		if ( $canDownload )
 		{
-			$extraVarsDL = '';
-			parse_str( $_SERVER['QUERY_STRING'], $getVars );
-			foreach ( $getVars as $getVar => $getVal )
-			{
-				if ( ! in_array( $getVar, [ 'as_image', 'download', 'page', 'pid', 'prefix',
-				                            'report_id', 'report_state' ] ) )
-				{
-					$extraVarsDL .= '&' . $getVar . '=' . rawurlencode( $getVal );
-				}
-			}
 
 ?>
- <a href="<?php
-			echo $this->getUrl( $reportType . '_view.php?report_id=' . $_GET['report_id'] .
-			                    $extraVarsDL . '&download=1' );
+ <a href="<?php echo $reportURL . '&download=1';
 ?>"><i class="fas fa-file-download fs11"></i> Download report</a>
 <?php
 
 		}
 
+		// If applicable for the report type, show a link to get the report as an image.
+		if ( $canEdit && $listOptions['asImage'] ?? false )
+		{
+
+?>
+ <a href="#" id="mod-advrep-imageview"><i class="far fa-file-image fs11"></i> Image view</a>
+<?php
+
+		}
+
 		// If the user can edit the report, show an edit link.
-		if ( ! $isPublic && $this->isReportEditable( $reportType ) )
+		if ( $canEdit )
 		{
 
 ?>
@@ -1343,7 +1361,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		}
 
 		// If applicable for the report type, show a link to reset the report state.
-		if ( $canReset )
+		if ( $listOptions['canReset'] ?? false )
 		{
 
 ?>
@@ -1360,6 +1378,68 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 ?>
 </p>
 <?php
+		// Dialog for getting report as image.
+		if ( $canEdit && $listOptions['asImage'] ?? false )
+		{
+?>
+<div id="mod-advrep-imageviewpopup" style="display:none">
+ <p>
+  Image theme:
+  <select>
+   <option value="b">Basic</option>
+   <option value="r">REDCap</option>
+   <option value="c">Custom</option>
+  </select>
+ </p>
+ <p style="display:grid;grid-template-columns:min-content auto;column-gap:10px;align-items:center">
+  <span>Text:</span> <input type="color" value="#000000">
+  <span>Background:</span> <input type="color" value="#ffffff">
+ </p>
+ <p>
+  Image view URL:<br>
+  <input readonly style="width:100%">
+ </p>
+</div>
+<script type="text/javascript">
+ $(function()
+ {
+   $('#mod-advrep-imageview').on('click',function(ev)
+   {
+     ev.preventDefault()
+     simpleDialog(null, "Image view", 'mod-advrep-imageviewpopup')
+   })
+   var vReportURL = <?php echo $this->escapeJSString( $reportURL ), "\n"; ?>
+   var vImageURLFunc = function()
+   {
+     var vDisplayURL = vReportURL + '&as_image='
+     var vTheme = $('#mod-advrep-imageviewpopup select').val()
+     $('#mod-advrep-imageviewpopup p[style*="grid"]').css('display','none')
+     if ( vTheme == 'b' )
+     {
+       vDisplayURL += '1'
+     }
+     else if ( vTheme == 'r' )
+     {
+       vDisplayURL += 'redcapredcap'
+     }
+     else
+     {
+       $('#mod-advrep-imageviewpopup p[style*="grid"]').css('display','grid')
+       var vFG = $('#mod-advrep-imageviewpopup input[type="color"]').first().val()
+       var vBG = $('#mod-advrep-imageviewpopup input[type="color"]').last().val()
+       vFG = (vFG.toLowerCase().replace(/[^0-9a-f]/g,'')+'000000').substring(0,6)
+       vBG = (vBG.toLowerCase().replace(/[^0-9a-f]/g,'')+'000000').substring(0,6)
+       vDisplayURL += vFG + vBG
+     }
+     $('#mod-advrep-imageviewpopup input[readonly]').val( vDisplayURL )
+   }
+   $('#mod-advrep-imageviewpopup input[type="color"]').on('change', vImageURLFunc)
+   $('#mod-advrep-imageviewpopup select').on('change', vImageURLFunc)
+   vImageURLFunc()
+ })
+</script>
+<?php
+		}
 
 	}
 
@@ -1602,6 +1682,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
                         'style="width:350px" list="mod-advrep-filterlist"></div>')
         vDialog.find('input[type="text"]').val(vFilter)
         vDialog.find('select').val(vOp)
+        vDialog.on('dialogopen',function(){vDialog.find('input[type="text"]').focus()})
         vDialog.dialog(
         {
           autoOpen:true,
@@ -1708,10 +1789,10 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
         }
         var vItems = vHeader[indexTd].getAttribute('data-items')
         vItems = JSON.parse( vItems === null ? '[]' : vItems )
-        if ( vItems !== false && vText != '' && vItems.indexOf( vText ) == -1 )
+        if ( vItems !== false && vText != '' && vText.length < 40 && vItems.indexOf( vText ) == -1 )
         {
           vItems.push( vText )
-          if ( vItems.length > 30 )
+          if ( vItems.length > 50 )
           {
             vItems = false
           }
@@ -2247,6 +2328,145 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			                        $sql );
 		}
 		return $sql;
+	}
+
+
+
+	// Functions to prepare and output a report as an image.
+
+	function reportImageCreate()
+	{
+		if ( preg_match( '/^([0-9a-f]{6}|redcap){2}$/', $_GET['as_image'] ) )
+		{
+			$fg = substr( $_GET['as_image'], 0, 6 );
+			$bg = substr( $_GET['as_image'], 6 );
+			if ( $fg == 'redcap' )
+			{
+				$fg = '000000';
+			}
+			if ( $bg == 'redcap' )
+			{
+				$bg = 'f5f5f5';
+			}
+		}
+		else
+		{
+			$fg = '000000';
+			$bg = 'ffffff';
+		}
+		$imgData = [ 'headerFont' => 5, 'dataFont' => 4, 'fg' => $fg, 'bg' => $bg ];
+		$imgData['headerCharW'] = imagefontwidth( $imgData['headerFont'] );
+		$imgData['headerCharH'] = imagefontheight( $imgData['headerFont' ]);
+		$imgData['dataCharW'] = imagefontwidth( $imgData['dataFont'] );
+		$imgData['dataCharH'] = imagefontheight( $imgData['dataFont'] );
+		$imgData['dataRows'] = 0;
+		$imgData['columns'] = [];
+		$imgData['outputRows'] = -1;
+		$imgData['img'] = null;
+		return $imgData;
+	}
+
+
+
+	function reportImageRowPrepare( &$imgData, $row )
+	{
+		// If the image is already being output, or if rows with different numbers of columns are
+		// supplied, exit here with an exception.
+		if ( $imgData['outputRows'] > -1 ||
+		     ( count( $imgData['columns'] ) > 0 && count( $imgData['columns'] ) != count( $row ) ) )
+		{
+			throw new Exception('Invalid call to reportImageRowPrepare.');
+		}
+		// If this is the first call to this function for the image, establish the number of columns
+		// and set initial widths based on the header row.
+		if ( count( $imgData['columns'] ) == 0 )
+		{
+			foreach( $row as $item )
+			{
+				$imgData['columns'][] = ( strlen( $item ) * $imgData['headerCharW'] ) + 5;
+			}
+		}
+		// Otherwise, this is a data row and each column width must now be expanded where the data
+		// length demands it.
+		else
+		{
+			$i = 0;
+			foreach( $row as $item )
+			{
+				$w = ( strlen( $item ) * $imgData['dataCharW'] ) + 5;
+				if ( $w > $imgData['columns'][ $i ] )
+				{
+					$imgData['columns'][ $i ] = $w;
+				}
+				$i++;
+			}
+			$imgData['dataRows']++;
+		}
+	}
+
+
+
+	function reportImageRowWrite( &$imgData, $row )
+	{
+		// Exit with an exception if reportImageRowPrepare hasn't been called yet, if the number of
+		// columns in the row does not match the prepared columns, or if all prepared rows have
+		// already been written.
+		if ( count( $imgData['columns'] ) == 0 || count( $imgData['columns'] ) != count( $row ) ||
+		     $imgData['outputRows'] >= $imgData['dataRows'] )
+		{
+			throw new Exception('Invalid call to reportImageRowWrite.');
+		}
+		// If nothing written yet, start creating the image data and write the headers.
+		if ( $imgData['outputRows'] == -1 )
+		{
+			$imgData['img'] = imagecreate( array_sum( $imgData['columns'] ) + 1,
+			                               ( $imgData['headerCharH'] + 2 ) +
+			                               ( ($imgData['dataCharH'] + 2) * $imgData['dataRows'] ) );
+			$imgData['bg'] = imagecolorallocate( $imgData['img'],
+			                                     hexdec( substr( $imgData['bg'], 0, 2 ) ),
+			                                     hexdec( substr( $imgData['bg'], 2, 2 ) ),
+			                                     hexdec( substr( $imgData['bg'], 4, 2 ) ) );
+			$imgData['fg'] = imagecolorallocate( $imgData['img'],
+			                                     hexdec( substr( $imgData['fg'], 0, 2 ) ),
+			                                     hexdec( substr( $imgData['fg'], 2, 2 ) ),
+			                                     hexdec( substr( $imgData['fg'], 4, 2 ) ) );
+			$font = $imgData['headerFont'];
+			$posH = 0;
+			$h = $imgData['headerCharH'] + 2;
+		}
+		// Otherwise write the data row.
+		else
+		{
+			$font = $imgData['dataFont'];
+			$posH = ( $imgData['headerCharH'] + 2 ) +
+			        ( ( $imgData['dataCharH'] + 2 ) * $imgData['outputRows'] );
+			$h = $imgData['dataCharH'] + 2;
+		}
+		$imgData['outputRows']++;
+		$posW = 0;
+		$i = 0;
+		foreach( $row as $item )
+		{
+			// Draw the row on the image.
+			$w = $imgData['columns'][ $i ];
+			imagerectangle( $imgData['img'], $posW, $posH, $posW + $w, $posH + $h, $imgData['fg'] );
+			imagestring( $imgData['img'], $font, $posW + 2, $posH + 1, $item, $imgData['fg'] );
+			$posW += $w;
+			$i++;
+		}
+	}
+
+
+
+	function reportImageOutput( $imgData )
+	{
+		// Exit with an exception if the image is incomplete.
+		if ( $imgData['img'] === null || $imgData['outputRows'] != $imgData['dataRows'] )
+		{
+			throw new Exception('Invalid call to reportImageOutput.');
+		}
+		// Output the image.
+		imagepng( $imgData['img'] );
 	}
 
 

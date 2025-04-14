@@ -239,6 +239,10 @@ if ( count( $listReports ) > 0 )
 		{
 			echo ' &nbsp;<i class="far fa-floppy-disk" title="Saveable to field"></i>';
 		}
+		if ( isset( $infoReport['as_image'] ) && $infoReport['as_image'] )
+		{
+			echo ' &nbsp;<i class="far fa-file-image" title="Retrievable as image"></i>';
+		}
 		if ( isset( $infoReport['as_api'] ) && $infoReport['as_api'] )
 		{
 			echo ' &nbsp;<i class="fas fa-laptop-code" title="API"></i>';
