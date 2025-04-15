@@ -259,7 +259,7 @@ if ( $resultType == 'eav' || $resultType == 'eav-id' )
 	{
 ?>
    <th class="sorting" data-colnum="<?php echo $colNum; ?>">
-    <?php echo $module->escapeHTML( $columnName ), "\n"; ?>
+    <?php echo $module->escape( $columnName ), "\n"; ?>
    </th>
 <?php
 		$colNum++;
@@ -314,7 +314,7 @@ else
 				$columns[] = $fieldName;
 ?>
   <th class="sorting" data-colnum="<?php echo $colNum; ?>">
-   <?php echo $module->escapeHTML( $fieldName ), "\n"; ?>
+   <?php echo $module->escape( $fieldName ), "\n"; ?>
   </th>
 <?php
 				$colNum++;

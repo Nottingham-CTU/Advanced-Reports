@@ -67,34 +67,31 @@ class FieldReference
 		     ! in_array( $fieldType,
 		                 [ 'text', 'notes', 'radio', 'dropdown', 'yesno', 'truefalse' ] ) )
 		{
-			return $module->escapeHTML( $this->value );
+			return $module->escape( $this->value );
 		}
 		$output = '<form method="post" class="valedit" style="white-space:nowrap">' .
-		          '<input type="hidden" name="record" value="' .
-		          $module->escapeHTML( $this->record ) .
+		          '<input type="hidden" name="record" value="' . $module->escape( $this->record ) .
 		          '"><input type="hidden" name="field" value="' .
-		          $module->escapeHTML( $this->fieldName ) . '">';
+		          $module->escape( $this->fieldName ) . '">';
 		if ( $this->event !== null )
 		{
 			$output .= '<input type="hidden" name="event" value="' .
-			          $module->escapeHTML( $this->event ) . '">';
+			          $module->escape( $this->event ) . '">';
 		}
 		if ( $this->instance !== null )
 		{
 			$output .= '<input type="hidden" name="instance" value="' .
-			          $module->escapeHTML( $this->instance ) . '">';
+			          $module->escape( $this->instance ) . '">';
 		}
 		if ( $fieldType == 'text' )
 		{
 			$output .= '<input onchange="$(this.form).find(\'button\').css(\'display\',\'\')" ' .
-			           'type="text" name="value" value="' .
-			           $module->escapeHTML( $this->value ) . '">';
+			           'type="text" name="value" value="' . $module->escape( $this->value ) . '">';
 		}
 		elseif ( $fieldType == 'notes' )
 		{
 			$output .= '<textarea onchange="$(this.form).find(\'button\').css(\'display\',\'\')" ' .
-			           'name="value" rows="2">' .
-			           $module->escapeHTML( $this->value ) . '</textarea>';
+			           'name="value" rows="2">' . $module->escape( $this->value ) . '</textarea>';
 		}
 		elseif ( in_array( $fieldType, [ 'radio', 'dropdown', 'yesno', 'truefalse' ] ) )
 		{
@@ -117,8 +114,8 @@ class FieldReference
 			foreach ( $choices as $choiceCode => $choiceLabel )
 			{
 				$output .= '<option' . ( $choiceCode == $this->value ? ' selected' : '' ) .
-				           ' value="' . $module->escapeHTML( $choiceCode ) . '">' .
-				           $module->escapeHTML( $choiceLabel ) . '</option>';
+				           ' value="' . $module->escape( $choiceCode ) . '">' .
+				           $module->escape( $choiceLabel ) . '</option>';
 			}
 			$output .= '</select>';
 		}
@@ -1129,7 +1126,7 @@ if ( count( $resultTable ) > 0 )
 	{
 ?>
    <th class="sorting" data-colnum="<?php echo $colNum; ?>">
-    <?php echo $module->escapeHTML( $fieldName ), "\n"; ?>
+    <?php echo $module->escape( $fieldName ), "\n"; ?>
    </th>
 <?php
 		$colNum++;

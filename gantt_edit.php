@@ -140,7 +140,7 @@ function outputGanttLabelFields( $name = '', $event = '', $field = '' )
   <tr>
    <td>Label Name</td>
    <td>
-    <input type="text" name="label_name[]" value="<?php echo $module->escapeHTML( $name ); ?>">
+    <input type="text" name="label_name[]" value="<?php echo $module->escape( $name ); ?>">
    </td>
   </tr>
   <tr>
@@ -171,7 +171,7 @@ function outputGanttChartFields( $name = '', $startEvent = '', $startField = '',
   <tr>
    <td>Name</td>
    <td>
-    <input type="text" name="chart_category[]" value="<?php echo $module->escapeHTML( $name ); ?>">
+    <input type="text" name="chart_category[]" value="<?php echo $module->escape( $name ); ?>">
    </td>
   </tr>
   <tr>
@@ -213,7 +213,7 @@ $module->writeStyle();
 ?>
 <div class="projhdr">
  Advanced Reports &#8212;
- Edit Gantt Report: <?php echo $module->escapeHTML( $reportID ), "\n"; ?>
+ Edit Gantt Report: <?php echo $module->escape( $reportID ), "\n"; ?>
 </div>
 <p style="font-size:11px">
  <a href="<?php echo $module->getUrl( 'reports_edit.php' );
@@ -268,7 +268,7 @@ outputGanttChartFields();
    <td>Condition</td>
    <td>
     <input type="text" name="condition" style="width:100%"
-           value="<?php echo $module->escapeHTML( $reportData['condition'] ?? '' ); ?>">
+           value="<?php echo $module->escape( $reportData['condition'] ?? '' ); ?>">
     <br>
     <span class="field-desc">
      Optional. Specify conditional logic here to filter the records to be displayed in the chart.

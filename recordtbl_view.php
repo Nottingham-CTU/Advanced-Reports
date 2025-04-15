@@ -270,7 +270,7 @@ if ( $isCsvDownload )
 			echo $firstField ? '' : ',';
 			$firstField = false;
 			echo '"', str_replace( '"', '""',
-			                       $module->escapeHTML( $resultRow[ $fieldName ] ?? '' ) ), '"';
+			                       $module->escape( $resultRow[ $fieldName ] ?? '' ) ), '"';
 		}
 	}
 	exit;
@@ -294,7 +294,7 @@ if ( isset( $_GET['as_image']) && $reportConfig['as_image'] )
 			foreach ( $listColumns as $columnName )
 			{
 				$imgRow[] = isset( $resultRow[$columnName] )
-				            ? $module->escapeHTML( $resultRow[$columnName] ) : '';
+				            ? $module->escape( $resultRow[$columnName] ) : '';
 			}
 			$module->$imageRowFunc( $img, $imgRow );
 		}
@@ -335,7 +335,7 @@ if ( count( $resultTable ) > 0 )
 	foreach ( $listColumns as $fieldName )
 	{
 ?>
-   <th class="sorting"><?php echo $module->escapeHTML( $fieldName ); ?></th>
+   <th class="sorting"><?php echo $module->escape( $fieldName ); ?></th>
 <?php
 	}
 }
@@ -353,7 +353,7 @@ foreach ( $resultTable as $resultRow )
 	foreach ( $listColumns as $fieldName )
 	{
 ?>
-   <td><?php echo $module->escapeHTML( $resultRow[ $fieldName ] ); ?></td>
+   <td><?php echo $module->escape( $resultRow[ $fieldName ] ); ?></td>
 <?php
 	}
 ?>

@@ -95,7 +95,7 @@ $module->writeStyle();
 ?>
 <div class="projhdr">
  Advanced Reports &#8212; Edit Record Table Report: <?php
-echo $module->escapeHTML( $reportID ), "\n"; ?>
+echo $module->escape( $reportID ), "\n"; ?>
 </div>
 <p style="font-size:11px">
  <a href="<?php echo $module->getUrl( 'reports_edit.php' )

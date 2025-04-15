@@ -128,7 +128,7 @@ $module->writeStyle();
 ?>
 <div class="projhdr">
  Advanced Reports &#8212;
- Edit Accumulation Report: <?php echo $module->escapeHTML( $reportID ), "\n"; ?>
+ Edit Accumulation Report: <?php echo $module->escape( $reportID ), "\n"; ?>
 </div>
 <p style="font-size:11px">
  <a href="<?php echo $module->getUrl( 'reports_edit.php' );
@@ -165,18 +165,18 @@ echo $reportData['desc'] ?? ''; ?></textarea>
      <tr>
       <td style="width:6em">Start</td>
       <td><input type="text" name="acc_start" style="width:100%" required
-                 value="<?php echo $module->escapeHTML( $reportData['acc_start'] ?? '' ); ?>"></td>
+                 value="<?php echo $module->escape( $reportData['acc_start'] ?? '' ); ?>"></td>
      </tr>
      <tr>
       <td style="width:6em">End</td>
       <td><input type="text" name="acc_end" style="width:100%" required
-                 value="<?php echo $module->escapeHTML( $reportData['acc_end'] ?? '' ); ?>"></td>
+                 value="<?php echo $module->escape( $reportData['acc_end'] ?? '' ); ?>"></td>
      </tr>
      <tr>
       <td style="width:6em">Step</td>
       <td>
        <input type="text" name="acc_step" style="width:5em" pattern="[0-9]+(\.[0-9]{1,2})?"
-              value="<?php echo $module->escapeHTML( $reportData['acc_step'] ?? '' ); ?>">
+              value="<?php echo $module->escape( $reportData['acc_step'] ?? '' ); ?>">
        &nbsp;<i>(default = 1)</i>
       </td>
      </tr>
@@ -188,7 +188,7 @@ echo $reportData['desc'] ?? ''; ?></textarea>
    <td>
     <textarea name="acc_logic" spellcheck="false" required
               style="height:100px;max-width:95%;font-family:monospace;white-space:pre"><?php
-echo $module->escapeHTML( $reportData['acc_logic'] ?? '' ); ?></textarea>
+echo $module->escape( $reportData['acc_logic'] ?? '' ); ?></textarea>
     <br>
     <span class="field-desc">
      REDCap logic to be run for each record and accumulation number.<br>
@@ -201,7 +201,7 @@ echo $module->escapeHTML( $reportData['acc_logic'] ?? '' ); ?></textarea>
    <td>
     <textarea name="group_logic" spellcheck="false"
               style="height:100px;max-width:95%;font-family:monospace;white-space:pre"><?php
-echo $module->escapeHTML( $reportData['group_logic'] ?? '' ); ?></textarea>
+echo $module->escape( $reportData['group_logic'] ?? '' ); ?></textarea>
     <br>
     <span class="field-desc">
      REDCap logic to be run for each record.<br>
@@ -242,7 +242,7 @@ echo $module->escapeHTML( $reportData['group_logic'] ?? '' ); ?></textarea>
    <td>
     <textarea name="col_logic" spellcheck="false"
               style="height:100px;max-width:95%;font-family:monospace;white-space:pre"><?php
-echo $module->escapeHTML( $reportData['col_logic'] ?? '' ); ?></textarea>
+echo $module->escape( $reportData['col_logic'] ?? '' ); ?></textarea>
     <br>
     <span class="field-desc">
      Optional. If not specified, use the accumulation numbers.

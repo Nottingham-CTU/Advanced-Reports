@@ -418,7 +418,7 @@ if ( count( $resultTable ) > 0 )
 	{
 ?>
    <th class="sorting" data-colnum="<?php echo $colNum; ?>">
-    <?php echo $module->escapeHTML( 'Group' ), "\n"; ?>
+    <?php echo $module->escape( 'Group' ), "\n"; ?>
    </th>
 <?php
 		$colNum++;
@@ -427,7 +427,7 @@ if ( count( $resultTable ) > 0 )
 	{
 ?>
    <th class="sorting" data-colnum="<?php echo $colNum; ?>">
-    <?php echo $module->escapeHTML( $colName ), "\n"; ?>
+    <?php echo $module->escape( $colName ), "\n"; ?>
    </th>
 <?php
 		$colNum++;
@@ -446,7 +446,7 @@ if ( count( $resultTable ) > 0 )
 		if ( $hasGroups )
 		{
 ?>
-   <td><?php echo $module->escapeHTML( $groupName ); ?></td>
+   <td><?php echo $module->escape( $groupName ); ?></td>
 <?php
 		}
 		foreach ( $listColNames as $accStr => $colName )
@@ -455,12 +455,12 @@ if ( count( $resultTable ) > 0 )
 			if ( $reportData['display'] == 'cumul/diff' )
 			{
 				$sortParam = ' data-sortvalue="' .
-				             $module->escapeHTML(
+				             $module->escape(
 				                 formatForOutput($resultTable[ $accStr ][ $groupName ], 'cumul') ) .
 				             '"';
 			}
 			echo '   <td', $sortParam, '>',
-				 $module->escapeHTML( formatForOutput( $resultTable[ $accStr ][ $groupName ],
+				 $module->escape( formatForOutput( $resultTable[ $accStr ][ $groupName ],
 				                                       $reportData['display'] ) ), '</td>';
 		}
 ?>
@@ -476,13 +476,13 @@ if ( count( $resultTable ) > 0 )
 ?>
  <tfoot>
   <tr>
-   <td><?php echo $module->escapeHTML( 'Total' ); ?></td>
+   <td><?php echo $module->escape( 'Total' ); ?></td>
 <?php
 		foreach ( $listColNames as $accStr => $colName )
 		{
 ?>
-   <td><?php echo $module->escapeHTML( formatForOutput( $listTotals[ $accStr ],
-                                                        $reportData['display'] ) ); ?></td>
+   <td><?php echo $module->escape( formatForOutput( $listTotals[ $accStr ],
+                                                    $reportData['display'] ) ); ?></td>
 <?php
 		}
 ?>
