@@ -1,7 +1,9 @@
 {
 	"name" : "Advanced Reports",
+	"tt_name" : "advanced_reports",
 	"namespace" : "Nottingham\\AdvancedReports",
 	"description" : "Provides additional report types for use in projects.&nbsp; <a href=\"https://github.com/Nottingham-CTU/Advanced-Reports/blob/main/README.md\" target=\"_blank\"><u>View documentation on GitHub</u></a><br>Report types: Accumulation, Gantt, Instrument Query, PDF, Record Table, SQL*<br>* Only administrators can create/edit SQL reports.",
+	"tt_description" : "module_description",
 	"authors": [
 		{
 			"name": "Richard Dooley",
@@ -9,37 +11,45 @@
 			"institution": "University of Nottingham"
 		}
 	],
-	"permissions" : [ "redcap_every_page_before_render", "redcap_save_record" ],
-	"framework-version" : 11,
+	"framework-version" : 12,
 	"compatibility" : {
-		"redcap-version-min" : "12.5.9",
+		"redcap-version-min" : "13.1.2",
 		"php-version-min" : "8.0.0",
 		"php-version-max" : "8.99.99"
 	},
 	"links" : {
 		"project" : [
-			{ "name" : "Advanced Reports", "icon" : "far fa-file-alt", "url" : "reports.php" }
+			{
+				"name" : "Advanced Reports",
+				"tt_name" : "advanced_reports",
+				"icon" : "far fa-file-alt",
+				"url" : "reports.php"
+			}
 		]
 	},
 	"system-settings" : [
 		{
 			"key" : "admin-only-public",
 			"name" : "Only allow administrators to save reports with Public access",
+			"tt_name" : "setting_admin_only_public",
 			"type" : "checkbox"
 		},
 		{
 			"key" : "admin-only-api",
 			"name" : "Only allow administrators to save reports with API access",
+			"tt_name" : "setting_admin_only_api",
 			"type" : "checkbox"
 		},
 		{
 			"key" : "admin-only-editable",
 			"name" : "Only allow administrators to save reports with editable fields",
+			"tt_name" : "setting_admin_only_editable",
 			"type" : "checkbox"
 		},
 		{
 			"key" : "allow-sql-source",
 			"name" : "Allow SQL reports to be used as the source for PDF reports",
+			"tt_name" : "setting_allow_sql_source",
 			"type" : "checkbox"
 		}
 	],
@@ -60,7 +70,8 @@
 	"action-tags" : [
 		{
 			"tag" : "@ADVANCED-REPORT-SAVE",
-			"description" : "Saves an advanced report to a file upload field upon form submission. Please refer to the module documentation for instructions on using this action tag."
+			"description" : "Saves an advanced report to a file upload field upon form submission. Please refer to the module documentation for instructions on using this action tag.",
+			"tt_description" : "actiontag_advanced_report_save"
 		}
 	],
 	"no-auth-pages" : [ "api", "public" ],

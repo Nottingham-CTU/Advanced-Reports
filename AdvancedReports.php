@@ -5,6 +5,7 @@ namespace Nottingham\AdvancedReports;
 class AdvancedReports extends \ExternalModules\AbstractExternalModule
 {
 
+	const ALL_TYPES = [ 'accumulation', 'gantt', 'instrument', 'pdf', 'recordtbl', 'sql' ];
 	const API_TYPES = [ 'accumulation', 'instrument', 'sql' ];
 	const PUBLIC_TYPES = [ 'accumulation', 'instrument', 'pdf', 'sql' ];
 	const SAVEABLE_TYPES = [ 'accumulation', 'instrument', 'pdf', 'sql' ];
@@ -651,14 +652,6 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 
-	// Escapes text for inclusion in HTML.
-	function escapeHTML( $text )
-	{
-		return htmlspecialchars( $text, ENT_QUOTES );
-	}
-
-
-
 	// Escapes text string for inclusion in JavaScript.
 	function escapeJSString( $text )
 	{
@@ -840,12 +833,15 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	// Get the list of report types.
 	function getReportTypes()
 	{
-		return [ 'accumulation' => 'Accumulation',
-		         'gantt' => 'Gantt',
-		         'instrument' => 'Instrument Query',
-		         'pdf' => 'PDF',
-		         'recordtbl' => 'Record Table',
-		         'sql' => 'SQL' ];
+		static $listTypes = [];
+		if ( empty( $listTypes ) )
+		{
+			foreach ( self::ALL_TYPES as $type )
+			{
+				$listTypes[ $type ] = $this->tt( 'rtype_' . $type );
+			}
+		}
+		return $listTypes;
 	}
 
 
