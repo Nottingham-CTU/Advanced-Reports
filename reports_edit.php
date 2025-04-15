@@ -144,33 +144,37 @@ $module->writeStyle();
 
 ?>
 <div class="projhdr">
- Advanced Reports &#8212; Edit
+ <?php echo $module->tt('advanced_reports_edit'), "\n"; ?>
 </div>
 <p style="font-size:11px">
- <a href="<?php echo $module->getUrl( 'reports.php' )
-?>"><i class="fas fa-arrow-circle-left fs11"></i> Back to advanced reports</a>
+ <a href="<?php echo $module->getUrl( 'reports.php' ) ?>">
+  <i class="fas fa-arrow-circle-left fs11"></i>
+  <?php echo $module->tt('back_to_advanced_reports'), "\n"; ?>
+ </a>
 </p>
 <form method="post">
  <table class="mod-advrep-formtable">
-  <tr><th colspan="2">Add Report</th></tr>
+  <tr><th colspan="2"><?php echo $module->tt('add_report'); ?></th></tr>
   <tr>
-   <td>Unique Report Name</td>
+   <td><?php echo $module->tt('report_id'); ?></td>
    <td>
-    <input type="text" name="report_id" required placeholder="e.g. my_report"
-           pattern="[a-z0-9_\-]+" title="lowercase letters, numbers, dashes and underscores">
+    <input type="text" name="report_id" required
+           placeholder="<?php echo $module->tt('report_id_ph'); ?>"
+           pattern="[a-z0-9_\-]+" title="<?php echo $module->tt('report_id_tt'); ?>">
    </td>
   </tr>
   <tr>
-   <td>Report Label</td>
+   <td><?php echo $module->tt('report_label'); ?></td>
    <td>
-    <input type="text" name="report_label" required placeholder="e.g. My Report">
+    <input type="text" name="report_label" required
+           placeholder="<?php echo $module->tt('report_label_ph'); ?>">
    </td>
   </tr>
   <tr>
    <td>Report Type</td>
    <td>
     <select name="report_type" required>
-     <option value="">[Select...]</option>
+     <option value=""><?php echo $module->tt('opt_select'); ?></option>
 <?php
 foreach ( $module->getReportTypes() as $typeCode => $typeName )
 {
@@ -189,7 +193,7 @@ foreach ( $module->getReportTypes() as $typeCode => $typeName )
    <td></td>
    <td>
     <input type="hidden" name="action" value="add_report">
-    <input type="submit" value="Add Report">
+    <input type="submit" value="<?php echo $module->tt('add_report'); ?>">
    </td>
   </tr>
  </table>
@@ -201,17 +205,18 @@ if ( count( $listReports ) > 0 )
 <p>&nbsp;</p>
 <table class="mod-advrep-listtable" style="width:97%">
  <tr>
-  <th colspan="5" style="font-size:130%">Edit Report</th>
+  <th colspan="5" style="font-size:130%"><?php echo $module->tt('edit_report'); ?></th>
  </tr>
 <?php
 	foreach ( $listReports as $reportID => $infoReport )
 	{
+		$canEdit = $module->isReportEditable( $infoReport['type'] );
 		if ( ! isset( $lastCategory ) || $infoReport['category'] != $lastCategory )
 		{
 ?>
  <tr>
   <td colspan="5" style="text-align:left;font-size:0.95em;font-weight:bold">
-   <?php echo $infoReport['category'] ?? '<i>(no category)</i>', "\n"; ?>
+   <?php echo $infoReport['category'] ?? ( '<i>(' . $module->tt('no_category') . ')</i>' ), "\n"; ?>
   </td>
  </tr>
 <?php
@@ -225,39 +230,42 @@ if ( count( $listReports ) > 0 )
    </span>
    <br>
    <span style="font-size:90%">
-    <b>Name:</b> <?php echo $reportID; ?> &nbsp;|&nbsp;
-    <b>Type:</b> <?php echo $module->getReportTypes()[ $infoReport['type'] ]; ?> &nbsp;|&nbsp;
+    <b><?php echo $module->tt('name'); ?>:</b> <?php echo $reportID; ?> &nbsp;|&nbsp;
+    <b><?php echo $module->tt('type'); ?>:</b>
+    <?php echo $module->getReportTypes()[ $infoReport['type'] ]; ?> &nbsp;|&nbsp;
 <?php
 		echo '    ';
 		echo '<i class="far fa-eye', ( $infoReport['visible'] ? '' : '-slash' ), '" title="';
-		echo ( $infoReport['visible'] ? 'Visible' : 'Hidden' ), ' in reports list"></i>';
+		echo $module->tt( 'report_' . ( $infoReport['visible'] ? 'visible' : 'hidden' ) ), '"></i>';
 		if ( isset( $infoReport['download'] ) && $infoReport['download'] )
 		{
-			echo ' &nbsp;<i class="fas fa-download" title="Downloadable"></i>';
+			echo ' &nbsp;<i class="fas fa-download" title="', $module->tt('downloadable'), '"></i>';
 		}
 		if ( isset( $infoReport['saveable'] ) && $infoReport['saveable'] )
 		{
-			echo ' &nbsp;<i class="far fa-floppy-disk" title="Saveable to field"></i>';
+			echo ' &nbsp;<i class="far fa-floppy-disk" title="', $module->tt('saveable'), '"></i>';
 		}
 		if ( isset( $infoReport['as_image'] ) && $infoReport['as_image'] )
 		{
-			echo ' &nbsp;<i class="far fa-file-image" title="Retrievable as image"></i>';
+			echo ' &nbsp;<i class="far fa-file-image" title="', $module->tt('ret_as_image'), '"></i>';
 		}
 		if ( isset( $infoReport['as_api'] ) && $infoReport['as_api'] )
 		{
-			echo ' &nbsp;<i class="fas fa-laptop-code" title="API"></i>';
+			echo ' &nbsp;<i class="fas fa-laptop-code" title="', $module->tt('api'), '"></i>';
 		}
 		if ( isset( $infoReport['as_public'] ) && $infoReport['as_public'] )
 		{
-			echo ' &nbsp;<i class="fas fa-earth-americas" title="Public"></i>';
+			echo ' &nbsp;<i class="fas fa-earth-americas" title="', $module->tt('public'), '"></i>';
 		}
 		echo "\n";
 		if ( isset( $infoReport['lastupdated_user'] ) )
 		{
 ?>
     <br>
-    <b>Last updated by</b> <?php echo htmlspecialchars( $infoReport['lastupdated_user'] ), "\n"; ?>
-    &nbsp;<b>at</b> <?php echo date( 'Y-m-d H:i (T)', $infoReport['lastupdated_time'] ), "\n"; ?>
+    <?php echo $module->tt( 'last_updated_ut', $infoReport['lastupdated_user'],
+                            $module->formatDate( date( 'Y-m-d H:i',
+                                                       $infoReport['lastupdated_time'] ), 'upf' ) .
+                            date( ' (T)', $infoReport['lastupdated_time'] ) ), "\n"; ?>
 <?php
 		}
 ?>
@@ -265,35 +273,34 @@ if ( count( $listReports ) > 0 )
   </td>
   <td style="width:75px;text-align:center">
 <?php
-		if ( $module->isReportEditable( $infoReport['type'] ) )
+		if ( $canEdit )
 		{
 ?>
    <a href="<?php echo $module->getUrl( 'view.php?report_id=' . $reportID );
-?>" class="fs12"><i class="far fa-file-alt fs14"></i> View</a>
+?>" class="fs12"><i class="far fa-file-alt fs14"></i> <?php echo $module->tt('view'); ?></a>
 <?php
 		}
 ?>
   </td>
   <td style="width:75px;text-align:center">
 <?php
-		if ( $module->isReportEditable( $infoReport['type'] ) )
+		if ( $canEdit )
 		{
 ?>
    <a href="<?php echo $module->getUrl( $infoReport['type'] . '_edit.php?report_id=' . $reportID );
-?>" class="fs12"><i class="fas fa-pencil-alt fs14"></i> Edit</a>
+?>" class="fs12"><i class="fas fa-pencil-alt fs14"></i> <?php echo $module->tt('edit'); ?></a>
 <?php
 		}
 ?>
   </td>
   <td style="width:75px;text-align:center">
 <?php
-		if ( $module->isReportEditable( $infoReport['type'] ) )
+		if ( $canEdit )
 		{
 ?>
-   <a href="" class="fs12" onclick="return mod_advrep_copy( '<?php
-			echo $reportID, "', ";
-			echo $module->escapeHTML( json_encode( $infoReport['label'] ) );
-?>)"><i class="fas fa-copy fs14"></i> Copy</a>
+   <a href="" class="fs12" data-copy-report="<?php echo $module->escape( $reportID ); ?>"
+      data-report-label="<?php echo $module->escape( $infoReport['label'] );
+?>"><i class="fas fa-copy fs14"></i> <?php echo $module->tt('copy'); ?></a>
    <form method="post" id="copyreport_<?php echo $reportID; ?>">
     <input type="hidden" name="action" value="copy_report">
     <input type="hidden" name="report_id" value="<?php echo $reportID; ?>">
@@ -305,13 +312,12 @@ if ( count( $listReports ) > 0 )
   </td>
   <td style="width:85px;text-align:center">
 <?php
-		if ( $module->isReportEditable( $infoReport['type'] ) )
+		if ( $canEdit )
 		{
 ?>
-   <a href="" class="fs12" style="color:#b00" onclick="return mod_advrep_delete( '<?php
-			echo $reportID, "', ";
-			echo $module->escapeHTML( json_encode( $infoReport['label'] ) );
-?>)"><i class="fas fa-trash fs14"></i> Delete</a>
+   <a href="" class="fs12" data-delete-report="<?php echo $module->escape( $reportID ); ?>"
+      style="color:#b00" data-report-label="<?php echo $module->escape( $infoReport['label'] );
+?>"><i class="fas fa-trash fs14"></i> <?php echo $module->tt('delete'); ?></a>
    <form method="post" id="delreport_<?php echo $reportID; ?>">
     <input type="hidden" name="action" value="delete_report">
     <input type="hidden" name="report_id" value="<?php echo $reportID; ?>">
@@ -332,14 +338,15 @@ if ( ! empty( $listReports ) )
 {
 ?>
  <li>
-  <a id="exportLink"
-     href="<?php echo $module->getUrl( 'export_reports.php' ) ?>">Export reports</a>
+  <a id="exportLink" href="<?php echo $module->getUrl( 'export_reports.php' ) ?>"><?php
+	echo $module->tt('export_reports'); ?></a>
  </li>
 <?php
 }
 ?>
  <li>
-  <a href="<?php echo $module->getUrl( 'import_reports.php' ) ?>">Import reports</a>
+  <a href="<?php echo $module->getUrl( 'import_reports.php' ) ?>"><?php
+	echo $module->tt('import_reports'); ?></a>
  </li>
 </ul>
 <p>&nbsp;</p>
@@ -347,10 +354,12 @@ if ( ! empty( $listReports ) )
  <p style="padding-left:1rem;margin-bottom:15px">
   <button type="button" class="btn btn-defaultrc btn-xs"
           onclick="window.location.href='<?php echo $module->getUrl( 'export_reports.php' ) ?>'">
-   Export all reports
+   <?php echo $module->tt('export_reports_all'), "\n"; ?>
   </button>
  </p>
- <p style="padding-left:1rem;margin-bottom:3px">Export individual report:</p>
+ <p style="padding-left:1rem;margin-bottom:3px">
+  <?php echo $module->tt('export_reports_all'); ?>:
+ </p>
  <div style="overflow-y:auto;max-height:300px">
   <ul>
 <?php
@@ -359,7 +368,7 @@ if ( ! empty( $listReports ) )
 		if ( $module->isReportEditable( $infoReport['type'] ) )
 		{
 			echo '   <li><a href="', $module->getUrl( 'export_reports.php?report_id=' . $reportID ),
-			     '">', $module->escapeHTML( $infoReport['label'] ), "</a></li>\n";
+			     '">', $module->escape( $infoReport['label'] ), "</a></li>\n";
 		}
 	}
 ?>
@@ -369,84 +378,58 @@ if ( ! empty( $listReports ) )
 <script type="text/javascript">
  $(function()
  {
-   var vDialog = $('<div>Copy report <i></i>?<br><br>New unique report name: ' +
-                   '<input type="text" style="width:95%" placeholder="e.g. my_report" ' +
-                   'required pattern="[a-z0-9_\\-]+" title="lowercase letters, numbers, dashes ' +
-                   'and underscores"></div>')
-   var vCopyID = ''
-   vDialog.dialog(
+   $('a[data-copy-report]').on('click',function(ev)
    {
-     autoOpen:false,
-     buttons:
+     ev.preventDefault()
+     var vID = $(this).attr('data-copy-report')
+     var vLabel = $(this).attr('data-report-label')
+     var vDialog = <?php echo $module->escapeJSString( $module->tt('copy_report_id') ), "\n"; ?>
+     vDialog = vDialog.replace( '{0}', $('<i></i>').text( vLabel ).prop('outerHTML') )
+     vDialog = '<div>' + vDialog + '<br><br>' +
+               <?php echo $module->escapeJSString( $module->tt('report_id_new') ); ?> +
+               ': <input id="report_id_new" type="text" style="width:95%" placeholder="' +
+               <?php echo $module->escapeJSString( $module->tt('report_id_ph') ); ?> +
+               '" required pattern="[a-z0-9_\\-]+" title="' +
+               <?php echo $module->escapeJSString( $module->tt('report_id_tt') ); ?> +
+               '"></div>'
+     var vSubmitFunc = function()
      {
-       "OK" : function()
+       if ( $('#report_id_new').prop('validity').valid )
        {
-         if ( vDialog.find('input').prop('validity').valid )
-         {
-           $('#copyreport_' + vCopyID).find('[name="new_report_id"]')
-                                      .val( vDialog.find('input').val() )
-           vDialog.dialog('close')
-           $('#copyreport_' + vCopyID)[0].submit()
-         }
-       },
-       "Cancel" : function() { vDialog.dialog('close') }
-     },
-     modal:true,
-     resizable:false,
-     title:"Copy Report",
-     width:350
+         $('#copyreport_' + vID).find('[name="new_report_id"]').val( $('#report_id_new').val() )
+         $('#copyreport_' + vID)[0].submit()
+         simpleDialogAlt( <?php echo $module->escapeJSString( $module->tt('please_wait') ); ?>,
+                          10000 )
+       }
+     }
+     simpleDialog( vDialog,
+                   <?php echo $module->escapeJSString( $module->tt('copy_report') ); ?>, null, 350,
+                   null, null, vSubmitFunc )
+     $('#report_id_new').trigger('focus')
    })
-   window.mod_advrep_copy = function( id, label )
+   $('a[data-delete-report]').on('click',function(ev)
    {
-     vCopyID = id
-     vDialog.find('i').text(label)
-     vDialog.find('input').val('')
-     vDialog.dialog('open')
-     return false
-   }
- })
- $(function()
- {
-   var vDialog = $("<div>Are you sure you want to delete the report <i></i>?</div>")
-   var vDelID = ''
-   vDialog.dialog(
-   {
-     autoOpen:false,
-     buttons:
+     ev.preventDefault()
+     var vID = $(this).attr('data-delete-report')
+     var vLabel = $(this).attr('data-report-label')
+     var vDialog = <?php echo $module->escapeJSString( $module->tt('delete_report_id') ), "\n"; ?>
+     vDialog = vDialog.replace( '{0}', $('<i></i>').text( vLabel ).prop('outerHTML') )
+     vDialog = '<div>' + vDialog + '</div>'
+     var vSubmitFunc = function()
      {
-       "OK" : function() { vDialog.dialog('close'); $('#delreport_' + vDelID)[0].submit() },
-       "Cancel" : function() { vDialog.dialog('close') }
-     },
-     modal:true,
-     resizable:false,
-     title:"Delete Report",
-     width:350
+       $('#delreport_' + vID)[0].submit()
+         simpleDialogAlt( <?php echo $module->escapeJSString( $module->tt('please_wait') ); ?>,
+                          10000 )
+     }
+     simpleDialog( vDialog,
+                   <?php echo $module->escapeJSString( $module->tt('delete_report') ); ?>, null,
+                   350, null, null, vSubmitFunc )
    })
-   window.mod_advrep_delete = function( id, label )
-   {
-     vDelID = id
-     vDialog.find('i').text(label)
-     vDialog.dialog('open')
-     return false
-   }
- })
- $(function()
- {
-   var vDialog = $('#exportDialog')
-   vDialog.dialog(
-   {
-     autoOpen:false,
-     buttons: { "Close" : function() { vDialog.dialog('close') } },
-     modal:true,
-     resizable:false,
-     title:"Export Reports",
-     width:350
-   })
-   vDialog.on( 'dialogopen', function() { $('#exportDialog button').trigger('blur') } )
    $('#exportLink').on('click',function( ev )
    {
      ev.preventDefault()
-     vDialog.dialog('open')
+     simpleDialog( null, <?php echo $module->escapeJSString( $module->tt('export_reports') ); ?>,
+                   'exportDialog', 350 )
    })
  })
 </script>

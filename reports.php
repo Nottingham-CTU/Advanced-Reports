@@ -37,7 +37,7 @@ require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
 
 ?>
 <div class="projhdr">
- Advanced Reports
+ <?php echo $module->tt('advanced_reports'), "\n"; ?>
 </div>
 <?php
 if ( $module->isReportEditable() )
@@ -45,7 +45,7 @@ if ( $module->isReportEditable() )
 ?>
 <p style="font-size:11px;text-align:right">
  <a href="<?php echo $module->getUrl( 'reports_edit.php' )
-?>"><i class="fas fa-pencil-alt fs11"></i> Edit reports</a>
+?>"><i class="fas fa-pencil-alt fs11"></i> <?php echo $module->tt('edit_reports'); ?></a>
 </p>
 <?php
 }
