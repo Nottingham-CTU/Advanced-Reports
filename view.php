@@ -34,9 +34,9 @@ require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
 
 ?>
 <div id="advanced-report-content">
- <div class="projhdr"><?php echo $module->escapeHTML( $reportLabel ); ?></div>
+ <div class="projhdr"><?php echo $module->escape( $reportLabel ); ?></div>
  <p><a style="font-size:1.3em"
-       href="<?php echo $module->escapeHTML( $reportURL ); ?>">Continue to report...</a></p>
+       href="<?php echo $module->escape( $reportURL ); ?>">Continue to report...</a></p>
 </div>
 <script type="text/javascript">
   (function()

@@ -1061,21 +1061,21 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
    <td>Report Label</td>
    <td>
     <input type="text" name="report_label" required
-           value="<?php echo $this->escapeHTML( $reportConfig['label'] ); ?>">
+           value="<?php echo $this->escape( $reportConfig['label'] ); ?>">
    </td>
   </tr>
   <tr>
    <td>Report Category</td>
    <td>
     <input type="text" name="report_category"
-           value="<?php echo $this->escapeHTML( $reportConfig['category'] ); ?>">
+           value="<?php echo $this->escape( $reportConfig['category'] ); ?>">
    </td>
   </tr>
   <tr>
    <td>Report Annotation</td>
    <td>
     <textarea name="report_annotation"><?php
-		echo $this->escapeHTML( $reportConfig['annotation'] ?? '' ); ?></textarea>
+		echo $this->escape( $reportConfig['annotation'] ?? '' ); ?></textarea>
     <br>
     <span class="field-desc">
      The report annotation will not be shown on the report.
@@ -1107,7 +1107,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
    <td>Grant access to roles</td>
    <td>
     <textarea name="report_roles_access"><?php
-		echo $this->escapeHTML( $reportConfig['roles_access'] ); ?></textarea>
+		echo $this->escape( $reportConfig['roles_access'] ); ?></textarea>
     <br>
     <span class="field-desc">
      Enter each role name on a separate line.
@@ -1140,7 +1140,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
    <td>Grant downloads to roles</td>
    <td>
     <textarea name="report_roles_download"><?php
-			echo $this->escapeHTML( $reportConfig['roles_download'] ); ?></textarea>
+			echo $this->escape( $reportConfig['roles_download'] ); ?></textarea>
     <br>
     <span class="field-desc">
      Enter each role name on a separate line. Reports can only be downloaded by users with access.
@@ -1362,10 +1362,10 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 ?>
  <a id="mod-advrep-resetstate" style="display:none" href="<?php
-			echo $this->escapeHTML( preg_replace( '/([?&])page=' . $reportType . '_view/',
-			                                      '$1page=view',
-			                                      preg_replace( '/&report_state=[^&]+/', '',
-			                                                    $_SERVER['REQUEST_URI'] ) ) );
+			echo $this->escape( preg_replace( '/([?&])page=' . $reportType . '_view/',
+			                                  '$1page=view',
+			                                  preg_replace( '/&report_state=[^&]+/', '',
+			                                                $_SERVER['REQUEST_URI'] ) ) );
 ?>"><i class="fas fa-rotate-left fs11"></i> Reset</a>
 <?php
 

@@ -256,9 +256,9 @@ elseif ( $mode == 'verify' )
 		foreach ( $listSkipped as $reportID )
 		{
 			$reportLabel = $module->getReportConfig( $reportID, 'label' );
-			echo '     <li>', $module->escapeHTML( $reportID ), ' &nbsp;',
+			echo '     <li>', $module->escape( $reportID ), ' &nbsp;',
 			     ( $reportLabel == '' ? '' :
-			       '<i>(' . $module->escapeHTML( $reportLabel ) . ')</i>' ), "</li>\n";
+			       '<i>(' . $module->escape( $reportLabel ) . ')</i>' ), "</li>\n";
 		}
 ?>
     </ul>
@@ -280,8 +280,8 @@ elseif ( $mode == 'verify' )
 		foreach ( $listIdentical as $reportID )
 		{
 ?>
-     <li><?php echo $module->escapeHTML( $reportID ); ?> &nbsp;<i>(<?php
-			echo $module->escapeHTML( $data["report-config-$reportID"]['label'] ); ?>)</i></li>
+     <li><?php echo $module->escape( $reportID ); ?> &nbsp;<i>(<?php
+			echo $module->escape( $data["report-config-$reportID"]['label'] ); ?>)</i></li>
 <?php
 		}
 ?>
@@ -302,10 +302,10 @@ elseif ( $mode == 'verify' )
 		{
 ?>
   <tr>
-   <td><?php echo $module->escapeHTML( $reportID ); ?></td>
+   <td><?php echo $module->escape( $reportID ); ?></td>
    <td>
     <input type="checkbox" name="report-add-<?php
-			echo $module->escapeHTML( $reportID ); ?>" value="1" checked>
+			echo $module->escape( $reportID ); ?>" value="1" checked>
     Add this report
     <ul>
 <?php
@@ -362,14 +362,14 @@ elseif ( $mode == 'verify' )
 			$changedData = $reportChange['data'];
 ?>
   <tr>
-   <td><?php echo $module->escapeHTML( $reportID ); ?></td>
+   <td><?php echo $module->escape( $reportID ); ?></td>
    <td>
 <?php
 			if ( $changedConfig )
 			{
 ?>
     <input type="checkbox" name="report-config-<?php
-			echo $module->escapeHTML( $reportID ); ?>" value="1" checked>
+			echo $module->escape( $reportID ); ?>" value="1" checked>
     Update report configuration (changes highlighted below)
     <br>
 <?php
@@ -378,7 +378,7 @@ elseif ( $mode == 'verify' )
 			{
 ?>
     <input type="checkbox" name="report-data-<?php
-			echo $module->escapeHTML( $reportID ); ?>" value="1" checked>
+			echo $module->escape( $reportID ); ?>" value="1" checked>
     Update report definition
 <?php
 			}
@@ -409,7 +409,7 @@ elseif ( $mode == 'verify' )
 					}
 					elseif ( is_string( $configValue[$configVer] ) )
 					{
-						$configValue[$configVer] = $module->escapeHTML( $configValue[$configVer] );
+						$configValue[$configVer] = $module->escape( $configValue[$configVer] );
 						if ( strpos( $configValue[$configVer], "\n" ) !== false )
 						{
 							$configValue[$configVer] = str_replace( [ "\r\n", "\n" ], '</li><li>',
@@ -455,10 +455,10 @@ elseif ( $mode == 'verify' )
 		{
 ?>
   <tr>
-   <td><?php echo $module->escapeHTML( $reportID ); ?></td>
+   <td><?php echo $module->escape( $reportID ); ?></td>
    <td>
     <input type="checkbox" name="report-delete-<?php
-			echo $module->escapeHTML( $reportID ); ?>" value="1">
+			echo $module->escape( $reportID ); ?>" value="1">
     Delete this report
     <ul>
 <?php
@@ -471,7 +471,7 @@ elseif ( $mode == 'verify' )
 				{
 					continue;
 				}
-				$configValue = $module->escapeHTML( $configValue );
+				$configValue = $module->escape( $configValue );
 ?>
      <li><b><?php echo $configLabel; ?>:</b> <?php echo $configValue; ?></li>
 <?php
@@ -488,7 +488,7 @@ elseif ( $mode == 'verify' )
    <td></td>
    <td>
     <input type="submit" value="Update Selected Reports">
-    <input type="hidden" name="import_data" value="<?php echo $module->escapeHTML( $fileData ); ?>">
+    <input type="hidden" name="import_data" value="<?php echo $module->escape( $fileData ); ?>">
    </td>
   </tr>
  </table>
@@ -503,7 +503,7 @@ elseif ( $mode == 'error' )
 
 
 ?>
-<p style="font-size:14px;color:#f00"><?php echo $module->escapeHTML( $error ); ?></p>
+<p style="font-size:14px;color:#f00"><?php echo $module->escape( $error ); ?></p>
 <?php
 
 

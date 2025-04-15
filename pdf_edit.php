@@ -115,7 +115,7 @@ $module->writeStyle();
 ?>
 <div class="projhdr">
  Advanced Reports &#8212; Edit PDF Report: <?php
-echo $module->escapeHTML( $reportID ), "\n"; ?>
+echo $module->escape( $reportID ), "\n"; ?>
 </div>
 <p style="font-size:11px">
  <a href="<?php echo $module->getUrl( 'reports_edit.php' );
@@ -136,9 +136,9 @@ echo $module->escapeHTML( $reportID ), "\n"; ?>
 <?php
 foreach ( $listDataSources as $sourceID => $sourceLabel )
 {
-	echo '     <option value="', $module->escapeHTML( $sourceID ), '"',
+	echo '     <option value="', $module->escape( $sourceID ), '"',
 	     ( ( $reportData['source'] ?? '' ) == $sourceID ? ' selected' : '' ),
-	     '>', $module->escapeHTML( $sourceLabel ), '</option>', "\n";
+	     '>', $module->escape( $sourceLabel ), '</option>', "\n";
 }
 ?>
     </select>
@@ -151,9 +151,9 @@ foreach ( $listDataSources as $sourceID => $sourceLabel )
 <?php
 foreach ( $listPaperSizes as $paperSizeID => $paperSize )
 {
-	echo '     <option value="', $module->escapeHTML( $paperSizeID ), '"',
+	echo '     <option value="', $module->escape( $paperSizeID ), '"',
 	     ( ( $reportData['pdf_size'] ?? 'a4' ) == $paperSizeID ? ' selected' : '' ),
-	     '>', $module->escapeHTML( $paperSize ), '</option>', "\n";
+	     '>', $module->escape( $paperSize ), '</option>', "\n";
 }
 ?>
     </select>
@@ -161,9 +161,9 @@ foreach ( $listPaperSizes as $paperSizeID => $paperSize )
 <?php
 foreach ( [ 'portrait', 'landscape' ] as $paperOrientation )
 {
-	echo '     <option value="', $module->escapeHTML( $paperOrientation ), '"',
+	echo '     <option value="', $module->escape( $paperOrientation ), '"',
 	     ( ( $reportData['pdf_orientation'] ?? '' ) == $paperOrientation ? ' selected' : '' ),
-	     '>', $module->escapeHTML( ucfirst( $paperOrientation ) ), '</option>', "\n";
+	     '>', $module->escape( ucfirst( $paperOrientation ) ), '</option>', "\n";
 }
 ?>
     </select>

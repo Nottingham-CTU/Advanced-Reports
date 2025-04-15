@@ -240,7 +240,7 @@ $module->outputInstrumentDropdown( 'query_form[]', $formVal ?? '',
 ?></td>
       <td style="text-align:left;width:unset">
        <input type="text" name="query_form_alias[]" placeholder="alias (optional)"
-              value="<?php echo $module->escapeHTML( $aliasVal ?? '' ); ?>"
+              value="<?php echo $module->escape( $aliasVal ?? '' ); ?>"
               style="width:100%<?php echo $setWidths ? ';min-width:80px' : ''; ?>">
       </td>
 <?php
@@ -263,7 +263,7 @@ function writeInstrumentRow2( $onCondVal, $formVal, $firstFormVal, $aliasVal, $f
               data-default="<?php echo $formVal == '' || $firstFormVal == '' ? ''
                                        : ( '[' . $formVal . '][' . $recordIDField . '] = [' .
                                            $firstFormVal . '][' . $recordIDField . ']' ); ?>"
-              value="<?php echo $module->escapeHTML( $onCondVal ?? '' ); ?>">
+              value="<?php echo $module->escape( $onCondVal ?? '' ); ?>">
       </td>
 <?php
 }
@@ -282,12 +282,12 @@ function writeSelectRow( $setWidths, $fieldVal, $aliasVal, $groupVal )
       </td>
       <td style="text-align:left;width:<?php echo $setWidths ? '50%;max-width:425px' : 'unset'; ?>">
        <input type="text" name="query_select_field[]" placeholder="field name/logic"
-              value="<?php echo $module->escapeHTML( $fieldVal ?? '' ); ?>"
+              value="<?php echo $module->escape( $fieldVal ?? '' ); ?>"
               data-list="field-var-list" style="width:100%">
       </td>
       <td style="text-align:left;width:unset">
        <input type="text" name="query_select_alias[]" placeholder="alias (optional)"
-              value="<?php echo $module->escapeHTML( $aliasVal ?? '' ); ?>"
+              value="<?php echo $module->escape( $aliasVal ?? '' ); ?>"
               style="width:100%<?php echo $setWidths ? ';min-width:60px' : ''; ?>">
       </td>
       <td style="text-align:left;width:unset">
@@ -368,7 +368,7 @@ $module->writeStyle();
 ?>
 <div class="projhdr">
  Advanced Reports &#8212; Edit Instrument Query Report: <?php
-echo $module->escapeHTML( $reportID ), "\n"; ?>
+echo $module->escape( $reportID ), "\n"; ?>
 </div>
 <p style="font-size:11px">
  <a href="<?php echo $module->getUrl( 'reports_edit.php' );
@@ -460,7 +460,7 @@ writeInstrumentRow2( '', '', $reportData['forms'][0]['form'],
    <td>
     <input type="text" name="query_where" style="width:95%;max-width:750px"
            placeholder="condition logic"
-           value="<?php echo $module->escapeHTML( $reportData['where'] ?? '' ); ?>">
+           value="<?php echo $module->escape( $reportData['where'] ?? '' ); ?>">
    </td>
   </tr>
   <tr>
@@ -468,7 +468,7 @@ writeInstrumentRow2( '', '', $reportData['forms'][0]['form'],
    <td>
     <input type="text" name="query_orderby" style="width:95%;max-width:750px"
            placeholder="sorting logic" list="field-var-list-sort"
-           value="<?php echo $module->escapeHTML( $reportData['orderby'] ?? '' ); ?>">
+           value="<?php echo $module->escape( $reportData['orderby'] ?? '' ); ?>">
    </td>
   </tr>
   <tr>
