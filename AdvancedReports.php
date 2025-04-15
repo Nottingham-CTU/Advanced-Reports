@@ -2354,7 +2354,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			$fg = '000000';
 			$bg = 'ffffff';
 		}
-		$imgData = [ 'headerFont' => 5, 'dataFont' => 4, 'fg' => $fg, 'bg' => $bg ];
+		$imgData = [ 'headerFont' => 5, 'dataFont' => 4, 'fg' => $fg, 'bg' => $bg, 'padding' => 2 ];
 		$imgData['headerCharW'] = imagefontwidth( $imgData['headerFont'] );
 		$imgData['headerCharH'] = imagefontheight( $imgData['headerFont' ]);
 		$imgData['dataCharW'] = imagefontwidth( $imgData['dataFont'] );
@@ -2383,7 +2383,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		{
 			foreach( $row as $item )
 			{
-				$imgData['columns'][] = ( strlen( $item ) * $imgData['headerCharW'] ) + 5;
+				$imgData['columns'][] = ( strlen( $item ) * $imgData['headerCharW'] ) +
+				                        ( $imgData['padding'] * 2 ) + 2;
 			}
 		}
 		// Otherwise, this is a data row and each column width must now be expanded where the data
@@ -2393,7 +2394,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			$i = 0;
 			foreach( $row as $item )
 			{
-				$w = ( strlen( $item ) * $imgData['dataCharW'] ) + 5;
+				$w = ( strlen( $item ) * $imgData['dataCharW'] ) + ( $imgData['padding'] * 2 ) + 2;
 				if ( $w > $imgData['columns'][ $i ] )
 				{
 					$imgData['columns'][ $i ] = $w;
@@ -2419,9 +2420,11 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		// If nothing written yet, start creating the image data and write the headers.
 		if ( $imgData['outputRows'] == -1 )
 		{
-			$imgData['img'] = imagecreate( array_sum( $imgData['columns'] ) + 1,
-			                               ( $imgData['headerCharH'] + 2 ) +
-			                               ( ($imgData['dataCharH'] + 2) * $imgData['dataRows'] ) );
+			$imgW = array_sum( $imgData['columns'] ) + 3;
+			$imgH = $imgData['headerCharH'] + ( $imgData['padding'] * 2 ) +
+			        ( ( $imgData['dataCharH'] +
+			            ( $imgData['padding'] * 2 ) ) * $imgData['dataRows'] ) + 4;
+			$imgData['img'] = imagecreate( $imgW, $imgH );
 			$imgData['bg'] = imagecolorallocate( $imgData['img'],
 			                                     hexdec( substr( $imgData['bg'], 0, 2 ) ),
 			                                     hexdec( substr( $imgData['bg'], 2, 2 ) ),
@@ -2430,27 +2433,30 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			                                     hexdec( substr( $imgData['fg'], 0, 2 ) ),
 			                                     hexdec( substr( $imgData['fg'], 2, 2 ) ),
 			                                     hexdec( substr( $imgData['fg'], 4, 2 ) ) );
+			imagerectangle( $imgData['img'], 0, 0, $imgW - 1, $imgH - 1, $imgData['fg'] );
 			$font = $imgData['headerFont'];
-			$posH = 0;
-			$h = $imgData['headerCharH'] + 2;
+			$posH = 1;
+			$h = $imgData['headerCharH'] + ( $imgData['padding'] * 2 );
 		}
 		// Otherwise write the data row.
 		else
 		{
 			$font = $imgData['dataFont'];
-			$posH = ( $imgData['headerCharH'] + 2 ) +
-			        ( ( $imgData['dataCharH'] + 2 ) * $imgData['outputRows'] );
-			$h = $imgData['dataCharH'] + 2;
+			$posH = ( $imgData['headerCharH'] + ( $imgData['padding'] * 2 ) ) +
+			        ( ( $imgData['dataCharH'] +
+			            ( $imgData['padding'] * 2 ) ) * $imgData['outputRows'] ) + 2;
+			$h = $imgData['dataCharH'] + ( $imgData['padding'] * 2 );
 		}
 		$imgData['outputRows']++;
-		$posW = 0;
+		$posW = 1;
 		$i = 0;
 		foreach( $row as $item )
 		{
 			// Draw the row on the image.
 			$w = $imgData['columns'][ $i ];
 			imagerectangle( $imgData['img'], $posW, $posH, $posW + $w, $posH + $h, $imgData['fg'] );
-			imagestring( $imgData['img'], $font, $posW + 2, $posH + 1, $item, $imgData['fg'] );
+			imagestring( $imgData['img'], $font, $posW + $imgData['padding'] + 2,
+			             $posH + $imgData['padding'], $item, $imgData['fg'] );
 			$posW += $w;
 			$i++;
 		}
