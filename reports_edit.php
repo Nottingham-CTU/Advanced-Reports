@@ -25,23 +25,23 @@ if ( ! empty( $_POST ) && isset( $_POST['action'] ) )
 		if ( $_POST['report_id'] == '' || $_POST['report_label'] == '' ||
 		     $_POST['report_type'] == '' )
 		{
-			echo 'Error: Required field missing.';
+			echo $module->tt('error_req_field_missing');
 			exit;
 		}
 		if ( preg_match( '/[^a-z0-9_-]/', $_POST['report_id'] ) )
 		{
-			echo 'Error: Invalid unique report name.';
+			echo $module->tt('error_invalid_report_id');
 			exit;
 		}
 		if ( ! $module->isReportEditable( $_POST['report_type'] ) )
 		{
-			echo 'Error: Cannot create selected report type.';
+			echo $module->tt('error_cannot_create_type');
 			exit;
 		}
 		$listReports = $module->getReportList();
 		if ( isset( $listReports[ $_POST['report_id'] ] ) )
 		{
-			echo 'Error: Unique report name already in use.';
+			echo $module->tt('error_report_id_in_use');
 			exit;
 		}
 		$module->addReport( $_POST['report_id'], $_POST['report_type'], $_POST['report_label'] );
@@ -55,29 +55,29 @@ if ( ! empty( $_POST ) && isset( $_POST['action'] ) )
 	{
 		if ( $_POST['report_id'] == '' || $_POST['new_report_id'] == '' )
 		{
-			echo 'Error: Required field missing.';
+			echo $module->tt('error_req_field_missing');
 			exit;
 		}
 		if ( preg_match( '/[^a-z0-9_-]/', $_POST['new_report_id'] ) )
 		{
-			echo 'Error: Invalid unique report name.';
+			echo $module->tt('error_invalid_report_id');
 			exit;
 		}
 		$reportConfig = $module->getReportConfig( $_POST['report_id'] );
 		if ( ! $module->isReportEditable( $reportConfig['type'] ) )
 		{
-			echo 'Error: Cannot copy selected report type.';
+			echo $module->tt('error_cannot_copy_type');
 			exit;
 		}
 		$listReports = $module->getReportList();
 		if ( ! isset( $listReports[ $_POST['report_id'] ] ) )
 		{
-			echo 'Error: Report does not exist.';
+			echo $module->tt('error_report_not_exist');
 			exit;
 		}
 		if ( isset( $listReports[ $_POST['new_report_id'] ] ) )
 		{
-			echo 'Error: Unique report name already in use.';
+			echo $module->tt('error_report_id_in_use');
 			exit;
 		}
 		$module->addReport( $_POST['new_report_id'],
@@ -104,13 +104,13 @@ if ( ! empty( $_POST ) && isset( $_POST['action'] ) )
 	{
 		if ( $_POST['report_id'] == '' )
 		{
-			echo 'Error: Required field missing.';
+			echo $module->tt('error_req_field_missing');
 			exit;
 		}
 		if ( ! $module->isReportEditable(
 		                             $module->getReportConfig( $_POST['report_id'], 'type' ) ) )
 		{
-			echo 'Error: Cannot delete selected report type.';
+			echo $module->tt('error_cannot_delete_type');
 			exit;
 		}
 		$module->deleteReport( $_POST['report_id'] );
@@ -171,7 +171,7 @@ $module->writeStyle();
    </td>
   </tr>
   <tr>
-   <td>Report Type</td>
+   <td><?php echo $module->tt('report_type'); ?></td>
    <td>
     <select name="report_type" required>
      <option value=""><?php echo $module->tt('opt_select'); ?></option>

@@ -25,7 +25,7 @@ if ( ! empty( $_FILES ) ) // file is uploaded
 	if ( ! is_uploaded_file( $_FILES['import_file']['tmp_name'] ) )
 	{
 		$mode = 'error';
-		$error = 'No file uploaded.';
+		$error = ['error_no_file_uploaded'];
 	}
 	if ( $mode == 'verify' ) // no error
 	{
@@ -35,7 +35,7 @@ if ( ! empty( $_FILES ) ) // file is uploaded
 			 ( ! is_array( $data['report-list'] ) && ! is_string( $data['report-list'] ) ) )
 		{
 			$mode = 'error';
-			$error = 'The uploaded file is not a valid Advanced Reports export.';
+			$error = ['error_exp_file_invalid'];
 		}
 	}
 	if ( $mode == 'verify' ) // no error
@@ -50,14 +50,14 @@ if ( ! empty( $_FILES ) ) // file is uploaded
 			if ( preg_match( '/[^a-z0-9_-]/', $reportID ) )
 			{
 				$mode = 'error';
-				$error = "The uploaded file contains an invalid report ID: $reportID";
+				$error = [ 'error_exp_file_inv_report_id', $reportID ];
 				break;
 			}
 			if ( ! isset( $data["report-config-$reportID"] ) ||
 			     ! array_key_exists( "report-data-$reportID", $data ) )
 			{
 				$mode = 'error';
-				$error = "Data missing for report $reportID";
+				$error = [ 'error_exp_file_data_missing', $reportID ];
 				break;
 			}
 		}
@@ -116,7 +116,7 @@ elseif ( ! empty( $_POST ) ) // normal POST request (confirming import)
 		 $_SESSION['mod-advrep-import-hash'] != hash( 'sha256', $fileData ) )
 	{
 		$mode = 'error';
-		$error = 'The uploaded file data is not valid.';
+		$error = ['error_invalid_file_data'];
 	}
 	unset( $_SESSION['mod-advrep-import-hash'] );
 	if ( $mode == 'complete' ) // no error
@@ -199,11 +199,12 @@ $module->writeStyle();
 
 ?>
 <div class="projhdr">
- Import Advanced Reports
+ <?php echo $module->tt('import_advanced_reports'), "\n"; ?>
 </div>
 <p style="font-size:11px">
- <a href="<?php echo $module->getUrl( 'reports.php' )
-?>"><i class="fas fa-arrow-circle-left fs11"></i> Back to advanced reports</a>
+ <a href="<?php echo $module->getUrl( 'reports.php' );
+?>"><i class="fas fa-arrow-circle-left fs11"></i> <?php
+echo $module->tt('back_to_advanced_reports'); ?></a>
 </p>
 <?php
 
@@ -217,7 +218,7 @@ if ( $mode == 'upload' )
 <form method="post" enctype="multipart/form-data">
  <table class="mod-advrep-formtable">
   <tr>
-   <td>Import file</td>
+   <td><?php echo $module->tt('import_file'); ?></td>
    <td>
     <input type="file" name="import_file">
    </td>
@@ -225,7 +226,7 @@ if ( $mode == 'upload' )
   <tr>
    <td></td>
    <td>
-    <input type="submit" value="Import">
+    <input type="submit" value="<?php echo $module->tt('import_reports'); ?>">
    </td>
   </tr>
  </table>
@@ -247,7 +248,7 @@ elseif ( $mode == 'verify' )
 	{
 ?>
   <tr>
-   <th colspan="2">Skipped Reports</th>
+   <th colspan="2"><?php echo $module->tt('import_skipped'); ?></th>
   </tr>
   <tr>
    <td colspan="2" style="text-align:left">
@@ -271,7 +272,7 @@ elseif ( $mode == 'verify' )
 	{
 ?>
   <tr>
-   <th colspan="2">Identical Reports</th>
+   <th colspan="2"><?php echo $module->tt('import_identical'); ?></th>
   </tr>
   <tr>
    <td colspan="2" style="text-align:left">
@@ -295,7 +296,7 @@ elseif ( $mode == 'verify' )
 	{
 ?>
   <tr>
-   <th colspan="2">New Reports</th>
+   <th colspan="2"><?php echo $module->tt('import_new'); ?></th>
   </tr>
 <?php
 		foreach ( $listNew as $reportID )
@@ -306,7 +307,7 @@ elseif ( $mode == 'verify' )
    <td>
     <input type="checkbox" name="report-add-<?php
 			echo $module->escape( $reportID ); ?>" value="1" checked>
-    Add this report
+    <?php echo $module->tt('import_add'), "\n"; ?>
     <ul>
 <?php
 			foreach ( [ 'type' => 'Report type', 'label' => 'Report label',
@@ -325,7 +326,7 @@ elseif ( $mode == 'verify' )
 				}
 				if ( is_bool( $configValue ) )
 				{
-					$configValue = $configValue ? 'Yes' : 'No';
+					$configValue = $module->tt( 'opt_' . ( $configValue ? 'yes' : 'no' ) );
 				}
 				elseif ( is_string( $configValue ) )
 				{
@@ -352,7 +353,7 @@ elseif ( $mode == 'verify' )
 	{
 ?>
   <tr>
-   <th colspan="2">Changed Reports</th>
+   <th colspan="2"><?php echo $module->tt('import_changed'); ?></th>
   </tr>
 <?php
 		foreach ( $listChanged as $reportChange )
@@ -370,7 +371,7 @@ elseif ( $mode == 'verify' )
 ?>
     <input type="checkbox" name="report-config-<?php
 			echo $module->escape( $reportID ); ?>" value="1" checked>
-    Update report configuration (changes highlighted below)
+    <?php echo $module->tt('import_update_config'), "\n"; ?>
     <br>
 <?php
 			}
@@ -379,7 +380,7 @@ elseif ( $mode == 'verify' )
 ?>
     <input type="checkbox" name="report-data-<?php
 			echo $module->escape( $reportID ); ?>" value="1" checked>
-    Update report definition
+    <?php echo $module->tt('import_update_data'), "\n"; ?>
 <?php
 			}
 ?>
@@ -405,7 +406,8 @@ elseif ( $mode == 'verify' )
 				{
 					if ( is_bool( $configValue[$configVer] ) )
 					{
-						$configValue[$configVer] = $configValue[$configVer] ? 'Yes' : 'No';
+						$configValue[$configVer] =
+							$module->tt( 'opt_' . ( $configValue[$configVer] ? 'yes' : 'no' ) );
 					}
 					elseif ( is_string( $configValue[$configVer] ) )
 					{
@@ -448,7 +450,7 @@ elseif ( $mode == 'verify' )
 	{
 ?>
   <tr>
-   <th colspan="2">Reports Not In Import File</th>
+   <th colspan="2"><?php echo $module->tt('import_deleted'); ?></th>
   </tr>
 <?php
 		foreach ( $listDeleted as $reportID )
@@ -459,7 +461,7 @@ elseif ( $mode == 'verify' )
    <td>
     <input type="checkbox" name="report-delete-<?php
 			echo $module->escape( $reportID ); ?>" value="1">
-    Delete this report
+    <?php echo $module->tt('import_delete'), "\n"; ?>
     <ul>
 <?php
 			foreach ( [ 'type' => 'Report type', 'label' => 'Report label',
@@ -487,7 +489,7 @@ elseif ( $mode == 'verify' )
   <tr>
    <td></td>
    <td>
-    <input type="submit" value="Update Selected Reports">
+    <input type="submit" value="<?php echo $module->tt('import_update_reports'); ?>">
     <input type="hidden" name="import_data" value="<?php echo $module->escape( $fileData ); ?>">
    </td>
   </tr>
@@ -503,7 +505,7 @@ elseif ( $mode == 'error' )
 
 
 ?>
-<p style="font-size:14px;color:#f00"><?php echo $module->escape( $error ); ?></p>
+<p style="font-size:14px;color:#f00"><?php echo $module->tt( ...$error ); ?></p>
 <?php
 
 
@@ -514,7 +516,7 @@ elseif ( $mode == 'complete' )
 
 
 ?>
-<p style="font-size:14px">Import complete</p>
+<p style="font-size:14px"><?php echo $module->tt('import_complete'); ?></p>
 <?php
 
 
