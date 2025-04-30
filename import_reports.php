@@ -115,6 +115,8 @@ elseif ( ! empty( $_POST ) ) // normal POST request (confirming import)
 				$module->addReport( $reportID, $reportType, $reportLabel );
 				$module->setSystemSetting( "p$projectID-report-config-$reportID",
 				                           json_encode( $data["report-config-$reportID"] ) );
+				$module->setReportConfig( $reportID, 'lastupdated_user', USERID );
+				$module->setReportConfig( $reportID, 'lastupdated_time', time() );
 				$module->setReportData( $reportID, $data["report-data-$reportID"] );
 			}
 			elseif ( substr( $key, 0, 14 ) == 'report-config-' )

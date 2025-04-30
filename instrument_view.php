@@ -274,8 +274,8 @@ if ( ! empty( $reportData['select'] ) )
 	// necessarily a single field, it can contain logic.
 	foreach ( $reportData['select'] as $selectField )
 	{
-		$refParams = array_merge( $refParams,
-								  $module->parseLogic( $selectField['field'], $requestType )[1] );
+		$refParams = array_merge( $refParams, $module->parseLogic( $selectField['field'],
+		                                                           $requestType, true )[1] );
 	}
 	// Each returned $refParam has the instrument alias at index 0 and the field name at index 1.
 	// Use this to build a list of the referenced fields grouped by instrument alias.
