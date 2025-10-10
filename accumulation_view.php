@@ -77,29 +77,64 @@ if ( ! empty( $listRecords ) )
 
 // Build the result table.
 $resultTable = [];
-$hasGroups = false;
+$noBlankGroup = ( isset( $reportData['group_noblank'] ) && $reportData['group_noblank'] );
+$hasGroups = $noBlankGroup;
 $listGroups = [];
 $listColNames = [];
 if ( ! empty( $listRecords ) )
 {
-	// Get the accumulation totals from the records.
-	for ( $accThis = $accStart;
-	      ( $accThis * $accFlip ) <= ( $accEnd * $accFlip ); $accThis += $accStep )
+	// Determine which fields we need to query.
+	$listFieldsInLogic = [];
+	$listSmartVars = \Piping::getSpecialTagsFormatted( false, false );
+	foreach ( array_keys( \REDCap::getInstrumentNames() ) as $field )
 	{
-		$accStr = strval( $accThis );
-		$resultTable[ $accStr ] = [];
-		foreach ( $listRecords as $recordName )
+		$listFieldsInLogic[] = $field . '_complete';
+	}
+	foreach ( [ $reportData['group_logic'], $reportData['acc_logic'] ] as $l )
+	{
+		foreach ( array_keys( \getBracketedFields( $module->replaceLogicVars( $l, ACC_SMART_VAR, '0' ),
+		                                           true, true, false ) ) as $field )
 		{
+			if ( strpos( $field, '.' ) !== false )
+			{
+				$field = explode( '.', $field, 2 )[1];
+			}
+			if ( ! in_array( $field, $listSmartVars ) && ! in_array( $field, $listFieldsInLogic ) )
+			{
+				$listFieldsInLogic[] = $field;
+			}
+		}
+	}
+	$infoDataParams = [ 'project_id' => $module->getProjectId(), 'fields' => $listFieldsInLogic,
+	                    'returnEmptyEvents' => true, 'decimalCharacter' => '.',
+	                    'returnBlankForGrayFormStatus' => true ];
+
+	// Get the accumulation totals from the records.
+	foreach ( $listRecords as $recordName )
+	{
+		$infoRecord = \REDCap::getData( $infoDataParams + [ 'records' => $recordName ] );
+		for ( $accThis = $accStart;
+		      ( $accThis * $accFlip ) <= ( $accEnd * $accFlip ); $accThis += $accStep )
+		{
+			$accStr = strval( $accThis );
+			if ( ! isset( $resultTable[ $accStr ] ) )
+			{
+				$resultTable[ $accStr ] = [];
+			}
 			$groupName =
 				\REDCap::evaluateLogic( $module->replaceLogicVars( $reportData['group_logic'],
 				                                                   ACC_SMART_VAR, $accStr ),
 				                        $module->getProjectId(), $recordName, null, 1, null, null,
-				                        null, true );
+				                        $infoRecord, true );
 			if ( $groupName == null )
 			{
 				$groupName = '';
 			}
 			$groupName = strval( $groupName );
+			if ( $groupName == '' && $noBlankGroup )
+			{
+				continue;
+			}
 			$listGroups[ $groupName ] = true;
 			if ( $groupName != '' )
 			{
@@ -113,7 +148,7 @@ if ( ! empty( $listRecords ) )
 				\REDCap::evaluateLogic( $module->replaceLogicVars( $reportData['acc_logic'],
 				                                                   ACC_SMART_VAR, $accStr ),
 				                        $module->getProjectId(), $recordName, null, 1, null, null,
-				                        null, true );
+				                        $infoRecord, true );
 			if ( ! is_numeric( $accRecord ) )
 			{
 				$accRecord = 0;

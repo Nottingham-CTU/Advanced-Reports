@@ -104,9 +104,10 @@ if ( ! empty( $_POST ) )
 	$module->submitReportConfig( $reportID, true, [ 'saveable', 'image', 'api', 'public' ] );
 	$reportData = [];
 	foreach ( [ 'desc', 'acc_start', 'acc_end', 'acc_step', 'acc_logic', 'group_logic',
-	            'group_total', 'display', 'col_logic', 'col_reverse' ] as $reportDataVar )
+	            'group_total', 'group_noblank', 'display', 'col_logic', 'col_reverse' ]
+	          as $reportDataVar )
 	{
-		if ( $reportDataVar == 'group_total' || $reportDataVar == 'col_reverse' )
+		if ( in_array( $reportDataVar, [ 'group_total', 'group_noblank', 'col_reverse' ] ) )
 		{
 			$reportData[ $reportDataVar ] = isset( $_POST[ $reportDataVar ] );
 			continue;
@@ -254,6 +255,11 @@ echo $module->escapeHTML( $reportData['col_logic'] ?? '' ); ?></textarea>
     <label>
      <input type="checkbox" name="group_total"<?php
 echo $reportData['group_total'] ? ' checked' : ''; ?>> Add a 'Total' row
+    </label>
+    <br>
+    <label>
+     <input type="checkbox" name="group_noblank"<?php
+echo $reportData['group_noblank'] ? ' checked' : ''; ?>> Exclude blank group
     </label>
     <br>
     <label>
