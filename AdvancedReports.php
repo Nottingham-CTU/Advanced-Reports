@@ -2529,6 +2529,14 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			elseif ( in_array( $configSetting, [ 'annotation', 'roles_access', 'roles_download' ] ) )
 			{
 				$configValue = str_replace( "\r\n", "\n", $configValue );
+				if ( in_array( $configSetting, [ 'roles_access', 'roles_download' ] ) )
+				{
+					$configValue = trim( $configValue );
+					$configValue = explode( "\n", $configValue );
+					array_walk( $configValue, function($v) {return trim($v);} );
+					sort( $configValue );
+					$configValue = implode( "\n", $configValue );
+				}
 			}
 			$this->setReportConfig( $reportID, $configSetting, $configValue );
 		}
