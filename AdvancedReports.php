@@ -5,9 +5,9 @@ namespace Nottingham\AdvancedReports;
 class AdvancedReports extends \ExternalModules\AbstractExternalModule
 {
 
-	const API_TYPES = [ 'accumulation', 'instrument', 'sql' ];
-	const PUBLIC_TYPES = [ 'accumulation', 'instrument', 'pdf', 'sql' ];
-	const SAVEABLE_TYPES = [ 'accumulation', 'instrument', 'pdf', 'sql' ];
+	const API_TYPES = [ 'accumulation', 'instrument', 'sql', 'system' ];
+	const PUBLIC_TYPES = [ 'accumulation', 'instrument', 'pdf', 'sql', 'system' ];
+	const SAVEABLE_TYPES = [ 'accumulation', 'instrument', 'pdf', 'sql', 'system' ];
 
 	// Show the advanced reports link based on whether the user is able to view or edit any
 	// reports. If the user has no access, hide the link.
@@ -558,8 +558,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 		// Don't allow editing by non-administrators without user rights.
 		// (in practice, such users probably cannot access the project)
-		// SQL reports are never editable by non-administrators.
-		if ( $userRights === null || $reportType == 'sql' )
+		// SQL and System Query reports are never editable by non-administrators.
+		if ( $userRights === null || $reportType == 'sql' || $reportType == 'system' )
 		{
 			return false;
 		}
@@ -845,7 +845,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		         'instrument' => 'Instrument Query',
 		         'pdf' => 'PDF',
 		         'recordtbl' => 'Record Table',
-		         'sql' => 'SQL' ];
+		         'sql' => 'SQL',
+		         'system' => 'System Query' ];
 	}
 
 
@@ -2884,6 +2885,17 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			.mod-advrep-chart-style23
 			{
 				background: linear-gradient(0.35turn, #f2dae6 40%, #ffffff);
+			}
+			.mod-advrep-icon-plus
+			{
+				width: 12px;
+				height: 12px;
+				display: inline-block;
+				background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVz' .
+				'nAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH6QoODC4AVe1/MAA' .
+				'AAIBJREFUKM+d0sERwjAQA8AFPpTgilKG6YN63EYKSAV04CcthI8CAR6M0Yw+dxqd7DteOKNiwRouuKT' .
+				'3hhN6RA1T2FLr0TydO24ovlHS69ukGpeCQ0TXUGolmio524frHO7RorUm7+Y84x7Ou0kT1qM/MBxp+NH' .
+				'D3zq8uF+nUffOD5uIMrQNgF0PAAAAAElFTkSuQmCC);
 			}
 			';
 		echo '<script type="text/javascript">',
