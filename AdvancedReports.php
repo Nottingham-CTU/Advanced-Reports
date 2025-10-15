@@ -1323,7 +1323,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		{
 ?>
  <a href="<?php echo $this->getUrl( 'reports.php' )
-?>"><i class="fas fa-arrow-circle-left fs11"></i> Back to Advanced Reports</a>
+?>"><i class="fas fa-arrow-left fs11"></i> Back to Advanced Reports</a>
 <?php
 		}
 
@@ -1334,7 +1334,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 ?>
  <a href="<?php echo $reportURL . '&download=1';
-?>"><i class="fas fa-file-download fs11"></i> Download report</a>
+?>"><i class="fas fa-download fs11"></i> Download report</a>
 <?php
 
 		}

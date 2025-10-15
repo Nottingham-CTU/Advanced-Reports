@@ -99,7 +99,7 @@ echo $module->escapeHTML( $reportID ), "\n"; ?>
 </div>
 <p style="font-size:11px">
  <a href="<?php echo $module->getUrl( 'reports_edit.php' )
-?>" class=""><i class="fas fa-arrow-circle-left fs11"></i> Back to edit reports</a>
+?>" class=""><i class="fas fa-arrow-left fs11"></i> Back to edit reports</a>
 </p>
 <p style="margin:15px 0px">
  <span class="yellow">

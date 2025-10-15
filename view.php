@@ -54,7 +54,12 @@ require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
                       {
                         clearInterval( vLoadingInterval )
                         $('#advanced-report-content').html( vData )
-                      } } )
+                      },
+             error: function( vData )
+                    {
+                      clearInterval( vLoadingInterval )
+                      $('#advanced-report-content').text( vData.responseText )
+                    } } )
   })()
 </script>
 <?php

@@ -148,7 +148,7 @@ $module->writeStyle();
 </div>
 <p style="font-size:11px">
  <a href="<?php echo $module->getUrl( 'reports.php' )
-?>"><i class="fas fa-arrow-circle-left fs11"></i> Back to advanced reports</a>
+?>"><i class="fas fa-arrow-left fs11"></i> Back to advanced reports</a>
 </p>
 <form method="post">
  <table class="mod-advrep-formtable">

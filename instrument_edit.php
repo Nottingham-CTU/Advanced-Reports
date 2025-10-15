@@ -372,7 +372,7 @@ echo $module->escapeHTML( $reportID ), "\n"; ?>
 </div>
 <p style="font-size:11px">
  <a href="<?php echo $module->getUrl( 'reports_edit.php' );
-?>" class=""><i class="fas fa-arrow-circle-left fs11"></i> Back to edit reports</a>
+?>" class=""><i class="fas fa-arrow-left fs11"></i> Back to edit reports</a>
  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
  <a href="<?php echo $module->getUrl( 'README-InstrumentQ.md' );
 ?>" target="_blank"><i class="fas fa-book fs11"></i> View Documentation</a>
@@ -445,7 +445,7 @@ writeInstrumentRow2( '', '', $reportData['forms'][0]['form'],
     <span id="inst-entries-link" style="display:none">
      <a onclick="$('#inst-entries-tbl tbody').last().clone().css('display',''
                     ).insertBefore($('#inst-entries-tbl tbody').last());return false"
-        href="#" class=""><i class="fas fa-plus-circle fs12"></i> Add instrument</a>
+        href="#" class=""><i class="mod-advrep-icon-plus"></i> Add instrument</a>
      <br>
      <span style="font-size:0.8em">
       Inner Join will only include rows where there is data on both sides of the join.<br>
@@ -504,7 +504,7 @@ writeSelectRow( false, '', '', '' );
      <a onclick="$('#field-entries-tbl tr').last().clone().css('display',''
                     ).insertBefore($('#field-entries-tbl tr').last());$('#field-entries-tbl tr')
                     .eq(-2).find('[name=&quot;query_select_field[]&quot;]').combobox();return false"
-        href="#" class=""><i class="fas fa-plus-circle fs12"></i> Add field</a>
+        href="#" class=""><i class="mod-advrep-icon-plus"></i> Add field</a>
     </span>
    </td>
   </tr>
