@@ -41,6 +41,7 @@ The following report types are currently available:
 * **PDF**
 * **Record Table**
 * **SQL** (direct database query) \*
+* **System Query** \*
 
 \* only administrators can edit
 
@@ -187,6 +188,29 @@ data export rights.
 * **Result Columns** pre-specify column names for EAV datasets
 
 Please refer to the [SQL report instructions](README-SQL.md) for more information.
+
+### System Query report options
+
+System Query reports provide a means of querying REDCap database tables on a per-project basis
+alongside the project instruments, which can all be joined and filtered as required. System Query
+reports support REDCap calculation logic and some smart variables.
+
+* **Description** brief descriptive text to appear above the report
+  * HTML &lt;a&gt; &lt;b&gt; and &lt;i&gt; tags as well as the placeholders `$$PROJECT$$`
+    (project ID) and `$$WEBROOT$$` (REDCap version directory web path) can be used in the
+    description.
+* **Projects** choose the REDCap projects from which to retrieve data
+* **Tables/Instruments** choose the tables/instruments from which to retrieve data
+* **Condition** filter the dataset after all the instruments have been retrieved and joined
+* **Sorting** field or logic on which to sort data
+  * Append ` DESC` to sort in descending order.
+* **Fields to display** specify each field or calculation logic for display in the report, with
+  optional alias for the field heading
+* **Hide missing data codes** if selected will show blank values instead of missing data codes
+* **Date display format** choose how dates are displayed on the report
+
+Please refer to the [System Query report instructions](README-SystemQ.md) for more
+information.
 
 
 
