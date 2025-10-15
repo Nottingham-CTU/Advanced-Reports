@@ -1,6 +1,6 @@
 <?php
 /**
- *	Instrument Query Reports view page.
+ *	System Query Reports view page.
  */
 
 namespace Nottingham\AdvancedReports;
@@ -49,66 +49,52 @@ $recordIDField = \REDCap::getRecordIdField();
 
 // Get the project IDs for each alias.
 $listProjects = [];
-foreach ( $reportData['projs'] as $infoProject )
+foreach ( $reportData['projs'] as $infoProjectLU )
 {
-	if ( $infoProject['lu'] == 'this' )
+	if ( $infoProjectLU['lu'] == 'this' )
 	{
-		$listProjects[ $infoProject['alias'] ] = $module->getProjectId();
+		$listProjects[ $infoProjectLU['alias'] ] = $module->getProjectId();
+		continue;
 	}
-	elseif ( $infoProject['lu'] == 'title-append' )
+	elseif ( $infoProjectLU['lu'] == 'title-append' )
 	{
 		$queryProject = $module->query( "SELECT project_id FROM redcap_projects WHERE app_title =" .
 		                                " concat((SELECT app_title FROM redcap_projects WHERE " .
-		                                "project_id = ? LIMIT 1), ' ', ?) LIMIT 1",
-		                                [ $module->getProjectId(), $infoProject['luv'] ] )
-		                                ->fetch_assoc();
-		if ( $queryProject !== null )
-		{
-			$listProjects[ $infoProject['alias'] ] = $queryProject['project_id'];
-		}
+		                                "project_id = ? LIMIT 1), ' ', ?) LIMIT 2",
+		                                [ $module->getProjectId(), $infoProjectLU['luv'] ] );
 	}
-	elseif ( $infoProject['lu'] == 'title' )
+	elseif ( $infoProjectLU['lu'] == 'title' )
 	{
 		$queryProject = $module->query( 'SELECT project_id FROM redcap_projects ' .
-		                                'WHERE app_title = ? LIMIT 1',
-		                                [ $infoProject['luv'] ] )->fetch_assoc();
-		if ( $queryProject !== null )
-		{
-			$listProjects[ $infoProject['alias'] ] = $queryProject['project_id'];
-		}
+		                                'WHERE app_title = ? LIMIT 2',
+		                                [ $infoProjectLU['luv'] ] );
 	}
-	elseif ( $infoProject['lu'] == 'ptitle' )
+	elseif ( $infoProjectLU['lu'] == 'ptitle' )
 	{
 		$queryProject = $module->query( 'SELECT project_id FROM redcap_projects ' .
-		                                'WHERE app_title LIKE ? LIMIT 1',
+		                                'WHERE app_title LIKE ? LIMIT 2',
 		                                [ '%' . str_replace( ['%', '_'], ['\\%', '\\_'],
-		                                                     $infoProject['luv'] ) . '%' ] )
-		                                ->fetch_assoc();
-		if ( $queryProject !== null )
-		{
-			$listProjects[ $infoProject['alias'] ] = $queryProject['project_id'];
-		}
+		                                                     $infoProjectLU['luv'] ) . '%' ] );
 	}
-	elseif ( $infoProject['lu'] == 'notes' )
+	elseif ( $infoProjectLU['lu'] == 'notes' )
 	{
 		$queryProject = $module->query( 'SELECT project_id FROM redcap_projects ' .
-		                                'WHERE project_note = ? LIMIT 1',
-		                                [ $infoProject['luv'] ] )->fetch_assoc();
-		if ( $queryProject !== null )
-		{
-			$listProjects[ $infoProject['alias'] ] = $queryProject['project_id'];
-		}
+		                                'WHERE project_note = ? LIMIT 2',
+		                                [ $infoProjectLU['luv'] ] );
 	}
-	elseif ( $infoProject['lu'] == 'pnotes' )
+	elseif ( $infoProjectLU['lu'] == 'pnotes' )
 	{
 		$queryProject = $module->query( 'SELECT project_id FROM redcap_projects ' .
-		                                'WHERE project_note LIKE ? LIMIT 1',
+		                                'WHERE project_note LIKE ? LIMIT 2',
 		                                [ '%' . str_replace( ['%', '_'], ['\\%', '\\_'],
-		                                                     $infoProject['luv'] ) . '%' ] )
-		                                ->fetch_assoc();
-		if ( $queryProject !== null )
+		                                                     $infoProjectLU['luv'] ) . '%' ] );
+	}
+	if ( ( $infoProject = $queryProject->fetch_assoc() ) !== null )
+	{
+		$listProjects[ $infoProjectLU['alias'] ] = $infoProject['project_id'];
+		if ( $queryProject->fetch_assoc() !== null )
 		{
-			$listProjects[ $infoProject['alias'] ] = $queryProject['project_id'];
+			unset( $listProjects[ $infoProjectLU['alias'] ] );
 		}
 	}
 }

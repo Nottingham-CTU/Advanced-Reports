@@ -22,7 +22,7 @@ $reportLabel = $listReports[$reportID]['label'];
 $reportURL = preg_replace( '!^(https?://[^/]+).*!', '$1', $module->getUrl( 'view.php' ) );
 $reportURL .= preg_replace( '/([?&])page=view/', '$1page=' . $reportType . '_view',
                             $_SERVER['REQUEST_URI'] );
-if ( $reportType == 'pdf' )
+if ( $reportType == 'pdf' || $reportType == 'gantt' )
 {
 	header( 'Location: ' . $reportURL );
 	exit;

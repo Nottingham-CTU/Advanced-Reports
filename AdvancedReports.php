@@ -2572,16 +2572,22 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		if ( ! isset( $_SERVER['HTTP_ADVANCED_REPORTS_AJAX'] ) )
 		{
 			// REDCap headers require some global variables, so bring globals into function scope.
-			foreach ( array_keys( $GLOBALS ) as $var )
+			global $pid;
+			global $lang;
+			global $project_encoding;
+			global $project_language;
+			global $project_id;
+			global $project_name;
+			global $app_title;
+			global $status;
+			global $user_rights;
+			global $longitudinal;
+			global $userid;
+			if ( $systemHeader )
 			{
-				if ( ! in_array( $var, [ 'GLOBALS', '_SERVER', '_GET', '_POST', '_FILES',
-				                         '_COOKIE', '_SESSION', '_REQUEST', '_ENV',
-				                         'systemHeader', 'var' ] ) )
-				{
-					global $$var;
-				}
+				($this->htmlPage = new \HtmlPage)->PrintHeader( false );
+				echo '<div style="margin-top:var(--page-top,0px)">';
 			}
-			if ( $systemHeader ) ($this->htmlPage = new \HtmlPage)->PrintHeader( false );
 			else require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
 		}
 	}
@@ -2593,7 +2599,11 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	{
 		if ( ! isset( $_SERVER['HTTP_ADVANCED_REPORTS_AJAX'] ) )
 		{
-			if ( is_object( $this->htmlPage ) ) $this->htmlPage->PrintFooter();
+			if ( is_object( $this->htmlPage ) )
+			{
+				echo '</div>';
+				$this->htmlPage->PrintFooter();
+			}
 			else require_once APP_PATH_DOCROOT . 'ProjectGeneral/footer.php';
 		}
 	}
@@ -2706,7 +2716,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			.mod-advrep-datatable tr:first-child th
 			{
 				position: sticky !important;
-				top: 0px;
+				top: var(--page-top,0px);
 			}
 			.mod-advrep-datatable tr:first-child th:first-child
 			{

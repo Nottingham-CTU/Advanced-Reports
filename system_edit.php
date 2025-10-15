@@ -314,7 +314,7 @@ function writeTableRow2( $onCondVal, $formVal, $firstFormVal, $aliasVal, $firstA
 ?>
       <td style="width:unset"></td>
       <td style="text-align:left;width:unset">On Condition</td>
-      <td colspan="2" style="text-align:left;width:unset">
+      <td colspan="3" style="text-align:left;width:unset">
        <input type="text" name="query_form_on[]" placeholder="condition logic"
               style="width:100%;max-width:unset"
               value="<?php echo $module->escape( $onCondVal ?? '' ); ?>">
@@ -417,7 +417,7 @@ echo $module->escape( $reportID ), "\n"; ?>
  <a href="<?php echo $module->getUrl( 'reports_edit.php' );
 ?>" class=""><i class="fas fa-arrow-left fs11"></i> Back to edit reports</a>
  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
- <a href="<?php echo $module->getUrl( 'README-InstrumentQ.md' );
+ <a href="<?php echo $module->getUrl( 'README-SystemQ.md' );
 ?>" target="_blank"><i class="fas fa-book fs11"></i> View Documentation</a>
 </p>
 <form method="post" id="queryform">
