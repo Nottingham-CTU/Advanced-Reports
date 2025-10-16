@@ -38,8 +38,8 @@ if ( ! $disableAccessControl && ! $isApiRequest && ! $module->isReportAccessible
 
 
 // Get the report data.
-$query = mysqli_query( $GLOBALS['conn'],
-                       $module->sqlPlaceholderReplace( $reportData['sql_query'] ) );
+$sqlQuery = $module->sqlPlaceholderReplace( $reportData['sql_query'] );
+$query = mysqli_query( $GLOBALS['conn'], $sqlQuery );
 $resultType = $reportData['sql_type'] ?? 'normal';
 $columns = [];
 
@@ -362,6 +362,32 @@ if ( $rowCount > 0 )
 
 
 $module->outputViewReportJS();
+
+if ( defined('SUPER_USER') && SUPER_USER )
+{
+?>
+<script type="text/javascript">
+$(function()
+{
+  var vNavLinks = $('.mod-advrep-navlinks')
+  var vDQTLink = $('<a href="#"><i class="fas fa-database fs11"></i> ' +
+                   'Open in Database Query Tool</a>')
+  vDQTLink.on('click', function(ev)
+  {
+    ev.preventDefault()
+    var vForm = $('<form action="' + app_path_webroot + 'ControlCenter/database_query_tool.php" ' +
+                  'method="post"></form>')
+    vForm.append('<input type="hidden" name="query" ' +
+                 'value="<?php echo $module->escape( $sqlQuery ); ?>">')
+    vForm.append('<input type="hidden" name="redcap_csrf_token" value="' + redcap_csrf_token + '">')
+    $('body').append(vForm)
+    vForm.trigger('submit')
+  })
+  vNavLinks.append(vDQTLink)
+})
+</script>
+<?php
+}
 
 
 // Display the footer

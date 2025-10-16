@@ -1314,7 +1314,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 <div class="projhdr">
  <?php echo htmlspecialchars( $reportLabel ), "\n"; ?>
 </div>
-<p style="font-size:11px;display:flex;flex-wrap:wrap;gap:10px 35px" class="hide_in_print">
+<p style="font-size:11px;display:flex;flex-wrap:wrap;gap:10px 35px"
+   class="hide_in_print mod-advrep-navlinks">
 <?php
 
 
