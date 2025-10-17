@@ -1485,22 +1485,36 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
     var vOldRowCompareDates = RowCompareDates
     var vFuncCompareStVals = function ( a, b, f )
     {
+      var vCompareResult, vTextA, vTextB
       var vElemA = $(a.getElementsByTagName('td')[lastSort])
       var vElemB = $(b.getElementsByTagName('td')[lastSort])
       if ( typeof vElemA.attr('data-sortvalue') == 'undefined' ||
            typeof vElemB.attr('data-sortvalue') == 'undefined' )
       {
-        return f( a, b )
+        vTextA = vElemA.text()
+        vTextB = vElemB.text()
+        vCompareResult = f( a, b )
       }
-      vElemA.attr('data-displayvalue',vElemA.html())
-      vElemA.text(vElemA.attr('data-sortvalue'))
-      vElemB.attr('data-displayvalue',vElemB.html())
-      vElemB.text(vElemB.attr('data-sortvalue'))
-      var vCompareResult = f( a, b )
-      vElemA.html(vElemA.attr('data-displayvalue'))
-      vElemA.attr('data-displayvalue',null)
-      vElemB.html(vElemB.attr('data-displayvalue'))
-      vElemB.attr('data-displayvalue',null)
+      else
+      {
+        vElemA.attr('data-displayvalue',vElemA.html())
+        vElemA.text(vElemA.attr('data-sortvalue'))
+        vElemB.attr('data-displayvalue',vElemB.html())
+        vElemB.text(vElemB.attr('data-sortvalue'))
+        vTextA = vElemA.text()
+        vTextB = vElemB.text()
+        vCompareResult = f( a, b )
+        vElemA.html(vElemA.attr('data-displayvalue'))
+        vElemA.attr('data-displayvalue',null)
+        vElemB.html(vElemB.attr('data-displayvalue'))
+        vElemB.attr('data-displayvalue',null)
+      }
+      if ( isNaN(vCompareResult) )
+      {
+        if ( vTextA == '' && vTextB == '' ) return 0
+        if ( vTextA == '' ) return -1
+        return 1
+      }
       return vCompareResult
     };
     RowCompare = function(a, b){ return vFuncCompareStVals(a, b, vOldRowCompare) };
