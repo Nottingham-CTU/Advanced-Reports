@@ -43,7 +43,7 @@ class TestT29CreateeditSystemQuery():
     self.driver.find_element(By.NAME, "report_id").click()
     self.driver.find_element(By.NAME, "report_id").send_keys("system_query")
     self.driver.find_element(By.NAME, "report_label").click()
-    self.driver.find_element(By.NAME, "report_label").send_keys("Instrument Query")
+    self.driver.find_element(By.NAME, "report_label").send_keys("System Query")
     dropdown = self.driver.find_element(By.NAME, "report_type")
     dropdown.find_element(By.CSS_SELECTOR, "*[value='system']").click()
     self.driver.find_element(By.CSS_SELECTOR, "input[type=\"submit\"][value=\"Add Report\"]").click()

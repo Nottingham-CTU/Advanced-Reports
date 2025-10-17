@@ -6783,7 +6783,7 @@
       "command": "type",
       "target": "name=report_label",
       "targets": [],
-      "value": "Instrument Query"
+      "value": "System Query"
     }, {
       "id": "4c8048e1-570d-401c-b0f0-16d87869d59d",
       "comment": "",
