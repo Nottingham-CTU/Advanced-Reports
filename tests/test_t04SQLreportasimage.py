@@ -26,7 +26,7 @@ class TestT04SQLreportasimage():
     self.driver.find_element(By.LINK_TEXT, "Advanced Reports Test").click()
     self.driver.find_element(By.LINK_TEXT, "Advanced Reports").click()
     self.driver.find_element(By.LINK_TEXT, "SQL Report").click()
-    self.driver.execute_script("$.get( window.location.href + \'&as_image=1\', function(data,status,xhr){if(data.indexOf(\'PNG\')>-1&&xhr.getResponseHeader(\'Content-Type\')==\'image/png\'){document.body.setAttribute(\'data-img-ok\',\'1\')};document.body.setAttribute(\'data-img\',\'1\')} )")
+    self.driver.execute_script("$.get( window.location.href.replace(\'page=view\',\'page=sql_view\') + \'&as_image=1\', function(data,status,xhr){if(data.indexOf(\'PNG\')>-1&&xhr.getResponseHeader(\'Content-Type\')==\'image/png\'){document.body.setAttribute(\'data-img-ok\',\'1\')};document.body.setAttribute(\'data-img\',\'1\')} )")
     WebDriverWait(self.driver, 60).until(expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "body[data-img]")))
     self.vars["imgDownloadOK"] = self.driver.execute_script("return $(\'body[data-img-ok]\').length")
     assert(self.vars["imgDownloadOK"] == 1)

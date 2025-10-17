@@ -10,7 +10,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
-class TestT01CreateeditSQLreport():
+class TestT29CreateeditSystemQuery():
   def setup_method(self, method):
     self.driver = webdriver.Firefox()
     self.vars = {}
@@ -18,7 +18,7 @@ class TestT01CreateeditSQLreport():
   def teardown_method(self, method):
     self.driver.quit()
   
-  def test_t01CreateeditSQLreport(self):
+  def test_t29CreateeditSystemQuery(self):
     self.driver.get("http://127.0.0.1/")
     self.driver.find_element(By.LINK_TEXT, "My Projects").click()
     elements = self.driver.find_elements(By.XPATH, "//*[@id=\"table-proj_table\"][contains(.,\'Advanced Reports Test\')]")
@@ -26,14 +26,14 @@ class TestT01CreateeditSQLreport():
     self.driver.find_element(By.LINK_TEXT, "Advanced Reports Test").click()
     self.driver.find_element(By.LINK_TEXT, "Advanced Reports").click()
     self.driver.find_element(By.LINK_TEXT, "Edit reports").click()
-    elements = self.driver.find_elements(By.CSS_SELECTOR, "select[name=\"report_type\"] option[value=\"sql\"]")
+    elements = self.driver.find_elements(By.CSS_SELECTOR, "select[name=\"report_type\"] option[value=\"instrument\"]")
     assert len(elements) > 0
     self.driver.execute_script("$(\'#south\').remove()")
     dropdown = self.driver.find_element(By.ID, "impersonate-user-select")
     dropdown.find_element(By.CSS_SELECTOR, "*[value='user']").click()
     self.driver.find_element(By.XPATH, "//div[contains(@aria-describedby,\'popup\')]//button[contains(.,\'Close\')]").click()
     WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.ID, "south")))
-    elements = self.driver.find_elements(By.CSS_SELECTOR, "select[name=\"report_type\"] option[value=\"sql\"]")
+    elements = self.driver.find_elements(By.CSS_SELECTOR, "select[name=\"report_type\"] option[value=\"system\"]")
     assert len(elements) == 0
     self.driver.execute_script("$(\'#south\').remove()")
     dropdown = self.driver.find_element(By.ID, "impersonate-user-select")
@@ -41,11 +41,11 @@ class TestT01CreateeditSQLreport():
     self.driver.find_element(By.XPATH, "//div[contains(@aria-describedby,\'popup\')]//button[contains(.,\'Close\')]").click()
     WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.ID, "south")))
     self.driver.find_element(By.NAME, "report_id").click()
-    self.driver.find_element(By.NAME, "report_id").send_keys("sql_report")
+    self.driver.find_element(By.NAME, "report_id").send_keys("system_query")
     self.driver.find_element(By.NAME, "report_label").click()
-    self.driver.find_element(By.NAME, "report_label").send_keys("SQL Report")
+    self.driver.find_element(By.NAME, "report_label").send_keys("Instrument Query")
     dropdown = self.driver.find_element(By.NAME, "report_type")
-    dropdown.find_element(By.CSS_SELECTOR, "*[value='sql']").click()
+    dropdown.find_element(By.CSS_SELECTOR, "*[value='system']").click()
     self.driver.find_element(By.CSS_SELECTOR, "input[type=\"submit\"][value=\"Add Report\"]").click()
     element = self.driver.find_element(By.CSS_SELECTOR, "[name=\"report_visible\"][value=\"Y\"]")
     if element.is_selected() != True: element.click()
@@ -53,43 +53,25 @@ class TestT01CreateeditSQLreport():
     if element.is_selected() != True: element.click()
     element = self.driver.find_element(By.CSS_SELECTOR, "[name=\"report_as_image\"][value=\"Y\"]")
     if element.is_selected() != True: element.click()
-    self.driver.execute_script("$(\'[name=\"sql_query\"]\').val(\"SELECT \'Normal text\' as \\u0060Normal text\\u0060, \'<b>Bold text</b>\' as \\u0060Bold text\\u0060\")")
+    self.driver.execute_script("$(\'[name=\"query_proj_alias[]\"]:eq(0)\').val(\'this\');$(\'[name=\"query_proj_alias[]\"]:eq(0)\').change();$(\'[name=\"query_form_proj[]\"]:eq(0)\').val(\'this\');$(\'[name=\"query_form[]\"]:eq(0)\').val(\'_external_module_settings\');$(\'[name=\"query_form[]\"]\').change();$(\'[name=\"query_form_alias[]\"]:eq(0)\').val(\'e\');$(\'[name=\"query_form_alias[]\"]\').change()")
     self.driver.find_element(By.CSS_SELECTOR, "input[type=\"submit\"][value=\"Save Report\"]").click()
-    WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "a[href*=\"page=view\"][href*=\"report_id=sql_report\"]")))
-    elements = self.driver.find_elements(By.CSS_SELECTOR, "a[href*=\"page=sql_edit\"][href*=\"report_id=sql_report\"]")
+    WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "a[href*=\"page=view\"][href*=\"report_id=system_query\"]")))
+    elements = self.driver.find_elements(By.CSS_SELECTOR, "a[href*=\"page=system_edit\"][href*=\"report_id=system_query\"]")
     assert len(elements) > 0
-    elements = self.driver.find_elements(By.CSS_SELECTOR, "a[onclick*=\"mod_advrep_copy\"][onclick*=\"sql_report\"]")
+    elements = self.driver.find_elements(By.CSS_SELECTOR, "a[onclick*=\"mod_advrep_copy\"][onclick*=\"system_query\"]")
     assert len(elements) > 0
     self.driver.execute_script("$(\'#south\').remove()")
     dropdown = self.driver.find_element(By.ID, "impersonate-user-select")
     dropdown.find_element(By.CSS_SELECTOR, "*[value='user']").click()
     self.driver.find_element(By.XPATH, "//div[contains(@aria-describedby,\'popup\')]//button[contains(.,\'Close\')]").click()
     WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.ID, "south")))
-    elements = self.driver.find_elements(By.CSS_SELECTOR, "a[href*=\"page=sql_edit\"][href*=\"report_id=sql_report\"]")
+    elements = self.driver.find_elements(By.CSS_SELECTOR, "a[href*=\"page=system_edit\"][href*=\"report_id=system_query\"]")
     assert len(elements) == 0
-    elements = self.driver.find_elements(By.CSS_SELECTOR, "a[onclick*=\"mod_advrep_copy\"][onclick*=\"sql_report\"]")
+    elements = self.driver.find_elements(By.CSS_SELECTOR, "a[onclick*=\"mod_advrep_copy\"][onclick*=\"system_query\"]")
     assert len(elements) == 0
     self.driver.execute_script("$(\'#south\').remove()")
     dropdown = self.driver.find_element(By.ID, "impersonate-user-select")
     dropdown.find_element(By.CSS_SELECTOR, "*:nth-child(1)").click()
     self.driver.find_element(By.XPATH, "//div[contains(@aria-describedby,\'popup\')]//button[contains(.,\'Close\')]").click()
     WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.ID, "south")))
-    self.driver.find_element(By.NAME, "report_id").click()
-    self.driver.find_element(By.NAME, "report_id").send_keys("sql_report_eav")
-    self.driver.find_element(By.NAME, "report_label").click()
-    self.driver.find_element(By.NAME, "report_label").send_keys("SQL Report (EAV)")
-    dropdown = self.driver.find_element(By.NAME, "report_type")
-    dropdown.find_element(By.CSS_SELECTOR, "*[value='sql']").click()
-    self.driver.find_element(By.CSS_SELECTOR, "input[type=\"submit\"][value=\"Add Report\"]").click()
-    element = self.driver.find_element(By.CSS_SELECTOR, "[name=\"report_visible\"][value=\"Y\"]")
-    if element.is_selected() != True: element.click()
-    element = self.driver.find_element(By.CSS_SELECTOR, "[name=\"report_download\"][value=\"Y\"]")
-    if element.is_selected() != True: element.click()
-    element = self.driver.find_element(By.CSS_SELECTOR, "[name=\"report_as_image\"][value=\"Y\"]")
-    if element.is_selected() != True: element.click()
-    self.driver.find_element(By.NAME, "sql_query").send_keys("SELECT record, field_name, value FROM $$DATATABLE$$ WHERE project_id = $$PROJECT$$")
-    element = self.driver.find_element(By.CSS_SELECTOR, "[name=\"sql_type\"][value=\"eav-id\"]")
-    if element.is_selected() != True: element.click()
-    self.driver.find_element(By.CSS_SELECTOR, "input[type=\"submit\"][value=\"Save Report\"]").click()
-    WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "a[href*=\"page=view\"][href*=\"report_id=sql_report_eav\"]")))
   

@@ -10,7 +10,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
-class TestT10InstrumentQueryasimage():
+class TestT31SystemQuerydownload():
   def setup_method(self, method):
     self.driver = webdriver.Firefox()
     self.vars = {}
@@ -18,16 +18,16 @@ class TestT10InstrumentQueryasimage():
   def teardown_method(self, method):
     self.driver.quit()
   
-  def test_t10InstrumentQueryasimage(self):
+  def test_t31SystemQuerydownload(self):
     self.driver.get("http://127.0.0.1/")
     self.driver.find_element(By.LINK_TEXT, "My Projects").click()
     elements = self.driver.find_elements(By.XPATH, "//*[@id=\"table-proj_table\"][contains(.,\'Advanced Reports Test\')]")
     assert len(elements) > 0
     self.driver.find_element(By.LINK_TEXT, "Advanced Reports Test").click()
     self.driver.find_element(By.LINK_TEXT, "Advanced Reports").click()
-    self.driver.find_element(By.LINK_TEXT, "Instrument Query").click()
-    self.driver.execute_script("$.get( window.location.href.replace(\'page=view\',\'page=instrument_view\') + \'&as_image=1\', function(data,status,xhr){if(data.indexOf(\'PNG\')>-1&&xhr.getResponseHeader(\'Content-Type\')==\'image/png\'){document.body.setAttribute(\'data-img-ok\',\'1\')};document.body.setAttribute(\'data-img\',\'1\')} )")
-    WebDriverWait(self.driver, 60).until(expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "body[data-img]")))
-    self.vars["imgDownloadOK"] = self.driver.execute_script("return $(\'body[data-img-ok]\').length")
-    assert(self.vars["imgDownloadOK"] == 1)
+    self.driver.find_element(By.LINK_TEXT, "System Query").click()
+    self.driver.execute_script("$.get( window.location.href.replace(\'page=view\',\'page=system_view\') + \'&download=1\', function(data,status,xhr){if(data.indexOf(\'enrollment_arm_1\')>-1&&xhr.getResponseHeader(\'Content-Type\')==\'text/csv; charset=utf-8\'){$(\'body\').append(\'<span data-csv-ok=\"1\"></span>\')};$(\'body\').append(\'<span data-csv=\"1\"></span>\')} )")
+    WebDriverWait(self.driver, 60).until(expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "span[data-csv]")))
+    self.vars["csvDownloadOK"] = self.driver.execute_script("return $(\'span[data-csv-ok]\').length")
+    assert(self.vars["csvDownloadOK"] == 1)
   

@@ -64,7 +64,7 @@ class TestT17CreateeditAccumulationreport():
     element = self.driver.find_element(By.NAME, "group_total")
     if element.is_selected() != True: element.click()
     self.driver.find_element(By.CSS_SELECTOR, "input[type=\"submit\"][value=\"Save Report\"]").click()
-    WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "a[href*=\"page=accumulation_view\"][href*=\"report_id=accumulation_report\"]")))
+    WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "a[href*=\"page=view\"][href*=\"report_id=accumulation_report\"]")))
     elements = self.driver.find_elements(By.CSS_SELECTOR, "a[href*=\"page=accumulation_edit\"][href*=\"report_id=accumulation_report\"]")
     assert len(elements) > 0
     elements = self.driver.find_elements(By.CSS_SELECTOR, "a[onclick*=\"mod_advrep_copy\"][onclick*=\"accumulation_report\"]")
