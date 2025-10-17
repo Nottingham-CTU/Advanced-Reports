@@ -6999,7 +6999,7 @@
       "id": "7acf02d6-0577-48f2-a787-8d6e0ce059fc",
       "comment": "Check CSV download",
       "command": "runScript",
-      "target": "$.get( window.location.href.replace('page=view','page=system_view') + '&download=1', function(data,status,xhr){if(data.indexOf('enrollment_arm_1')>-1&&xhr.getResponseHeader('Content-Type')=='text/csv; charset=utf-8'){$('body').append('<span data-csv-ok=\"1\"></span>')};$('body').append('<span data-csv=\"1\"></span>')} )",
+      "target": "$.get( window.location.href.replace('page=view','page=system_view') + '&download=1', function(data,status,xhr){if(data.indexOf('external_module_id')>-1&&xhr.getResponseHeader('Content-Type')=='text/csv; charset=utf-8'){$('body').append('<span data-csv-ok=\"1\"></span>')};$('body').append('<span data-csv=\"1\"></span>')} )",
       "targets": [],
       "value": ""
     }, {

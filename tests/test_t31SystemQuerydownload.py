@@ -26,7 +26,7 @@ class TestT31SystemQuerydownload():
     self.driver.find_element(By.LINK_TEXT, "Advanced Reports Test").click()
     self.driver.find_element(By.LINK_TEXT, "Advanced Reports").click()
     self.driver.find_element(By.LINK_TEXT, "System Query").click()
-    self.driver.execute_script("$.get( window.location.href.replace(\'page=view\',\'page=system_view\') + \'&download=1\', function(data,status,xhr){if(data.indexOf(\'enrollment_arm_1\')>-1&&xhr.getResponseHeader(\'Content-Type\')==\'text/csv; charset=utf-8\'){$(\'body\').append(\'<span data-csv-ok=\"1\"></span>\')};$(\'body\').append(\'<span data-csv=\"1\"></span>\')} )")
+    self.driver.execute_script("$.get( window.location.href.replace(\'page=view\',\'page=system_view\') + \'&download=1\', function(data,status,xhr){if(data.indexOf(\'external_module_id\')>-1&&xhr.getResponseHeader(\'Content-Type\')==\'text/csv; charset=utf-8\'){$(\'body\').append(\'<span data-csv-ok=\"1\"></span>\')};$(\'body\').append(\'<span data-csv=\"1\"></span>\')} )")
     WebDriverWait(self.driver, 60).until(expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "span[data-csv]")))
     self.vars["csvDownloadOK"] = self.driver.execute_script("return $(\'span[data-csv-ok]\').length")
     assert(self.vars["csvDownloadOK"] == 1)
