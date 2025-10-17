@@ -29,7 +29,8 @@ $allowSQLSource = $module->getSystemSetting( 'allow-sql-source' );
 $listDataSources = [];
 foreach ( $listReports as $rID => $rConfig )
 {
-	if ( $rConfig['type'] == 'instrument' || ( $allowSQLSource && $rConfig['type'] == 'sql' ) )
+	if ( $rConfig['type'] == 'instrument' ||
+	     ( $allowSQLSource && in_array( $rConfig['type'], [ 'sql', 'system' ] ) ) )
 	{
 		$listDataSources[ $rID ] = $rConfig['label'];
 	}

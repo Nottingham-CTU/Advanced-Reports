@@ -39,7 +39,7 @@
 		},
 		{
 			"key" : "allow-sql-source",
-			"name" : "Allow SQL reports to be used as the source for PDF reports",
+			"name" : "Allow SQL and System Query reports to be used as the source for PDF reports",
 			"type" : "checkbox"
 		}
 	],
