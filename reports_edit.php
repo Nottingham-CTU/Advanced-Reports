@@ -195,7 +195,7 @@ foreach ( $module->getReportTypes() as $typeCode => $typeName )
  </table>
 </form>
 <?php
-if ( count( $listReports ) > 0 )
+if ( ! empty( $listReports ) )
 {
 ?>
 <p>&nbsp;</p>
@@ -325,6 +325,9 @@ if ( count( $listReports ) > 0 )
 	}
 ?>
 </table>
+<?php
+}
+?>
 <p>&nbsp;</p>
 <ul>
 <?php
@@ -342,6 +345,10 @@ if ( ! empty( $listReports ) )
   <a href="<?php echo $module->getUrl( 'import_reports.php' ) ?>">Import reports</a>
  </li>
 </ul>
+<?php
+if ( ! empty( $listReports ) )
+{
+?>
 <p>&nbsp;</p>
 <div id="exportDialog" style="display:none">
  <p style="padding-left:1rem;margin-bottom:15px">
