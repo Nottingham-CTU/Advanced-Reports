@@ -71,31 +71,13 @@ foreach ( $listReports as $reportID => $infoReport )
 	}
 ?>
  <li><a href="<?php
-	echo $module->getUrl( $infoReport['type'] . '_view.php?report_id=' . $reportID ); ?>"><?php
+	echo $module->getUrl( 'view.php?report_id=' . $reportID ); ?>"><?php
 	echo htmlspecialchars( $infoReport['label'] ); ?></a></li>
 <?php
 }
 ?>
 </ul>
 <p>&nbsp;</p>
-<?php
-if ( $module->framework->getUser()->isSuperUser() )
-{
-?>
-<p>&nbsp;</p>
-<hr style="max-width:300px;margin-left:0px">
-<p><b>Administrative Options</b></p>
-<ul>
- <li>
-  <a href="<?php echo $module->getUrl( 'export_reports.php' ) ?>">Export report definitions</a>
- </li>
- <li>
-  <a href="<?php echo $module->getUrl( 'import_reports.php' ) ?>">Import report definitions</a>
- </li>
-</ul>
-<?php
-}
-?>
 <?php
 
 // Display the project footer

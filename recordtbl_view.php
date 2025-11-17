@@ -282,80 +282,34 @@ if ( $isCsvDownload )
 if ( isset( $_GET['as_image']) && $reportConfig['as_image'] )
 {
 	header( 'Content-Type: image/png' );
-	// Determine the fonts and character sizes for the report.
-	$imgHeaderFont = 5;
-	$imgDataFont = 4;
-	$imgHeaderCharW = imagefontwidth( $imgHeaderFont );
-	$imgHeaderCharH = imagefontheight( $imgHeaderFont );
-	$imgDataCharW = imagefontwidth( $imgDataFont );
-	$imgDataCharH = imagefontheight( $imgDataFont );
-	$imgHeaderH = $imgHeaderCharH + 2;
-	$imgDataH = $imgDataCharH + 2;
-	// Get all the column names.
-	// Calculate column widths based on column name string lengths.
-	$imgColumnWidths = [];
-	foreach ( $listColumns as $columnName )
+	$img = $module->reportImageCreate();
+	foreach ( [ 'reportImageRowPrepare', 'reportImageRowWrite' ] as $imageRowFunc )
 	{
-		$imgColumnWidths[ $columnName ] = ( strlen( $columnName ) * $imgHeaderCharW ) + 5;
-	}
-	// Check the data in each column for each record, increase the column widths if necessary.
-	foreach ( $resultTable as $resultRow )
-	{
-		foreach ( $listColumns as $columnName )
+		// Prepare/draw the header row.
+		$module->$imageRowFunc( $img, $listColumns );
+		// Prepare/draw each row of data.
+		foreach ( $resultTable as $resultRow )
 		{
-			$imgParsedData = isset( $resultRow[$columnName] )
-			                    ? $module->escapeHTML( $resultRow[$columnName] ) : '';
-			$thisWidth = ( strlen( $imgParsedData ) * $imgDataCharW ) + 5;
-			if ( $imgColumnWidths[$columnName] < $thisWidth )
+			$imgRow = [];
+			foreach ( $listColumns as $columnName )
 			{
-				$imgColumnWidths[$columnName] = $thisWidth;
+				$imgRow[] = isset( $resultRow[$columnName] )
+				            ? $module->escapeHTML( $resultRow[$columnName] ) : '';
 			}
+			$module->$imageRowFunc( $img, $imgRow );
 		}
-	}
-	// Calculate the image dimensions, create the image, and set the colours (black/white).
-	$imgWidth = array_sum( $imgColumnWidths ) + 1;
-	$imgHeight = $imgHeaderH + ( count( $resultTable ) * ( $imgDataH ) ) + 1;
-	$img = imagecreate( $imgWidth, $imgHeight );
-	imagecolorallocate( $img, 255, 255, 255 );
-	$imgBlack = imagecolorallocate( $img, 0, 0, 0 );
-	// Draw the column headers.
-	$posW = 0;
-	$posH = 0;
-	foreach ( $listColumns as $columnName )
-	{
-		$thisWidth = $imgColumnWidths[$columnName];
-		imagerectangle( $img, $posW, $posH, $posW + $thisWidth, $posH + $imgHeaderH, $imgBlack );
-		imagestring( $img, $imgHeaderFont, $posW + 2, $posH + 1, $columnName, $imgBlack );
-		$posW += $thisWidth;
-	}
-	// Draw each row of data.
-	$posW = 0;
-	$posH += $imgHeaderH;
-	foreach ( $resultTable as $resultRow )
-	{
-		foreach ( $listColumns as $columnName )
-		{
-			$imgParsedData = isset( $resultRow[$columnName] )
-			                    ? $module->escapeHTML( $resultRow[$columnName] ) : '';
-			$thisWidth = $imgColumnWidths[$columnName];
-			imagerectangle( $img, $posW, $posH, $posW + $thisWidth, $posH + $imgDataH, $imgBlack );
-			imagestring( $img, $imgDataFont, $posW + 2, $posH + 1, $imgParsedData, $imgBlack );
-			$posW += $thisWidth;
-		}
-		$posW = 0;
-		$posH += $imgDataH;
 	}
 	// Output the image as a PNG and exit.
-	imagepng( $img );
+	$module->reportImageOutput( $img );
 	exit;
 }
 
 
 
 // Display the project header and report navigation links.
-
-require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
-$module->outputViewReportHeader( $reportConfig['label'], 'recordtbl', true );
+$module->writePageHeader();
+$module->outputViewReportHeader( $reportConfig['label'], 'recordtbl',
+                                 [ 'canReset' => true, 'asImage' => $reportConfig['as_image'] ] );
 
 // Initialise the row counter.
 $rowCount = 0;
@@ -429,4 +383,4 @@ $module->outputViewReportJS();
 
 
 // Display the project footer
-require_once APP_PATH_DOCROOT . 'ProjectGeneral/footer.php';
+$module->writePageFooter();

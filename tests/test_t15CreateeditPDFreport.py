@@ -53,7 +53,7 @@ class TestT15CreateeditPDFreport():
     dropdown.find_element(By.CSS_SELECTOR, "*[value='instrument_query']").click()
     self.driver.find_element(By.CSS_SELECTOR, "[name=\"pdf\"]").send_keys("<b>Name:</b> [[demographics][first_name]] [[demographics][last_name]]<br>[[demographics][redcap_event_name]]")
     self.driver.find_element(By.CSS_SELECTOR, "input[type=\"submit\"][value=\"Save Report\"]").click()
-    WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "a[href*=\"page=pdf_view\"][href*=\"report_id=pdf\"]")))
+    WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "a[href*=\"page=view\"][href*=\"report_id=pdf\"]")))
     elements = self.driver.find_elements(By.CSS_SELECTOR, "a[href*=\"page=pdf_edit\"][href*=\"report_id=pdf\"]")
     assert len(elements) > 0
     elements = self.driver.find_elements(By.CSS_SELECTOR, "a[onclick*=\"mod_advrep_copy\"][onclick*=\"pdf\"]")

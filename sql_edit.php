@@ -74,7 +74,7 @@ $module->writeStyle();
 </div>
 <p style="font-size:11px">
  <a href="<?php echo $module->getUrl( 'reports_edit.php' );
-?>"><i class="fas fa-arrow-circle-left fs11"></i> Back to edit reports</a>
+?>"><i class="fas fa-arrow-left fs11"></i> Back to edit reports</a>
  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
  <a href="<?php echo $module->getUrl( 'README-SQL.md' );
 ?>" target="_blank"><i class="fas fa-book fs11"></i> View Documentation</a>

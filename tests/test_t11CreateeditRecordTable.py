@@ -54,7 +54,7 @@ class TestT11CreateeditRecordTable():
     element = self.driver.find_element(By.CSS_SELECTOR, "[name=\"report_as_image\"][value=\"Y\"]")
     if element.is_selected() != True: element.click()
     self.driver.find_element(By.CSS_SELECTOR, "input[type=\"submit\"][value=\"Save Report\"]").click()
-    WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "a[href*=\"page=recordtbl_view\"][href*=\"report_id=rectbl\"]")))
+    WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "a[href*=\"page=view\"][href*=\"report_id=rectbl\"]")))
     elements = self.driver.find_elements(By.CSS_SELECTOR, "a[href*=\"page=recordtbl_edit\"][href*=\"report_id=rectbl\"]")
     assert len(elements) > 0
     elements = self.driver.find_elements(By.CSS_SELECTOR, "a[onclick*=\"mod_advrep_copy\"][onclick*=\"rectbl\"]")

@@ -5,9 +5,9 @@ namespace Nottingham\AdvancedReports;
 class AdvancedReports extends \ExternalModules\AbstractExternalModule
 {
 
-	const API_TYPES = [ 'accumulation', 'instrument', 'sql' ];
-	const PUBLIC_TYPES = [ 'accumulation', 'instrument', 'pdf', 'sql' ];
-	const SAVEABLE_TYPES = [ 'accumulation', 'instrument', 'pdf', 'sql' ];
+	const API_TYPES = [ 'accumulation', 'instrument', 'sql', 'system' ];
+	const PUBLIC_TYPES = [ 'accumulation', 'instrument', 'pdf', 'sql', 'system' ];
+	const SAVEABLE_TYPES = [ 'accumulation', 'instrument', 'pdf', 'sql', 'system' ];
 
 	// Show the advanced reports link based on whether the user is able to view or edit any
 	// reports. If the user has no access, hide the link.
@@ -459,6 +459,28 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Format a date to the requested format. If the value is not a date just return it.
+	function formatDate( $value, $format )
+	{
+		if ( $format == '' ||
+		     ! preg_match( '/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])' .
+		                   '( ([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?)?$/', $value ) )
+		{
+			return $value;
+		}
+		if ( $format == 'upf' ) // user's preferred format
+		{
+			return \DateTimeRC::format_ts_from_ymd( $value, false, true );
+		}
+		if ( $format == 'dmy' || $format == 'mdy' )
+		{
+			return \DateTimeRC::datetimeConvert( $value, 'ymd', $format );
+		}
+		return $value;
+	}
+
+
+
 	// Check if the specified report is accessible by the current user,
 	// as determined by the specified access roles.
 	function isReportAccessible( $reportID )
@@ -536,8 +558,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 		// Don't allow editing by non-administrators without user rights.
 		// (in practice, such users probably cannot access the project)
-		// SQL reports are never editable by non-administrators.
-		if ( $userRights === null || $reportType == 'sql' )
+		// SQL and System Query reports are never editable by non-administrators.
+		if ( $userRights === null || $reportType == 'sql' || $reportType == 'system' )
 		{
 			return false;
 		}
@@ -633,6 +655,18 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 	function escapeHTML( $text )
 	{
 		return htmlspecialchars( $text, ENT_QUOTES );
+	}
+
+
+
+	// Escapes text string for inclusion in JavaScript.
+	function escapeJSString( $text )
+	{
+		return '"' . $this->escape( substr( json_encode( (string)$text,
+		                                                 JSON_HEX_QUOT | JSON_HEX_APOS |
+		                                                 JSON_HEX_TAG | JSON_HEX_AMP |
+		                                                 JSON_UNESCAPED_SLASHES ),
+		                                    1, -1 ) ) . '"';
 	}
 
 
@@ -811,7 +845,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		         'instrument' => 'Instrument Query',
 		         'pdf' => 'PDF',
 		         'recordtbl' => 'Record Table',
-		         'sql' => 'SQL' ];
+		         'sql' => 'SQL',
+		         'system' => 'System Query' ];
 	}
 
 
@@ -1249,17 +1284,38 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 	// Output the report navigation links.
-	function outputViewReportHeader( $reportLabel, $reportType, $canReset = false )
+	function outputViewReportHeader( $reportLabel, $reportType, $listOptions = false )
 	{
+		if ( is_bool( $listOptions ) )
+		{
+			$listOptions = [ 'canReset' => $listOptions, 'asImage' => false ];
+		}
+
 		$isPublic = ( isset($GLOBALS['disableAccessControl']) && $GLOBALS['disableAccessControl'] );
 		$canDownload = $this->isReportDownloadable( $_GET['report_id'] );
+		$canEdit = ( $isPublic ? false : $this->isReportEditable( $reportType ) );
+
+		$reportURL = '';
+		parse_str( $_SERVER['QUERY_STRING'], $getVars );
+		foreach ( $getVars as $getVar => $getVal )
+		{
+			if ( ! in_array( $getVar, [ 'as_image', 'download', 'page', 'pid', 'prefix',
+			                            'report_id', 'report_state' ] ) )
+			{
+				$reportURL .= '&' . $getVar . '=' . rawurlencode( $getVal );
+			}
+		}
+		$reportURL = $this->getURL( $reportType . '_view.php?report_id=' . $_GET['report_id'] .
+		                    $reportURL );
+
 		$this->writeStyle();
 
 ?>
 <div class="projhdr">
  <?php echo htmlspecialchars( $reportLabel ), "\n"; ?>
 </div>
-<p style="font-size:11px" class="hide_in_print">
+<p style="font-size:11px;display:flex;flex-wrap:wrap;gap:10px 35px"
+   class="hide_in_print mod-advrep-navlinks">
 <?php
 
 
@@ -1268,7 +1324,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		{
 ?>
  <a href="<?php echo $this->getUrl( 'reports.php' )
-?>"><i class="fas fa-arrow-circle-left fs11"></i> Back to Advanced Reports</a>
+?>"><i class="fas fa-arrow-left fs11"></i> Back to Advanced Reports</a>
 <?php
 		}
 
@@ -1276,33 +1332,29 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		// If report can be downloaded, show the download link.
 		if ( $canDownload )
 		{
-			$extraVarsDL = '';
-			parse_str( $_SERVER['QUERY_STRING'], $getVars );
-			foreach ( $getVars as $getVar => $getVal )
-			{
-				if ( ! in_array( $getVar, [ 'as_image', 'download', 'page', 'pid', 'prefix',
-				                            'report_id', 'report_state' ] ) )
-				{
-					$extraVarsDL .= '&' . $getVar . '=' . rawurlencode( $getVal );
-				}
-			}
 
 ?>
- &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
- <a href="<?php
-			echo $this->getUrl( $reportType . '_view.php?report_id=' . $_GET['report_id'] .
-			                    $extraVarsDL . '&download=1' );
-?>"><i class="fas fa-file-download fs11"></i> Download report</a>
+ <a href="<?php echo $reportURL . '&download=1';
+?>"><i class="fas fa-download fs11"></i> Download report</a>
+<?php
+
+		}
+
+		// If applicable for the report type, show a link to get the report as an image.
+		if ( $canEdit && $listOptions['asImage'] ?? false )
+		{
+
+?>
+ <a href="#" id="mod-advrep-imageview"><i class="far fa-file-image fs11"></i> Image view</a>
 <?php
 
 		}
 
 		// If the user can edit the report, show an edit link.
-		if ( ! $isPublic && $this->isReportEditable( $reportType ) )
+		if ( $canEdit )
 		{
 
 ?>
- &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
  <a href="<?php
 			echo $this->getUrl( $reportType . '_edit.php?report_id=' . $_GET['report_id'] );
 ?>"><i class="fas fa-pencil-alt fs11"></i> Edit report</a>
@@ -1311,17 +1363,16 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		}
 
 		// If applicable for the report type, show a link to reset the report state.
-		if ( $canReset )
+		if ( $listOptions['canReset'] ?? false )
 		{
 
 ?>
- <span id="mod-advrep-resetstate" style="display:none">
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  <a href="<?php
-			echo $this->escapeHTML( preg_replace( '/&report_state=[^&]+/', '',
-			                                      $_SERVER['REQUEST_URI'] ) );
+ <a id="mod-advrep-resetstate" style="display:none" href="<?php
+			echo $this->escapeHTML( preg_replace( '/([?&])page=' . $reportType . '_view/',
+			                                      '$1page=view',
+			                                      preg_replace( '/&report_state=[^&]+/', '',
+			                                                    $_SERVER['REQUEST_URI'] ) ) );
 ?>"><i class="fas fa-rotate-left fs11"></i> Reset</a>
- </span>
 <?php
 
 		}
@@ -1329,6 +1380,68 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 ?>
 </p>
 <?php
+		// Dialog for getting report as image.
+		if ( $canEdit && $listOptions['asImage'] ?? false )
+		{
+?>
+<div id="mod-advrep-imageviewpopup" style="display:none">
+ <p>
+  Image theme:
+  <select>
+   <option value="b">Basic</option>
+   <option value="r">REDCap</option>
+   <option value="c">Custom</option>
+  </select>
+ </p>
+ <p style="display:grid;grid-template-columns:min-content auto;column-gap:10px;align-items:center">
+  <span>Text:</span> <input type="color" value="#000000">
+  <span>Background:</span> <input type="color" value="#ffffff">
+ </p>
+ <p>
+  Image view URL:<br>
+  <input readonly style="width:100%">
+ </p>
+</div>
+<script type="text/javascript">
+ $(function()
+ {
+   $('#mod-advrep-imageview').on('click',function(ev)
+   {
+     ev.preventDefault()
+     simpleDialog(null, "Image view", 'mod-advrep-imageviewpopup')
+   })
+   var vReportURL = <?php echo $this->escapeJSString( $reportURL ), "\n"; ?>
+   var vImageURLFunc = function()
+   {
+     var vDisplayURL = vReportURL + '&as_image='
+     var vTheme = $('#mod-advrep-imageviewpopup select').val()
+     $('#mod-advrep-imageviewpopup p[style*="grid"]').css('display','none')
+     if ( vTheme == 'b' )
+     {
+       vDisplayURL += '1'
+     }
+     else if ( vTheme == 'r' )
+     {
+       vDisplayURL += 'redcapredcap'
+     }
+     else
+     {
+       $('#mod-advrep-imageviewpopup p[style*="grid"]').css('display','grid')
+       var vFG = $('#mod-advrep-imageviewpopup input[type="color"]').first().val()
+       var vBG = $('#mod-advrep-imageviewpopup input[type="color"]').last().val()
+       vFG = (vFG.toLowerCase().replace(/[^0-9a-f]/g,'')+'000000').substring(0,6)
+       vBG = (vBG.toLowerCase().replace(/[^0-9a-f]/g,'')+'000000').substring(0,6)
+       vDisplayURL += vFG + vBG
+     }
+     $('#mod-advrep-imageviewpopup input[readonly]').val( vDisplayURL )
+   }
+   $('#mod-advrep-imageviewpopup input[type="color"]').on('change', vImageURLFunc)
+   $('#mod-advrep-imageviewpopup select').on('change', vImageURLFunc)
+   vImageURLFunc()
+ })
+</script>
+<?php
+		}
 
 	}
 
@@ -1372,22 +1485,36 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
     var vOldRowCompareDates = RowCompareDates
     var vFuncCompareStVals = function ( a, b, f )
     {
+      var vCompareResult, vTextA, vTextB
       var vElemA = $(a.getElementsByTagName('td')[lastSort])
       var vElemB = $(b.getElementsByTagName('td')[lastSort])
       if ( typeof vElemA.attr('data-sortvalue') == 'undefined' ||
            typeof vElemB.attr('data-sortvalue') == 'undefined' )
       {
-        return f( a, b )
+        vTextA = vElemA.text()
+        vTextB = vElemB.text()
+        vCompareResult = f( a, b )
       }
-      vElemA.attr('data-displayvalue',vElemA.html())
-      vElemA.text(vElemA.attr('data-sortvalue'))
-      vElemB.attr('data-displayvalue',vElemB.html())
-      vElemB.text(vElemB.attr('data-sortvalue'))
-      var vCompareResult = f( a, b )
-      vElemA.html(vElemA.attr('data-displayvalue'))
-      vElemA.attr('data-displayvalue',null)
-      vElemB.html(vElemB.attr('data-displayvalue'))
-      vElemB.attr('data-displayvalue',null)
+      else
+      {
+        vElemA.attr('data-displayvalue',vElemA.html())
+        vElemA.text(vElemA.attr('data-sortvalue'))
+        vElemB.attr('data-displayvalue',vElemB.html())
+        vElemB.text(vElemB.attr('data-sortvalue'))
+        vTextA = vElemA.text()
+        vTextB = vElemB.text()
+        vCompareResult = f( a, b )
+        vElemA.html(vElemA.attr('data-displayvalue'))
+        vElemA.attr('data-displayvalue',null)
+        vElemB.html(vElemB.attr('data-displayvalue'))
+        vElemB.attr('data-displayvalue',null)
+      }
+      if ( isNaN(vCompareResult) )
+      {
+        if ( vTextA == '' && vTextB == '' ) return 0
+        if ( vTextA == '' ) return -1
+        return 1
+      }
       return vCompareResult
     };
     RowCompare = function(a, b){ return vFuncCompareStVals(a, b, vOldRowCompare) };
@@ -1571,6 +1698,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
                         'style="width:350px" list="mod-advrep-filterlist"></div>')
         vDialog.find('input[type="text"]').val(vFilter)
         vDialog.find('select').val(vOp)
+        vDialog.on('dialogopen',function(){vDialog.find('input[type="text"]').focus()})
         vDialog.dialog(
         {
           autoOpen:true,
@@ -1677,10 +1805,10 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
         }
         var vItems = vHeader[indexTd].getAttribute('data-items')
         vItems = JSON.parse( vItems === null ? '[]' : vItems )
-        if ( vItems !== false && vText != '' && vItems.indexOf( vText ) == -1 )
+        if ( vItems !== false && vText != '' && vText.length < 40 && vItems.indexOf( vText ) == -1 )
         {
           vItems.push( vText )
-          if ( vItems.length > 30 )
+          if ( vItems.length > 50 )
           {
             vItems = false
           }
@@ -2220,6 +2348,151 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Functions to prepare and output a report as an image.
+
+	function reportImageCreate()
+	{
+		if ( preg_match( '/^([0-9a-f]{6}|redcap){2}$/', $_GET['as_image'] ) )
+		{
+			$fg = substr( $_GET['as_image'], 0, 6 );
+			$bg = substr( $_GET['as_image'], 6 );
+			if ( $fg == 'redcap' )
+			{
+				$fg = '000000';
+			}
+			if ( $bg == 'redcap' )
+			{
+				$bg = 'f5f5f5';
+			}
+		}
+		else
+		{
+			$fg = '000000';
+			$bg = 'ffffff';
+		}
+		$imgData = [ 'headerFont' => 5, 'dataFont' => 4, 'fg' => $fg, 'bg' => $bg, 'padding' => 2 ];
+		$imgData['headerCharW'] = imagefontwidth( $imgData['headerFont'] );
+		$imgData['headerCharH'] = imagefontheight( $imgData['headerFont' ]);
+		$imgData['dataCharW'] = imagefontwidth( $imgData['dataFont'] );
+		$imgData['dataCharH'] = imagefontheight( $imgData['dataFont'] );
+		$imgData['dataRows'] = 0;
+		$imgData['columns'] = [];
+		$imgData['outputRows'] = -1;
+		$imgData['img'] = null;
+		return $imgData;
+	}
+
+
+
+	function reportImageRowPrepare( &$imgData, $row )
+	{
+		// If the image is already being output, or if rows with different numbers of columns are
+		// supplied, exit here with an exception.
+		if ( $imgData['outputRows'] > -1 ||
+		     ( count( $imgData['columns'] ) > 0 && count( $imgData['columns'] ) != count( $row ) ) )
+		{
+			throw new Exception('Invalid call to reportImageRowPrepare.');
+		}
+		// If this is the first call to this function for the image, establish the number of columns
+		// and set initial widths based on the header row.
+		if ( count( $imgData['columns'] ) == 0 )
+		{
+			foreach( $row as $item )
+			{
+				$imgData['columns'][] = ( strlen( $item ) * $imgData['headerCharW'] ) +
+				                        ( $imgData['padding'] * 2 ) + 2;
+			}
+		}
+		// Otherwise, this is a data row and each column width must now be expanded where the data
+		// length demands it.
+		else
+		{
+			$i = 0;
+			foreach( $row as $item )
+			{
+				$w = ( strlen( $item ) * $imgData['dataCharW'] ) + ( $imgData['padding'] * 2 ) + 2;
+				if ( $w > $imgData['columns'][ $i ] )
+				{
+					$imgData['columns'][ $i ] = $w;
+				}
+				$i++;
+			}
+			$imgData['dataRows']++;
+		}
+	}
+
+
+
+	function reportImageRowWrite( &$imgData, $row )
+	{
+		// Exit with an exception if reportImageRowPrepare hasn't been called yet, if the number of
+		// columns in the row does not match the prepared columns, or if all prepared rows have
+		// already been written.
+		if ( count( $imgData['columns'] ) == 0 || count( $imgData['columns'] ) != count( $row ) ||
+		     $imgData['outputRows'] >= $imgData['dataRows'] )
+		{
+			throw new Exception('Invalid call to reportImageRowWrite.');
+		}
+		// If nothing written yet, start creating the image data and write the headers.
+		if ( $imgData['outputRows'] == -1 )
+		{
+			$imgW = array_sum( $imgData['columns'] ) + 3;
+			$imgH = $imgData['headerCharH'] + ( $imgData['padding'] * 2 ) +
+			        ( ( $imgData['dataCharH'] +
+			            ( $imgData['padding'] * 2 ) ) * $imgData['dataRows'] ) + 4;
+			$imgData['img'] = imagecreate( $imgW, $imgH );
+			$imgData['bg'] = imagecolorallocate( $imgData['img'],
+			                                     hexdec( substr( $imgData['bg'], 0, 2 ) ),
+			                                     hexdec( substr( $imgData['bg'], 2, 2 ) ),
+			                                     hexdec( substr( $imgData['bg'], 4, 2 ) ) );
+			$imgData['fg'] = imagecolorallocate( $imgData['img'],
+			                                     hexdec( substr( $imgData['fg'], 0, 2 ) ),
+			                                     hexdec( substr( $imgData['fg'], 2, 2 ) ),
+			                                     hexdec( substr( $imgData['fg'], 4, 2 ) ) );
+			imagerectangle( $imgData['img'], 0, 0, $imgW - 1, $imgH - 1, $imgData['fg'] );
+			$font = $imgData['headerFont'];
+			$posH = 1;
+			$h = $imgData['headerCharH'] + ( $imgData['padding'] * 2 );
+		}
+		// Otherwise write the data row.
+		else
+		{
+			$font = $imgData['dataFont'];
+			$posH = ( $imgData['headerCharH'] + ( $imgData['padding'] * 2 ) ) +
+			        ( ( $imgData['dataCharH'] +
+			            ( $imgData['padding'] * 2 ) ) * $imgData['outputRows'] ) + 2;
+			$h = $imgData['dataCharH'] + ( $imgData['padding'] * 2 );
+		}
+		$imgData['outputRows']++;
+		$posW = 1;
+		$i = 0;
+		foreach( $row as $item )
+		{
+			// Draw the row on the image.
+			$w = $imgData['columns'][ $i ];
+			imagerectangle( $imgData['img'], $posW, $posH, $posW + $w, $posH + $h, $imgData['fg'] );
+			imagestring( $imgData['img'], $font, $posW + $imgData['padding'] + 2,
+			             $posH + $imgData['padding'], $item, $imgData['fg'] );
+			$posW += $w;
+			$i++;
+		}
+	}
+
+
+
+	function reportImageOutput( $imgData )
+	{
+		// Exit with an exception if the image is incomplete.
+		if ( $imgData['img'] === null || $imgData['outputRows'] != $imgData['dataRows'] )
+		{
+			throw new Exception('Invalid call to reportImageOutput.');
+		}
+		// Output the image.
+		imagepng( $imgData['img'] );
+	}
+
+
+
 	// Perform submission of all the report config values (upon edit form submission).
 	// These are the values which are the same for each report type (e.g. visibility, category).
 	function submitReportConfig( $reportID, $includeDownload = true, $includeAdditional = [] )
@@ -2272,6 +2545,15 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			elseif ( in_array( $configSetting, [ 'annotation', 'roles_access', 'roles_download' ] ) )
 			{
 				$configValue = str_replace( "\r\n", "\n", $configValue );
+				if ( in_array( $configSetting, [ 'roles_access', 'roles_download' ] ) )
+				{
+					$configValue = trim( $configValue );
+					$configValue = explode( "\n", $configValue );
+					array_walk( $configValue, function($v) {return trim($v);} );
+					$configValue = array_unique( $configValue );
+					sort( $configValue );
+					$configValue = implode( "\n", $configValue );
+				}
 			}
 			$this->setReportConfig( $reportID, $configSetting, $configValue );
 		}
@@ -2295,6 +2577,50 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		        trim( preg_replace( '/[^A-Za-z0-9-]+/', '_', \REDCap::getProjectTitle() ), '_-' ) .
 		        '_' . preg_replace( '/[^A-Za-z0-9-]+/', '_', $reportID ) . '_' .
 		        gmdate( 'Ymd-His' ) . ( $isDev ? '_dev' : '' ) . '.csv"' );
+	}
+
+
+
+	// Write the REDCap page header for a report.
+	function writePageHeader( $systemHeader = false )
+	{
+		if ( ! isset( $_SERVER['HTTP_ADVANCED_REPORTS_AJAX'] ) )
+		{
+			// REDCap headers require some global variables, so bring globals into function scope.
+			global $pid;
+			global $lang;
+			global $project_encoding;
+			global $project_language;
+			global $project_id;
+			global $project_name;
+			global $app_title;
+			global $status;
+			global $user_rights;
+			global $longitudinal;
+			global $userid;
+			if ( $systemHeader )
+			{
+				($this->htmlPage = new \HtmlPage)->PrintHeader( false );
+				echo '<div style="margin-top:var(--page-top,0px)">';
+			}
+			else require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
+		}
+	}
+
+
+
+	// Write the REDCap page footer for a report.
+	function writePageFooter()
+	{
+		if ( ! isset( $_SERVER['HTTP_ADVANCED_REPORTS_AJAX'] ) )
+		{
+			if ( is_object( $this->htmlPage ) )
+			{
+				echo '</div>';
+				$this->htmlPage->PrintFooter();
+			}
+			else require_once APP_PATH_DOCROOT . 'ProjectGeneral/footer.php';
+		}
 	}
 
 
@@ -2405,7 +2731,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			.mod-advrep-datatable tr:first-child th
 			{
 				position: sticky !important;
-				top: 0px;
+				top: var(--page-top,0px);
 			}
 			.mod-advrep-datatable tr:first-child th:first-child
 			{
@@ -2585,6 +2911,17 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			{
 				background: linear-gradient(0.35turn, #f2dae6 40%, #ffffff);
 			}
+			.mod-advrep-icon-plus
+			{
+				width: 12px;
+				height: 12px;
+				display: inline-block;
+				background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVz' .
+				'nAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH6QoODC4AVe1/MAA' .
+				'AAIBJREFUKM+d0sERwjAQA8AFPpTgilKG6YN63EYKSAV04CcthI8CAR6M0Yw+dxqd7DteOKNiwRouuKT' .
+				'3hhN6RA1T2FLr0TydO24ovlHS69ukGpeCQ0TXUGolmio524frHO7RorUm7+Y84x7Ou0kT1qM/MBxp+NH' .
+				'D3zq8uF+nUffOD5uIMrQNgF0PAAAAAElFTkSuQmCC);
+			}
 			';
 		echo '<script type="text/javascript">',
 			 '(function (){var el = document.createElement(\'style\');',
@@ -2593,5 +2930,6 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			 'document.getElementsByTagName(\'head\')[0].appendChild(el)})()</script>';
 	}
 
+	private $htmlPage;
 
 }

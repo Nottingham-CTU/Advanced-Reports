@@ -67,7 +67,7 @@ class TestT05CreateeditGanttchart():
     self.driver.find_element(By.ID, "gantt-add-cat").click()
     self.driver.execute_script("$(\'[name=\"chart_category[]\"]:eq(1)\').val(\'Range2\');$(\'[name=\"chart_start_event[]\"]:eq(1)\').val(\'enrollment_arm_1\');$(\'[name=\"chart_start_field[]\"]:eq(1)\').val(\'date_enrolled\');$(\'[name=\"chart_end_event[]\"]:eq(1)\').val(\'final_visit_arm_1\');$(\'[name=\"chart_end_field[]\"]:eq(1)\').val(\'discharge_date_4\')")
     self.driver.find_element(By.CSS_SELECTOR, "input[type=\"submit\"][value=\"Save Report\"]").click()
-    WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "a[href*=\"page=gantt_view\"][href*=\"report_id=gantt_chart\"]")))
+    WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "a[href*=\"page=view\"][href*=\"report_id=gantt_chart\"]")))
     elements = self.driver.find_elements(By.CSS_SELECTOR, "a[href*=\"page=gantt_edit\"][href*=\"report_id=gantt_chart\"]")
     assert len(elements) > 0
     elements = self.driver.find_elements(By.CSS_SELECTOR, "a[onclick*=\"mod_advrep_copy\"][onclick*=\"gantt_chart\"]")

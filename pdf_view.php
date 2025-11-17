@@ -40,8 +40,9 @@ $allowSQLSource = $module->getSystemSetting( 'allow-sql-source' );
 
 // Check a valid source is specified, redirect to main reports page if not.
 if ( ! isset( $reportData['source'] ) || ! isset( $listReports[ $reportData['source'] ] ) ||
-     ( $listReports[ $reportData['source'] ]['type'] != 'instrument' &&
-       ( ! $allowSQLSource || $listReports[ $reportData['source'] ]['type'] != 'sql' ) ) )
+     ! ( $listReports[ $reportData['source'] ]['type'] == 'instrument' ||
+         ( $allowSQLSource &&
+           in_array( $listReports[ $reportData['source'] ]['type'], [ 'sql', 'system' ] ) ) ) )
 {
 	if ( $isInternalRequest )
 	{

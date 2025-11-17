@@ -29,7 +29,8 @@ $allowSQLSource = $module->getSystemSetting( 'allow-sql-source' );
 $listDataSources = [];
 foreach ( $listReports as $rID => $rConfig )
 {
-	if ( $rConfig['type'] == 'instrument' || ( $allowSQLSource && $rConfig['type'] == 'sql' ) )
+	if ( $rConfig['type'] == 'instrument' ||
+	     ( $allowSQLSource && in_array( $rConfig['type'], [ 'sql', 'system' ] ) ) )
 	{
 		$listDataSources[ $rID ] = $rConfig['label'];
 	}
@@ -119,7 +120,7 @@ echo $module->escapeHTML( $reportID ), "\n"; ?>
 </div>
 <p style="font-size:11px">
  <a href="<?php echo $module->getUrl( 'reports_edit.php' );
-?>" class=""><i class="fas fa-arrow-circle-left fs11"></i> Back to edit reports</a>
+?>" class=""><i class="fas fa-arrow-left fs11"></i> Back to edit reports</a>
  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
  <a href="<?php echo $module->getUrl( 'README-PDF.md' );
 ?>" target="_blank"><i class="fas fa-book fs11"></i> View Documentation</a>
@@ -176,7 +177,8 @@ foreach ( [ 'portrait', 'landscape' ] as $paperOrientation )
 echo $reportData['pdf'] ?? ''; ?></textarea>
     <br>
     <span class="field-desc">
-     The PDF will be rendered based on this HTML source.
+     The PDF will be rendered based on this HTML source.<br>
+     To insert an image, copy an image file, then paste into the HTML source (right click -> Paste).
     </span>
    </td>
   </tr>
@@ -224,6 +226,29 @@ echo $reportData['pdf'] ?? ''; ?></textarea>
              } )
      return false
    }
+   $('[name="pdf"]').on('paste', function(ev)
+   {
+     var vListFiles = ev.originalEvent.clipboardData.files
+     if ( vListFiles.length < 1 )
+     {
+       return
+     }
+     ev.preventDefault()
+     $(vListFiles).each(async function()
+     {
+       if ( this.type.substring(0,6) == 'image/' )
+       {
+         var vData = await this.bytes()
+         vData = vData.toBase64()
+         vData = '<img src="data:image/png;base64,' + vData + '">'
+         var vPos = $('[name="pdf"]')[0].selectionStart
+         var vEnd = $('[name="pdf"]')[0].selectionEnd
+         var vVal = $('[name="pdf"]').val()
+         $('[name="pdf"]').val( vVal.slice(0,vPos) + vData + vVal.slice(vEnd) )
+         $('[name="pdf"]')[0].selectionEnd = vPos + vData.length
+       }
+     })
+   })
  })()
 </script>
 <?php

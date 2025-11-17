@@ -55,7 +55,7 @@ class TestT07CreateeditInstrumentQuery():
     if element.is_selected() != True: element.click()
     self.driver.execute_script("$(\'#inst-entries-link a\').click();$(\'[name=\"query_form[]\"]:eq(0)\').val(\'demographics\');$(\'[name=\"query_form[]\"]:eq(1)\').val(\'visit_blood_workup\');$(\'[name=\"query_form[]\"]\').change()")
     self.driver.find_element(By.CSS_SELECTOR, "input[type=\"submit\"][value=\"Save Report\"]").click()
-    WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "a[href*=\"page=instrument_view\"][href*=\"report_id=instrument_query\"]")))
+    WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "a[href*=\"page=view\"][href*=\"report_id=instrument_query\"]")))
     elements = self.driver.find_elements(By.CSS_SELECTOR, "a[href*=\"page=instrument_edit\"][href*=\"report_id=instrument_query\"]")
     assert len(elements) > 0
     elements = self.driver.find_elements(By.CSS_SELECTOR, "a[onclick*=\"mod_advrep_copy\"][onclick*=\"instrument_query\"]")

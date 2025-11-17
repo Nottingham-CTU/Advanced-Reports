@@ -1,31 +1,25 @@
 <?php
 /**
- *	Instrument Query Reports edit page.
+ *	System Query Reports edit page.
  */
 
 namespace Nottingham\AdvancedReports;
 
 
 
-// Check user can edit Instrument Query reports and verify the report exists and is an Instrument
-// Query report.
+// Check user can edit System Query reports and verify the report exists and is an System Query
+// report.
 // Redirect to main reports page if not.
 $reportID = $_GET['report_id'];
 $listReports = $module->getReportList();
-if ( ! $module->isReportEditable( 'instrument' ) ||
-     ! isset( $listReports[$reportID] ) || $listReports[$reportID]['type'] != 'instrument' )
+if ( ! $module->isReportEditable( 'system' ) ||
+     ! isset( $listReports[$reportID] ) || $listReports[$reportID]['type'] != 'system' )
 {
 	header( 'Location: ' . $module->getUrl( 'reports.php' ) );
 	exit;
 }
 $reportConfig = $listReports[$reportID];
 $reportData = $module->getReportData( $reportID );
-$canSaveIfApi = ( ! $module->getSystemSetting( 'admin-only-api' ) ||
-                  $module->getUser()->isSuperUser() );
-$canSaveIfPublic = ( ! $module->getSystemSetting( 'admin-only-public' ) ||
-                     $module->getUser()->isSuperUser() );
-$canSaveIfEditable = ( ! $module->getSystemSetting( 'admin-only-editable' ) ||
-                       $module->getUser()->isSuperUser() );
 
 
 
@@ -34,25 +28,18 @@ if ( ! empty( $_POST ) )
 {
 	// Validate data
 	$validationMsg = '';
-	if ( ! $canSaveIfApi && $_POST['report_as_api'] == 'Y' )
-	{
-		$validationMsg = 'Reports with API access can only be saved by an administrator.';
-	}
-	if ( ! $canSaveIfPublic && $_POST['report_as_public'] == 'Y' )
-	{
-		$validationMsg = 'Reports with Public access can only be saved by an administrator.';
-	}
 	// - Check the forms/fields are specified if an alias or join condition is specified.
 	if ( $validationMsg == '' )
 	{
 		foreach ( $_POST['query_form'] as $i => $formName )
 		{
-			if ( $formName == '' &&
-			     ( $i == 0 || $_POST['query_form_alias'][$i] != '' ||
-			       $_POST['query_form_on'][ $i - 1 ] != '' ) )
+			if ( ( $formName . $_POST['query_form_proj'][$i] . $_POST['query_form_alias'][$i] .
+			       ( $i == 0 ? '' : $_POST['query_form_on'][ $i - 1 ] ) != '' ) &&
+			     ( $formName == '' || $_POST['query_form_proj'][$i] == '' ||
+			       $_POST['query_form_alias'][$i] == '' ) )
 			{
-				$validationMsg =
-						'Form cannot be empty if the first entry or if alias/condition specified.';
+				$validationMsg = 'For each table/instrument, the project, table/instrument and ' .
+				                 'alias must be specified.';
 				break;
 			}
 		}
@@ -123,7 +110,7 @@ if ( ! empty( $_POST ) )
 			{
 				if ( $fieldName != '' )
 				{
-					$module->parseLogic( $fieldName, false, true, false );
+					$module->parseLogic( $fieldName, false, false, false );
 					if ( $_POST['query_grouping'][ $index ] == '' )
 					{
 						$hasGroupingUnselected = true;
@@ -131,12 +118,6 @@ if ( ! empty( $_POST ) )
 					if ( $_POST['query_grouping'][ $index ] != '' )
 					{
 						$hasGroupingSelected = true;
-					}
-					if ( ! $canSaveIfEditable &&
-					     preg_match( '/^\\[[a-z0-9_]+\\]\\[[a-z0-9_]+\\]:edit$/i', $fieldName ) )
-					{
-						$validationMsg = 'Reports with editable fields can only be saved ' .
-						                 'by an administrator.';
 					}
 				}
 			}
@@ -151,7 +132,7 @@ if ( ! empty( $_POST ) )
 	{
 		$validationMsg = 'If grouping is selected, it must be selected for all fields';
 	}
-	if ( isset( $_SERVER['HTTP_X_RC_ADVREP_INSTQUERYCHK'] ) )
+	if ( isset( $_SERVER['HTTP_X_RC_ADVREP_SYSQUERYCHK'] ) )
 	{
 		header( 'Content-Type: application/json' );
 		if ( $validationMsg == '' )
@@ -171,17 +152,36 @@ if ( ! empty( $_POST ) )
 
 	// Save data
 	$module->submitReportConfig( $reportID, true, [ 'saveable', 'image', 'api', 'public' ] );
-	$reportData = [ 'desc' => $_POST['query_desc'], 'forms' => [], 'where' => $_POST['query_where'],
+	$reportData = [ 'desc' => $_POST['query_desc'], 'projs' => [], 'forms' => [],
+	                'where' => $_POST['query_where'],
 	                'orderby' => $_POST['query_orderby'], 'select' => [],
 	                'nomissingdatacodes' => isset( $_POST['query_nomissingdatacodes'] ),
 	                'dateformat' => $_POST['query_dateformat'] ];
+	foreach ( $_POST['query_proj_alias'] as $i => $projAlias )
+	{
+		if ( $projAlias == '' )
+		{
+			continue;
+		}
+		if ( $_POST['query_proj_lu'][$i] == 'this' )
+		{
+			$reportData['projs'][] = [ 'lu' => 'this', 'alias' => $projAlias ];
+		}
+		else
+		{
+			$reportData['projs'][] = [ 'lu' => $_POST['query_proj_lu'][$i],
+			                           'luv' => $_POST['query_proj_luv'][$i],
+			                           'alias' => $projAlias ];
+		}
+	}
 	foreach ( $_POST['query_form'] as $i => $formName )
 	{
 		if ( $formName == '' )
 		{
 			continue;
 		}
-		$reportData['forms'][] = [ 'form' => $formName, 'alias' => $_POST['query_form_alias'][$i],
+		$reportData['forms'][] = [ 'proj' => $_POST['query_form_proj'][$i],
+		                           'form' => $formName, 'alias' => $_POST['query_form_alias'][$i],
 		                           'join' => ( ( $i == 0 ) ? ''
 		                                                 : $_POST['query_form_join'][ $i - 1 ] ),
 		                           'on' => ( ( $i == 0 ) ? ''
@@ -204,9 +204,45 @@ if ( ! empty( $_POST ) )
 
 
 
-function writeInstrumentRow1( $setWidths, $formVal, $aliasVal, $joinVal = '' )
+function writeProjectRow( $projType, $projVal, $aliasVal )
 {
 	global $module;
+?>
+      <td style="width:60px">
+       <select name="query_proj_lu[]"
+               onchange="$(this).closest('tr').find('[name=&quot;query_proj_luv[]&quot;]')
+                         .css('display',$(this).val()=='this'?'none':'')">
+        <option value="this">This Project</option>
+        <option value="title-append"<?php echo $projType == 'title-append'
+                                         ? ' selected' : ''; ?>>Title (append to this)</option>
+        <option value="title"<?php echo $projType == 'title'
+                                         ? ' selected' : ''; ?>>Title (exact match)</option>
+        <option value="ptitle"<?php echo $projType == 'ptitle'
+                                         ? ' selected' : ''; ?>>Title (partial match)</option>
+        <option value="notes"<?php echo $projType == 'notes'
+                                         ? ' selected' : ''; ?>>Notes (exact match)</option>
+        <option value="pnotes"<?php echo $projType == 'pnotes'
+                                         ? ' selected' : ''; ?>>Notes (partial match)</option>
+       </select>
+      </td>
+      <td style="width:unset;min-width:100px">
+       <input type="text" name="query_proj_luv[]"
+              value="<?php echo $module->escape( $projVal ?? '' ); ?>"
+              style="width:100%<?php echo $setWidths ? ';min-width:80px' : ''; ?>">
+      </td>
+      <td style="width:unset;max-width:20%">
+       <input type="text" name="query_proj_alias[]" placeholder="alias"
+              value="<?php echo $module->escape( $aliasVal ?? '' ); ?>"
+              style="width:100%<?php echo $setWidths ? ';min-width:80px' : ''; ?>">
+      </td>
+<?php
+}
+
+
+
+function writeTableRow1( $setWidths, $projVal, $tableVal, $aliasVal, $joinVal = '' )
+{
+	global $module, $listTables;
 
 ?>
       <td style="text-align:center;width:15px;padding-right:0px">
@@ -234,13 +270,34 @@ function writeInstrumentRow1( $setWidths, $formVal, $aliasVal, $joinVal = '' )
 	}
 ?>
       </td>
-      <td style="text-align:left;width:<?php echo $setWidths ? '60px' : 'unset'; ?>"><?php
-$module->outputInstrumentDropdown( 'query_form[]', $formVal ?? '',
-                                   [ 'redcap_users' => 'redcap_users - Project Users'] );
-?></td>
+      <td style="text-align:left;width:<?php echo $setWidths ? '60px' : 'unset'; ?>">
+       <select name="query_form_proj[]">
+        <option value=""></option>
+<?php
+	if ( $projVal != '' )
+	{
+		echo '        <option selected value="', $module->escape( $projVal ), '">',
+		     $module->escape( $projVal ), "</option>\n";
+	}
+?>
+       </select>
+      </td>
+      <td style="text-align:left;width:<?php echo $setWidths ? '60px' : 'unset'; ?>">
+       <select name="query_form[]">
+        <option value=""></option>
+<?php
+	foreach ( array_keys( $listTables ) as $tableName )
+	{
+		echo '        <option', ( $tableVal == $tableName ? ' selected' : '' ), ' value="',
+		     $module->escape( $tableName ), '">', $module->escape( substr( $tableName, 1 ) ),
+		     "</option>\n";
+	}
+?>
+       </select>
+      </td>
       <td style="text-align:left;width:unset">
-       <input type="text" name="query_form_alias[]" placeholder="alias (optional)"
-              value="<?php echo $module->escapeHTML( $aliasVal ?? '' ); ?>"
+       <input type="text" name="query_form_alias[]" placeholder="alias"
+              value="<?php echo $module->escape( $aliasVal ?? '' ); ?>"
               style="width:100%<?php echo $setWidths ? ';min-width:80px' : ''; ?>">
       </td>
 <?php
@@ -248,22 +305,19 @@ $module->outputInstrumentDropdown( 'query_form[]', $formVal ?? '',
 
 
 
-function writeInstrumentRow2( $onCondVal, $formVal, $firstFormVal, $aliasVal, $firstAliasVal )
+function writeTableRow2( $onCondVal, $formVal, $firstFormVal, $aliasVal, $firstAliasVal )
 {
-	global $module, $recordIDField;
+	global $module;
 	$formVal = ( $aliasVal == '' ) ? $formVal : $aliasVal;
 	$firstFormVal = ( $firstAliasVal == '' ) ? $firstFormVal : $firstAliasVal;
 
 ?>
       <td style="width:unset"></td>
       <td style="text-align:left;width:unset">On Condition</td>
-      <td colspan="2" style="text-align:left;width:unset">
+      <td colspan="3" style="text-align:left;width:unset">
        <input type="text" name="query_form_on[]" placeholder="condition logic"
               style="width:100%;max-width:unset"
-              data-default="<?php echo $formVal == '' || $firstFormVal == '' ? ''
-                                       : ( '[' . $formVal . '][' . $recordIDField . '] = [' .
-                                           $firstFormVal . '][' . $recordIDField . ']' ); ?>"
-              value="<?php echo $module->escapeHTML( $onCondVal ?? '' ); ?>">
+              value="<?php echo $module->escape( $onCondVal ?? '' ); ?>">
       </td>
 <?php
 }
@@ -282,12 +336,12 @@ function writeSelectRow( $setWidths, $fieldVal, $aliasVal, $groupVal )
       </td>
       <td style="text-align:left;width:<?php echo $setWidths ? '50%;max-width:425px' : 'unset'; ?>">
        <input type="text" name="query_select_field[]" placeholder="field name/logic"
-              value="<?php echo $module->escapeHTML( $fieldVal ?? '' ); ?>"
+              value="<?php echo $module->escape( $fieldVal ?? '' ); ?>"
               data-list="field-var-list" style="width:100%">
       </td>
       <td style="text-align:left;width:unset">
        <input type="text" name="query_select_alias[]" placeholder="alias (optional)"
-              value="<?php echo $module->escapeHTML( $aliasVal ?? '' ); ?>"
+              value="<?php echo $module->escape( $aliasVal ?? '' ); ?>"
               style="width:100%<?php echo $setWidths ? ';min-width:60px' : ''; ?>">
       </td>
       <td style="text-align:left;width:unset">
@@ -319,44 +373,33 @@ function writeSelectRow( $setWidths, $fieldVal, $aliasVal, $groupVal )
 
 
 
+// Get list of table names and fields.
+$listTables = [];
+$queryTables = $module->query( "SELECT TABLE_NAME, GROUP_CONCAT(COLUMN_NAME SEPARATOR ',') fields" .
+                               " FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND " .
+                               "TABLE_NAME IN( SELECT TABLE_NAME FROM INFORMATION_SCHEMA.COLUMNS " .
+                               "WHERE TABLE_SCHEMA = ? AND COLUMN_NAME = 'project_id' AND " .
+                               "DATA_TYPE = 'int' AND TABLE_NAME LIKE 'redcap\_%' AND TABLE_NAME " .
+                               "NOT REGEXP '^redcap_(data|log_event)[0-9]+$' ) AND COLUMN_NAME " .
+                               "<> 'project_id' GROUP BY TABLE_NAME",
+                               [ $GLOBALS['db'], $GLOBALS['db'], ] );
+while ( $infoTable = $queryTables->fetch_assoc() )
+{
+	if ( $infoTable['TABLE_NAME'] == 'redcap_data' )
+	{
+		$infoTable['fields'] = '';
+	}
+	$listTables[ substr( $infoTable['TABLE_NAME'], 6 ) ] = explode( ',', $infoTable['fields'] );
+}
+
+
+
 // Get fields and smart variables for field suggestions.
-$recordIDField = \REDCap::getRecordIdField();
 $smartVarsInfo = \Piping::getSpecialTagsInfo();
 $listSmartVars = array_merge( array_keys( $smartVarsInfo[ $GLOBALS['lang']['global_17'] ] ),
                               array_keys( $smartVarsInfo[ $GLOBALS['lang']['global_156'] ] ),
                               [ 'is-download', 'is-api' ] );
 array_walk( $listSmartVars, function( &$i ) { $i = '[' . $i . ']'; } );
-$listCommonFormVars = [ $recordIDField ];
-if ( \REDCap::isLongitudinal() )
-{
-	$listCommonFormVars[] = 'redcap_event_name';
-}
-$listCommonFormVars[] = 'redcap_repeat_instance';
-if ( ! empty( \REDCap::getGroupNames() ) )
-{
-	$listCommonFormVars[] = 'redcap_data_access_group';
-}
-$listCommonFormVars2 = [ 'redcap_form_url', 'redcap_survey_url', 'redcap_created_by',
-                         'redcap_created_time', 'redcap_updated_by', 'redcap_updated_time',
-                         'redcap_last_instance' ];
-$listFormVars = [];
-foreach ( array_keys( $module->getInstrumentList() ) as $instrument )
-{
-	$formFieldNames = \REDCap::getFieldNames( $instrument );
-	foreach ( $formFieldNames as $i => $formFieldName )
-	{
-		if ( \REDCap::getFieldType( $formFieldName ) == 'descriptive' )
-		{
-			unset( $formFieldNames[$i] );
-		}
-	}
-	$listFormVars[ $instrument ] = array_values(
-	                                array_unique( array_merge( $listCommonFormVars,
-	                                                           array_values( $formFieldNames ),
-	                                                           $listCommonFormVars2 ) ) );
-}
-$listFormVars['redcap_users'] = [ 'username', 'firstname', 'lastname', 'email', 'role_name', 'dag',
-                                  'added', 'expiration', 'first_activity', 'last_activity' ];
 
 
 
@@ -367,14 +410,14 @@ $module->writeStyle();
 
 ?>
 <div class="projhdr">
- Advanced Reports &#8212; Edit Instrument Query Report: <?php
-echo $module->escapeHTML( $reportID ), "\n"; ?>
+ Advanced Reports &#8212; Edit System Query Report: <?php
+echo $module->escape( $reportID ), "\n"; ?>
 </div>
 <p style="font-size:11px">
  <a href="<?php echo $module->getUrl( 'reports_edit.php' );
 ?>" class=""><i class="fas fa-arrow-left fs11"></i> Back to edit reports</a>
  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
- <a href="<?php echo $module->getUrl( 'README-InstrumentQ.md' );
+ <a href="<?php echo $module->getUrl( 'README-SystemQ.md' );
 ?>" target="_blank"><i class="fas fa-book fs11"></i> View Documentation</a>
 </p>
 <form method="post" id="queryform">
@@ -404,12 +447,48 @@ echo $reportData['desc'] ?? ''; ?></textarea>
    </td>
   </tr>
   <tr>
-   <td>Instruments</td>
+   <td>Projects</td>
+   <td>
+    <table id="proj-entries-tbl" style="width:95%;max-width:750px">
+     <tbody>
+      <tr><?php
+writeProjectRow( $reportData['projs'][0]['lu'], $reportData['projs'][0]['luv'],
+                 $reportData['projs'][0]['alias'] );
+?></tr>
+<?php
+$firstProj = true;
+foreach ( $reportData['projs'] as $projData )
+{
+	if ( $firstProj )
+	{
+		$firstProj = false;
+		continue;
+	}
+?>
+      <tr><?php
+	writeProjectRow( $projData['lu'], $projData['luv'], $projData['alias'] );
+?></tr>
+<?php
+}
+?>
+      <tr style="display:none"><?php writeProjectRow( '', '', '' ); ?></tr>
+     </tbody>
+    </table>
+    <span id="proj-entries-link" style="display:none">
+     <a onclick="$('#proj-entries-tbl tr').last().clone().css('display',''
+                    ).insertBefore($('#proj-entries-tbl tr').last());return false"
+        href="#" class=""><i class="mod-advrep-icon-plus"></i> Add project</a>
+    </span>
+   </td>
+  </tr>
+  <tr>
+   <td>Tables or<br>Instruments</td>
    <td>
     <table id="inst-entries-tbl" style="width:95%;max-width:750px">
      <tbody>
       <tr><?php
-writeInstrumentRow1( true, $reportData['forms'][0]['form'], $reportData['forms'][0]['alias'] );
+writeTableRow1( true, $reportData['forms'][0]['proj'], $reportData['forms'][0]['form'],
+                $reportData['forms'][0]['alias'] );
 ?></tr>
      </tbody>
 <?php
@@ -424,30 +503,32 @@ foreach ( $reportData['forms'] as $formData )
 ?>
      <tbody class="instq-row-from">
       <tr><?php
-	writeInstrumentRow1( false, $formData['form'], $formData['alias'], $formData['join'] );
+	writeTableRow1( false, $formData['proj'], $formData['form'], $formData['alias'],
+	                $formData['join'] );
 ?></tr>
       <tr><?php
-	writeInstrumentRow2( $formData['on'], $formData['form'], $reportData['forms'][0]['form'],
-	                     $formData['alias'], $reportData['forms'][0]['alias'] );
+	writeTableRow2( $formData['on'], $formData['form'], $reportData['forms'][0]['form'],
+	                $formData['alias'], $reportData['forms'][0]['alias'] );
 ?></tr>
      </tbody>
 <?php
 }
 ?>
      <tbody class="instq-row-from" style="display:none">
-      <tr><?php writeInstrumentRow1( false, '', '' ); ?></tr>
+      <tr><?php writeTableRow1( false, '', '', '' ); ?></tr>
       <tr><?php
-writeInstrumentRow2( '', '', $reportData['forms'][0]['form'],
-                     '', $reportData['forms'][0]['alias'] );
+writeTableRow2( '', '', $reportData['forms'][0]['form'],
+                '', $reportData['forms'][0]['alias'] );
 ?></tr>
      </tbody>
     </table>
     <span id="inst-entries-link" style="display:none">
      <a onclick="$('#inst-entries-tbl tbody').last().clone().css('display',''
                     ).insertBefore($('#inst-entries-tbl tbody').last());return false"
-        href="#" class=""><i class="mod-advrep-icon-plus"></i> Add instrument</a>
+        href="#" class=""><i class="mod-advrep-icon-plus"></i> Add table or instrument</a>
      <br>
      <span style="font-size:0.8em">
+      Choose the <i>data</i> table to add an instrument.<br>
       Inner Join will only include rows where there is data on both sides of the join.<br>
       Left Join will include rows where there is data before the join, even if there is no data
       after the join.
@@ -460,7 +541,7 @@ writeInstrumentRow2( '', '', $reportData['forms'][0]['form'],
    <td>
     <input type="text" name="query_where" style="width:95%;max-width:750px"
            placeholder="condition logic"
-           value="<?php echo $module->escapeHTML( $reportData['where'] ?? '' ); ?>">
+           value="<?php echo $module->escape( $reportData['where'] ?? '' ); ?>">
    </td>
   </tr>
   <tr>
@@ -468,7 +549,7 @@ writeInstrumentRow2( '', '', $reportData['forms'][0]['form'],
    <td>
     <input type="text" name="query_orderby" style="width:95%;max-width:750px"
            placeholder="sorting logic" list="field-var-list-sort"
-           value="<?php echo $module->escapeHTML( $reportData['orderby'] ?? '' ); ?>">
+           value="<?php echo $module->escape( $reportData['orderby'] ?? '' ); ?>">
    </td>
   </tr>
   <tr>
@@ -550,7 +631,8 @@ echo $reportData['nomissingdatacodes'] ? ' checked' : '';
 <script type="text/javascript">
  (function ()
  {
-   $('#inst-entries-link, #field-entries-link').css('display','')
+   $('#proj-entries-link, #inst-entries-link, #field-entries-link').css('display','')
+   $('[name="query_proj_lu[]"]').trigger('change')
    var vValidated = false
    $('#queryform')[0].onsubmit = function()
    {
@@ -561,7 +643,7 @@ echo $reportData['nomissingdatacodes'] ? ' checked' : '';
      $.ajax( { url : window.location.href,
                method : 'POST',
                data : $('#queryform').serialize(),
-                        headers : { 'X-RC-AdvRep-InstQueryChk' : '1' },
+                        headers : { 'X-RC-AdvRep-SysQueryChk' : '1' },
                         dataType : 'json',
                         success : function ( result )
                         {
@@ -573,7 +655,7 @@ echo $reportData['nomissingdatacodes'] ? ' checked' : '';
                           }
                           else
                           {
-                            var vMsg = 'Invalid instrument query: ' + result
+                            var vMsg = 'Invalid system query: ' + result
                             $('#query_err_msg span').text( vMsg )
                             $('#query_err_msg').css( 'display', '' )
                           }
@@ -581,8 +663,36 @@ echo $reportData['nomissingdatacodes'] ? ' checked' : '';
              } )
      return false
    }
+   var vListProjs = []
+   var vFuncUpdateProjs = function()
+   {
+     vListProjs = []
+     $('[name="query_proj_alias[]"]').each(function()
+     {
+       if ( $(this).val() != '' )
+       {
+         vListProjs.push($(this).val())
+       }
+     })
+     $('[name="query_form_proj[]"]').each(function()
+     {
+       var vDropdown = $(this)
+       var vOldVal = ( vDropdown.val() == '' ? null : vDropdown.val() )
+       vDropdown.html('<option></option>')
+       $(vListProjs).each(function()
+       {
+         vDropdown.append($('<option></option>').attr('value',this).text(this))
+       })
+       if ( vOldVal != null )
+       {
+         vDropdown.val(vOldVal)
+       }
+     })
+   }
+   vFuncUpdateProjs()
+   $('[name="query_proj_alias[]"]').on('change',vFuncUpdateProjs)
    var vSmartVars = <?php echo json_encode( $listSmartVars ), "\n"; ?>
-   var vFormVars = <?php echo json_encode( $listFormVars ), "\n"; ?>
+   var vFormVars = <?php echo json_encode( $listTables ), "\n"; ?>
    var vFuncUpdateVars = function()
    {
      $('#field-var-list').html('')
@@ -594,23 +704,20 @@ echo $reportData['nomissingdatacodes'] ? ' checked' : '';
      for ( var vIndex = 0; vIndex < vFormElems.length; vIndex++ )
      {
        var vFormName = vFormElems[ vIndex ].value
-       var vAlias = vAliasElems[ vIndex ].value == '' ? vFormName : vAliasElems[ vIndex ].value
-       if ( vIndex > 0 )
+       if ( vFormName == '_data' )
        {
-         var vOnCondElem = vOnCondElems.eq( vIndex - 1 )
-         var vNewOnCond = ''
-         if ( vAlias != '' && vFirstAlias != '' )
+         vFormName = prompt('Please enter instrument form name:')
+         vFormName = ( vFormName == null ? '' : vFormName.replace(/^_+/,'') )
+         var vItem = $(vFormElems[ vIndex ]).find('[value="' + vFormName + '"]')
+         if ( vItem.length == 0 )
          {
-           vNewOnCond = '[' + vAlias + '][<?php echo $recordIDField; ?>] = ' +
-                        '[' + vFirstAlias + '][<?php echo $recordIDField; ?>]'
+           $(vFormElems[ vIndex ]).append($('<option></option>').attr('value',vFormName)
+                                                                .text('data:'+vFormName))
          }
-         if ( vOnCondElem.data('default') == vOnCondElem.val() )
-         {
-           vOnCondElem.val(vNewOnCond)
-         }
-         vOnCondElem.data('default',vNewOnCond)
+         $(vFormElems[ vIndex ]).val(vFormName)
        }
-       if ( vFormName == '' )
+       var vAlias = vAliasElems[ vIndex ].value
+       if ( vAlias == '' || vFormName == '' || vFormName[0] != '_' )
        {
          continue
        }
@@ -680,6 +787,10 @@ echo $reportData['nomissingdatacodes'] ? ' checked' : '';
    }
    vFuncMakeDraggable('.instq-row-from', true)
    vFuncMakeDraggable('.instq-row-select', true)
+   $('#proj-entries-link a').click(function()
+   {
+     $('[name="query_proj_alias[]"]:visible').last().on('change',vFuncUpdateProjs)
+   })
    $('#inst-entries-link a').click(function(){vFuncMakeDraggable('.instq-row-from')})
    $('#field-entries-link a').click(function(){vFuncMakeDraggable('.instq-row-select')})
  })()

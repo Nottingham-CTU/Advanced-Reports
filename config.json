@@ -1,7 +1,7 @@
 {
 	"name" : "Advanced Reports",
 	"namespace" : "Nottingham\\AdvancedReports",
-	"description" : "Provides additional report types for use in projects.&nbsp; <a href=\"https://github.com/Nottingham-CTU/Advanced-Reports/blob/main/README.md\" target=\"_blank\"><u>View documentation on GitHub</u></a><br>Report types: Accumulation, Gantt, Instrument Query, PDF, Record Table, SQL*<br>* Only administrators can create/edit SQL reports.",
+	"description" : "Provides additional report types for use in projects.&nbsp; <a href=\"https://github.com/Nottingham-CTU/Advanced-Reports/blob/main/README.md\" target=\"_blank\"><u>View documentation on GitHub</u></a><br>Report types: Accumulation, Gantt, Instrument Query, PDF, Record Table, SQL*, System Query*<br>* Only administrators can create/edit SQL and System Query reports.",
 	"authors": [
 		{
 			"name": "Richard Dooley",
@@ -39,7 +39,7 @@
 		},
 		{
 			"key" : "allow-sql-source",
-			"name" : "Allow SQL reports to be used as the source for PDF reports",
+			"name" : "Allow SQL and System Query reports to be used as the source for PDF reports",
 			"type" : "checkbox"
 		}
 	],

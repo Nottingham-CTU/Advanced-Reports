@@ -219,6 +219,8 @@ while ( $infoSurvey = $querySurveys->fetch_assoc() )
 // which are not used will be able to be disregarded later for efficiency.
 $hasRCUsersTable = false;
 $rcUsersTable = [];
+$hasRCAlertsTable = false;
+$rcAlertsTable = [];
 $listAliasForms = [];
 $listReferencedFields = [];
 foreach ( $reportData['forms'] as $queryForm )
@@ -227,6 +229,11 @@ foreach ( $reportData['forms'] as $queryForm )
 	if ( $queryForm['form'] == 'redcap_users' )
 	{
 		$hasRCUsersTable = true;
+		continue;
+	}
+	elseif ( $queryForm['form'] == 'redcap_alerts' )
+	{
+		$hasRCAlertsTable = true;
 		continue;
 	}
 	// Map the form alias to the instrument name.
@@ -295,6 +302,7 @@ if ( ! empty( $reportData['select'] ) )
 
 // Get event names, DAG names, redcap_data table and redcap_log_event table for the project.
 $listEventNames = \REDCap::getEventNames( true );
+$listEventLabels = \REDCap::getEventNames( false, true );
 $listDAGUniqueNames = \REDCap::getGroupNames( true );
 $listDAGFullNames = \REDCap::getGroupNames( false );
 $dataTable = method_exists( '\REDCap', 'getDataTable' )
@@ -404,6 +412,32 @@ foreach ( $reportData['forms'] as $queryForm )
 
 
 
+// If the instrument query makes use of the redcap_alerts virtual table, query the database for this
+// data and store in an array for use later.
+if ( $hasRCAlertsTable )
+{
+	// This query returns a table of all sent alerts for each record/event/instance. It includes the
+	// alert number (sort order), alert title, alert type, record_id, event, instance, instrument,
+	// date/time first sent, date/time last sent, and number of times sent.
+	$queryRCAlertsTable =
+		$module->query( 'SELECT ra.alert_order alert_num, ra.alert_title, ra.alert_type, ' .
+		                'ras.record record_id, ras.event_id event_name, ' .
+		                'ras.instance repeat_instance, ras.instrument, (SELECT time_sent FROM ' .
+		                'redcap_alerts_sent_log rasl WHERE rasl.alert_sent_id = ras.alert_sent_id' .
+		                ' ORDER BY time_sent LIMIT 1) first_sent, ras.last_sent, (SELECT count(*)' .
+		                ' FROM redcap_alerts_sent_log rasl WHERE rasl.alert_sent_id = ' .
+		                'ras.alert_sent_id) sent_count FROM redcap_alerts ra ' .
+		                'JOIN redcap_alerts_sent ras ON ra.alert_id = ras.alert_id ' .
+		                'WHERE ra.project_id = ?', [ $module->getProjectId() ] );
+	// Store the alerts table.
+	while ( $infoRCAlertsTable = $queryRCAlertsTable->fetch_assoc() )
+	{
+		$rcAlertsTable[] = $infoRCAlertsTable;
+	}
+}
+
+
+
 // If the instrument query makes use of the redcap_users virtual table, query the database for this
 // data and store in an array for use later.
 if ( $hasRCUsersTable )
@@ -455,7 +489,17 @@ foreach ( $reportData['forms'] as $queryForm )
 	$alias = $queryForm['alias'] == '' ? $form : $queryForm['alias'];
 
 	// Get the fields for the form and retrieve the values and value labels for each record.
-	if ( $form == 'redcap_users' )
+	if ( $form == 'redcap_alerts' )
+	{
+		// If using the redcap_alerts virtual table, get the values saved earlier. Mark any datetime
+		// fields as such so format transformations can be applied.
+		$fields = empty( $rcAlertsTable ) ? [] : array_keys( $rcAlertsTable[0] );
+		$fieldMetadata = [ 'first_sent' => [ 'field_type' => 'text', TVALIDSTR => 'time' ],
+		                   'last_sent' => [ 'field_type' => 'text', TVALIDSTR => 'time' ] ];
+		$formValues = $rcAlertsTable;
+		$formLabels = $rcAlertsTable;
+	}
+	elseif ( $form == 'redcap_users' )
 	{
 		// If using the redcap_users virtual table, get the values saved earlier. Mark any datetime
 		// fields as such so format transformations can be applied.
@@ -495,7 +539,7 @@ foreach ( $reportData['forms'] as $queryForm )
 	// If this isn't a CSV download, identify the date fields. The 'label' of any date fields will
 	// be set to the date transformed into the user's preferred format.
 	$dateFields = [];
-	if ( ! $isCsvDownload )
+	if ( ! $isCsvDownload && $reportData['dateformat'] ?? '' == '' )
 	{
 		foreach ( $fieldMetadata as $fieldName => $fieldParams )
 		{
@@ -516,8 +560,7 @@ foreach ( $reportData['forms'] as $queryForm )
 			{
 				if ( in_array( $fieldName, $dateFields ) )
 				{
-					$formLabels[ $i ][ $fieldName ] =
-							\DateTimeRC::format_ts_from_ymd( $value, false, true );
+					$formLabels[ $i ][ $fieldName ] = $module->formatDate( $value, 'upf' );
 				}
 			}
 		}
@@ -547,8 +590,22 @@ foreach ( $reportData['forms'] as $queryForm )
 				continue;
 			}
 			$formLabelsRow = $formLabels[$i];
+			// For redcap_alerts virtual table, replace event ID with name.
+			if ( $form == 'redcap_alerts' )
+			{
+				if ( $listEventNames === false )
+				{
+					$formValuesRow['event_name'] = '';
+					$formLabelsRow['event_name'] = '';
+				}
+				elseif ( $formValuesRow['event_name'] !== null )
+				{
+					$formValuesRow['event_name'] = $listEventNames[ $formValuesRow['event_name'] ];
+					$formLabelsRow['event_name'] = $listEventLabels[ $formLabelsRow['event_name'] ];
+				}
+			}
 			// For redcap_users virtual table, replace DAG ID with name.
-			if ( $form == 'redcap_users' )
+			elseif ( $form == 'redcap_users' )
 			{
 				if ( $formValuesRow['dag'] !== null )
 				{
@@ -988,8 +1045,12 @@ if ( $isApiRequest )
 	{
 		foreach ( $resultRow as $fieldName => $value )
 		{
-			$resultTable[ $resultIndex ][ $fieldName ] = is_array( $value ) ? $value['value']
-			                                                                : (string)$value;
+			$value = is_array( $value ) ? $value['value'] : (string)$value;
+			if ( $isInternalRequest )
+			{
+				$value = $module->formatDate( $value, $reportData['dateformat'] ?? '' );
+			}
+			$resultTable[ $resultIndex ][ $fieldName ] = $value;
 		}
 	}
 	return $resultTable;
@@ -1049,16 +1110,7 @@ if ( isset( $_GET['as_image'] ) && $reportConfig['as_image'] )
 	{
 		header( 'Content-Type: image/png' );
 	}
-	// Determine the fonts and character sizes for the report.
-	$imgHeaderFont = 5;
-	$imgDataFont = 4;
-	$imgHeaderCharW = imagefontwidth( $imgHeaderFont );
-	$imgHeaderCharH = imagefontheight( $imgHeaderFont );
-	$imgDataCharW = imagefontwidth( $imgDataFont );
-	$imgDataCharH = imagefontheight( $imgDataFont );
-	$imgHeaderH = $imgHeaderCharH + 2;
-	$imgDataH = $imgDataCharH + 2;
-	// Get all the column names.
+	$img = $module->reportImageCreate();
 	$columns = [];
 	if ( ! empty( $resultTable ) )
 	{
@@ -1067,77 +1119,34 @@ if ( isset( $_GET['as_image'] ) && $reportConfig['as_image'] )
 			$columns[] = $fieldName;
 		}
 	}
-	// Calculate column widths based on column name string lengths.
-	$imgColumnWidths = [];
-	foreach ( $columns as $columnName )
+	foreach ( [ 'reportImageRowPrepare', 'reportImageRowWrite' ] as $imageRowFunc )
 	{
-		$imgColumnWidths[ $columnName ] = ( strlen( $columnName ) * $imgHeaderCharW ) + 5;
-	}
-	// Check the data in each column for each record, increase the column widths if necessary.
-	foreach ( $resultTable as $resultRow )
-	{
-		foreach ( $columns as $columnName )
+		// Prepare/draw the header row.
+		$module->$imageRowFunc( $img, $columns );
+		// Prepare/draw each row of data.
+		foreach ( $resultTable as $resultRow )
 		{
-			if ( is_object( $resultRow[$columnName] ) )
+			$imgRow = [];
+			foreach ( $columns as $columnName )
 			{
-				$resultRow[$columnName] = $resultRow[$columnName]->getLabel();
+				if ( is_object( $resultRow[$columnName] ) )
+				{
+					$resultRow[$columnName] = $resultRow[$columnName]->getLabel();
+				}
+				elseif ( is_array( $resultRow[$columnName] ) )
+				{
+					$resultRow[$columnName] = $resultRow[$columnName]['label'];
+				}
+				$resultRow[$columnName] = $module->formatDate( (string)$resultRow[$columnName],
+				                                               $reportData['dateformat'] ?? '' );
+				$imgRow[] = isset( $resultRow[$columnName] )
+				            ? $module->parseHTML( $resultRow[$columnName], true ) : '';
 			}
-			elseif ( is_array( $resultRow[$columnName] ) )
-			{
-				$resultRow[$columnName] = $resultRow[$columnName]['label'];
-			}
-			$imgParsedData = isset( $resultRow[$columnName] )
-			                    ? $module->parseHTML( (string)$resultRow[$columnName], true ) : '';
-			$thisWidth = ( strlen( $imgParsedData ) * $imgDataCharW ) + 5;
-			if ( $imgColumnWidths[$columnName] < $thisWidth )
-			{
-				$imgColumnWidths[$columnName] = $thisWidth;
-			}
+			$module->$imageRowFunc( $img, $imgRow );
 		}
-	}
-	// Calculate the image dimensions, create the image, and set the colours (black/white).
-	$imgWidth = array_sum( $imgColumnWidths ) + 1;
-	$imgHeight = $imgHeaderH + ( count( $resultTable ) * ( $imgDataH ) ) + 1;
-	$img = imagecreate( $imgWidth, $imgHeight );
-	imagecolorallocate( $img, 255, 255, 255 );
-	$imgBlack = imagecolorallocate( $img, 0, 0, 0 );
-	// Draw the column headers.
-	$posW = 0;
-	$posH = 0;
-	foreach ( $columns as $columnName )
-	{
-		$thisWidth = $imgColumnWidths[$columnName];
-		imagerectangle( $img, $posW, $posH, $posW + $thisWidth, $posH + $imgHeaderH, $imgBlack );
-		imagestring( $img, $imgHeaderFont, $posW + 2, $posH + 1, $columnName, $imgBlack );
-		$posW += $thisWidth;
-	}
-	// Draw each row of data.
-	$posW = 0;
-	$posH += $imgHeaderH;
-	foreach ( $resultTable as $resultRow )
-	{
-		foreach ( $columns as $columnName )
-		{
-			if ( is_object( $resultRow[$columnName] ) )
-			{
-				$resultRow[$columnName] = $resultRow[$columnName]->getLabel();
-			}
-			elseif ( is_array( $resultRow[$columnName] ) )
-			{
-				$resultRow[$columnName] = $resultRow[$columnName]['label'];
-			}
-			$imgParsedData = isset( $resultRow[$columnName] )
-			                    ? $module->parseHTML( (string)$resultRow[$columnName], true ) : '';
-			$thisWidth = $imgColumnWidths[$columnName];
-			imagerectangle( $img, $posW, $posH, $posW + $thisWidth, $posH + $imgDataH, $imgBlack );
-			imagestring( $img, $imgDataFont, $posW + 2, $posH + 1, $imgParsedData, $imgBlack );
-			$posW += $thisWidth;
-		}
-		$posW = 0;
-		$posH += $imgDataH;
 	}
 	// Output the image as a PNG and exit.
-	imagepng( $img );
+	$module->reportImageOutput( $img );
 	if ( $isInternalRequest )
 	{
 		return;
@@ -1148,9 +1157,9 @@ if ( isset( $_GET['as_image'] ) && $reportConfig['as_image'] )
 
 
 // Display the header and report navigation links.
-if ( $disableAccessControl ) ($htmlPage = new \HtmlPage)->PrintHeader( false );
-else require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
-$module->outputViewReportHeader( $reportConfig['label'], 'instrument', true );
+$module->writePageHeader( $disableAccessControl );
+$module->outputViewReportHeader( $reportConfig['label'], 'instrument',
+                                 [ 'canReset' => true, 'asImage' => $reportConfig['as_image'] ] );
 
 // Initialise the row counter.
 $rowCount = 0;
@@ -1206,6 +1215,7 @@ foreach ( $resultTable as $resultRow )
 		{
 			$value = $value['label'];
 		}
+		$value = $module->formatDate( $value, $reportData['dateformat'] ?? '' );
 ?>
    <td><?php echo $module->parseHTML( $value ); ?></td>
 <?php
@@ -1260,5 +1270,4 @@ $('#mod-advrep-table .valedit').submit( function(e)
 <?php
 
 // Display the footer
-if ( $disableAccessControl ) $htmlPage->PrintFooter();
-else require_once APP_PATH_DOCROOT . 'ProjectGeneral/footer.php';
+$module->writePageFooter();

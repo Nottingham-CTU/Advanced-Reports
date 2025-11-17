@@ -54,7 +54,7 @@
 		"scenario" : "Check CSV download. Check report download rights are correctly enforced. Ensure any HTML is correctly stripped/escaped."
 	},
 	{
-		"file" : "test_t10InstrumentQueryasimage",
+		"file" : "test_t10InstrumentQueryasimage.py",
 		"name" : "Instrument Query as image",
 		"expected" : "Report is rendered as image",
 		"scenario" : "Check that Instrument Query reports are rendered as image correctly. Check report viewing rights are correctly enforced. Ensure any HTML is correctly stripped/escaped."
@@ -164,6 +164,42 @@
 	{
 		"file" : "test_t28Accumulationreportfilefield.py",
 		"name" : "Accumulation report file field",
+		"expected" : "Report can be saved to a file field when enabled",
+		"scenario" : "Check that the report is only saved to a file field when the feature is enabled."
+	},
+	{
+		"file" : "test_t29CreateeditSystemQuery.py",
+		"name" : "Create/edit System Query",
+		"expected" : "System Query can be created",
+		"scenario" : "Check that System Query report create/edit options are shown only to users with report edit rights. Ensure that new/edited reports are saved correctly."
+	},
+	{
+		"file" : "test_t30SystemQueryview.py",
+		"name" : "System Query view",
+		"expected" : "Report is displayed correctly",
+		"scenario" : "Check that System Query reports are displayed correctly, and that functions are processed correctly where applicable. Check report viewing rights are correctly enforced. Ensure HTML is allowed/escaped as expected."
+	},
+	{
+		"file" : "test_t31SystemQuerydownload.py",
+		"name" : "System Query download",
+		"expected" : "CSV file download is valid",
+		"scenario" : "Check CSV download. Check report download rights are correctly enforced. Ensure any HTML is correctly stripped/escaped."
+	},
+	{
+		"file" : "test_t32SystemQueryasimage.py",
+		"name" : "System Query as image",
+		"expected" : "Report is rendered as image",
+		"scenario" : "Check that System Query reports are rendered as image correctly. Check report viewing rights are correctly enforced. Ensure any HTML is correctly stripped/escaped."
+	},
+	{
+		"file" : "test_t33SystemQuerypublicapi.py",
+		"name" : "System Query public/api",
+		"expected" : "Report can be accessed via public/api endpoints when enabled",
+		"scenario" : "Check that the report is only accessible via the public/api endpoints when the features are enabled, and that the correct API key is required to access the API endpoint."
+	},
+	{
+		"file" : "test_t34SystemQueryfilefield.py",
+		"name" : "System Query file field",
 		"expected" : "Report can be saved to a file field when enabled",
 		"scenario" : "Check that the report is only saved to a file field when the feature is enabled."
 	}

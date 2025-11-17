@@ -148,7 +148,7 @@ $module->writeStyle();
 </div>
 <p style="font-size:11px">
  <a href="<?php echo $module->getUrl( 'reports.php' )
-?>"><i class="fas fa-arrow-circle-left fs11"></i> Back to advanced reports</a>
+?>"><i class="fas fa-arrow-left fs11"></i> Back to advanced reports</a>
 </p>
 <form method="post">
  <table class="mod-advrep-formtable">
@@ -195,7 +195,7 @@ foreach ( $module->getReportTypes() as $typeCode => $typeName )
  </table>
 </form>
 <?php
-if ( count( $listReports ) > 0 )
+if ( ! empty( $listReports ) )
 {
 ?>
 <p>&nbsp;</p>
@@ -239,6 +239,10 @@ if ( count( $listReports ) > 0 )
 		{
 			echo ' &nbsp;<i class="far fa-floppy-disk" title="Saveable to field"></i>';
 		}
+		if ( isset( $infoReport['as_image'] ) && $infoReport['as_image'] )
+		{
+			echo ' &nbsp;<i class="far fa-file-image" title="Retrievable as image"></i>';
+		}
 		if ( isset( $infoReport['as_api'] ) && $infoReport['as_api'] )
 		{
 			echo ' &nbsp;<i class="fas fa-laptop-code" title="API"></i>';
@@ -264,7 +268,7 @@ if ( count( $listReports ) > 0 )
 		if ( $module->isReportEditable( $infoReport['type'] ) )
 		{
 ?>
-   <a href="<?php echo $module->getUrl( $infoReport['type'] . '_view.php?report_id=' . $reportID );
+   <a href="<?php echo $module->getUrl( 'view.php?report_id=' . $reportID );
 ?>" class="fs12"><i class="far fa-file-alt fs14"></i> View</a>
 <?php
 		}
@@ -321,8 +325,57 @@ if ( count( $listReports ) > 0 )
 	}
 ?>
 </table>
+<?php
+}
+?>
+<p>&nbsp;</p>
+<ul>
+<?php
+if ( ! empty( $listReports ) )
+{
+?>
+ <li>
+  <a id="exportLink"
+     href="<?php echo $module->getUrl( 'export_reports.php' ) ?>">Export reports</a>
+ </li>
+<?php
+}
+?>
+ <li>
+  <a href="<?php echo $module->getUrl( 'import_reports.php' ) ?>">Import reports</a>
+ </li>
+</ul>
+<?php
+if ( ! empty( $listReports ) )
+{
+?>
+<p>&nbsp;</p>
+<div id="exportDialog" style="display:none">
+ <p style="padding-left:1rem;margin-bottom:15px">
+  <button type="button" class="btn btn-defaultrc btn-xs"
+          onclick="window.location.href='<?php echo $module->getUrl( 'export_reports.php' ) ?>'">
+   Export all reports
+  </button>
+ </p>
+ <p style="padding-left:1rem;margin-bottom:3px">Export individual report:</p>
+ <div style="overflow-y:auto;max-height:300px">
+  <ul>
+<?php
+	foreach ( $listReports as $reportID => $infoReport )
+	{
+		if ( $module->isReportEditable( $infoReport['type'] ) )
+		{
+			echo '   <li><a href="', $module->getUrl( 'export_reports.php?report_id=' . $reportID ),
+			     '">', $module->escapeHTML( $infoReport['label'] ), "</a></li>\n";
+		}
+	}
+?>
+  </ul>
+ </div>
+</div>
 <script type="text/javascript">
- $(function(){
+ $(function()
+ {
    var vDialog = $('<div>Copy report <i></i>?<br><br>New unique report name: ' +
                    '<input type="text" style="width:95%" placeholder="e.g. my_report" ' +
                    'required pattern="[a-z0-9_\\-]+" title="lowercase letters, numbers, dashes ' +
@@ -333,7 +386,7 @@ if ( count( $listReports ) > 0 )
      autoOpen:false,
      buttons:
      {
-       OK : function()
+       "OK" : function()
        {
          if ( vDialog.find('input').prop('validity').valid )
          {
@@ -343,11 +396,11 @@ if ( count( $listReports ) > 0 )
            $('#copyreport_' + vCopyID)[0].submit()
          }
        },
-       Cancel : function() { vDialog.dialog('close') }
+       "Cancel" : function() { vDialog.dialog('close') }
      },
      modal:true,
      resizable:false,
-     title:'Copy Report',
+     title:"Copy Report",
      width:350
    })
    window.mod_advrep_copy = function( id, label )
@@ -359,20 +412,21 @@ if ( count( $listReports ) > 0 )
      return false
    }
  })
- $(function(){
-   var vDialog = $('<div>Are you sure you want to delete the report <i></i>?</div>')
+ $(function()
+ {
+   var vDialog = $("<div>Are you sure you want to delete the report <i></i>?</div>")
    var vDelID = ''
    vDialog.dialog(
    {
      autoOpen:false,
      buttons:
      {
-       OK : function() { vDialog.dialog('close'); $('#delreport_' + vDelID)[0].submit() },
-       Cancel : function() { vDialog.dialog('close') }
+       "OK" : function() { vDialog.dialog('close'); $('#delreport_' + vDelID)[0].submit() },
+       "Cancel" : function() { vDialog.dialog('close') }
      },
      modal:true,
      resizable:false,
-     title:'Delete Report',
+     title:"Delete Report",
      width:350
    })
    window.mod_advrep_delete = function( id, label )
@@ -382,6 +436,25 @@ if ( count( $listReports ) > 0 )
      vDialog.dialog('open')
      return false
    }
+ })
+ $(function()
+ {
+   var vDialog = $('#exportDialog')
+   vDialog.dialog(
+   {
+     autoOpen:false,
+     buttons: { "Close" : function() { vDialog.dialog('close') } },
+     modal:true,
+     resizable:false,
+     title:"Export Reports",
+     width:350
+   })
+   vDialog.on( 'dialogopen', function() { $('#exportDialog button').trigger('blur') } )
+   $('#exportLink').on('click',function( ev )
+   {
+     ev.preventDefault()
+     vDialog.dialog('open')
+   })
  })
 </script>
 <?php
