@@ -15,6 +15,10 @@ if ( ! $module->isReportEditable() )
 
 $projectID = $module->getProjectID();
 $singleReport = false;
+$isSuperUser = $module->getUser()->isSuperUser();
+$canSavePublic = $isSuperUser || ! $module->getSystemSetting('admin-only-public');
+$canSaveAPI = $isSuperUser || ! $module->getSystemSetting('admin-only-api');
+$canSaveEditable = $isSuperUser || ! $module->getSystemSetting('admin-only-editable');
 
 
 $mode = 'upload';
@@ -66,7 +70,8 @@ if ( ! empty( $_FILES ) ) // file is uploaded
 	// within the file. The user will be asked to confirm the changes.
 	if ( $mode == 'verify' ) // no error
 	{
-		$_SESSION['mod-advrep-import-hash'] = hash( 'sha256', $fileData );
+		$_SESSION['mod-advrep-import-hash'] = hash( 'sha256',
+		                                            str_replace( "\r\n", "\n", $fileData ) );
 		$listCurrent = json_decode( $module->getSystemSetting( "p$projectID-report-list" ),
 		                            true ) ?? [];
 		$listImported = $data['report-list'] ?? [];
@@ -87,7 +92,21 @@ if ( ! empty( $_FILES ) ) // file is uploaded
 			$identicalData =
 				( $module->getReportData( $reportID ) == $data["report-data-$reportID"] );
 			if ( ! $module->isReportEditable( $currentConfig['type'] ) ||
-			     ! $module->isReportEditable( $data["report-config-$reportID"]['type'] ) )
+			     ! $module->isReportEditable( $data["report-config-$reportID"]['type'] ) ||
+			     ( ! $canSavePublic && isset( $currentConfig['as_public'] ) &&
+			                           $currentConfig['as_public'] ) ||
+			     ( ! $canSavePublic && isset( $data["report-config-$reportID"]['as_public'] ) &&
+			                           $data["report-config-$reportID"]['as_public'] ) ||
+			     ( ! $canSaveAPI && isset( $currentConfig['as_api'] ) &&
+			                        $currentConfig['as_api'] ) ||
+			     ( ! $canSaveAPI && isset( $data["report-config-$reportID"]['as_api'] ) &&
+			                        $data["report-config-$reportID"]['as_api'] ) ||
+			     ( ! $canSaveEditable && $currentConfig['type'] == 'instrument' &&
+			       strpos( json_encode( $module->getReportData( $reportID )['select'] ),
+			               ']:edit' ) !== false ) ||
+			     ( ! $canSaveEditable && $data["report-config-$reportID"]['type'] == 'instrument' &&
+			       strpos( json_encode( $data["report-data-$reportID"]['select'] ),
+			               ']:edit' ) !== false ) )
 			{
 				$listSkipped[] = $reportID;
 			}
@@ -113,7 +132,8 @@ elseif ( ! empty( $_POST ) ) // normal POST request (confirming import)
 	if ( $data == null || ! is_array( $data ) || ! isset( $data['report-list'] ) ||
 		 ( ! is_array( $data['report-list'] ) && ! is_string( $data['report-list'] ) ) ||
 		 ! isset( $_SESSION['mod-advrep-import-hash'] ) ||
-		 $_SESSION['mod-advrep-import-hash'] != hash( 'sha256', $fileData ) )
+		 $_SESSION['mod-advrep-import-hash'] != hash( 'sha256',
+		                                              str_replace( "\r\n", "\n", $fileData ) ) )
 	{
 		$mode = 'error';
 		$error = 'The uploaded file data is not valid.';
@@ -488,7 +508,9 @@ elseif ( $mode == 'verify' )
    <td></td>
    <td>
     <input type="submit" value="Update Selected Reports">
-    <input type="hidden" name="import_data" value="<?php echo $module->escapeHTML( $fileData ); ?>">
+    <input type="hidden" name="import_data" value="<?php
+	echo str_replace( ["\r", "\n"], ['&#13;', '&#10;'], $module->escapeHTML( $fileData ) );
+?>">
    </td>
   </tr>
  </table>
