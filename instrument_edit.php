@@ -520,16 +520,16 @@ echo $reportData['nomissingdatacodes'] ? ' checked' : '';
    <td>Date display format</td>
    <td>
     <select name="query_dateformat">
-     <option value=""<?php echo $reportData['dateformat'] ?? '' == '' ? ' selected' : ''?>>
+     <option value=""<?php echo ($reportData['dateformat'] ?? '') == '' ? ' selected' : ''?>>
       Date fields (labels) in user's preferred format
      </option>
-     <option value="upf"<?php echo $reportData['dateformat'] ?? '' == 'upf' ? ' selected' : ''?>>
+     <option value="upf"<?php echo ($reportData['dateformat'] ?? '') == 'upf' ? ' selected' : ''?>>
       All date values in user's preferred format
      </option>
-     <option value="dmy"<?php echo $reportData['dateformat'] ?? '' == 'dmy' ? ' selected' : ''?>>
+     <option value="dmy"<?php echo ($reportData['dateformat'] ?? '') == 'dmy' ? ' selected' : ''?>>
       All date values in D-M-Y format
      </option>
-     <option value="mdy"<?php echo $reportData['dateformat'] ?? '' == 'mdy' ? ' selected' : ''?>>
+     <option value="mdy"<?php echo ($reportData['dateformat'] ?? '') == 'mdy' ? ' selected' : ''?>>
       All date values in M-D-Y format
      </option>
     </select>
