@@ -236,7 +236,8 @@ function writeInstrumentRow1( $setWidths, $formVal, $aliasVal, $joinVal = '' )
       </td>
       <td style="text-align:left;width:<?php echo $setWidths ? '60px' : 'unset'; ?>"><?php
 $module->outputInstrumentDropdown( 'query_form[]', $formVal ?? '',
-                                   [ 'redcap_users' => 'redcap_users - Project Users'] );
+                                   [ 'redcap_alerts' => 'redcap_alerts - Sent Alerts',
+                                     'redcap_users' => 'redcap_users - Project Users'] );
 ?></td>
       <td style="text-align:left;width:unset">
        <input type="text" name="query_form_alias[]" placeholder="alias (optional)"
@@ -355,6 +356,9 @@ foreach ( array_keys( $module->getInstrumentList() ) as $instrument )
 	                                                           array_values( $formFieldNames ),
 	                                                           $listCommonFormVars2 ) ) );
 }
+$listFormVars['redcap_alerts'] = [ 'alert_num', 'alert_title', 'alert_type', 'record_id',
+                                   'event_name', 'repeat_instance', 'instrument', 'first_sent',
+                                   'last_sent', 'sent_count' ];
 $listFormVars['redcap_users'] = [ 'username', 'firstname', 'lastname', 'email', 'role_name', 'dag',
                                   'added', 'expiration', 'first_activity', 'last_activity' ];
 
