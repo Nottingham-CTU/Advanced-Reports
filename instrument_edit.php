@@ -236,7 +236,8 @@ function writeInstrumentRow1( $setWidths, $formVal, $aliasVal, $joinVal = '' )
       </td>
       <td style="text-align:left;width:<?php echo $setWidths ? '60px' : 'unset'; ?>"><?php
 $module->outputInstrumentDropdown( 'query_form[]', $formVal ?? '',
-                                   [ 'redcap_users' => 'redcap_users - Project Users'] );
+                                   [ 'redcap_alerts' => 'redcap_alerts - Sent Alerts',
+                                     'redcap_users' => 'redcap_users - Project Users'] );
 ?></td>
       <td style="text-align:left;width:unset">
        <input type="text" name="query_form_alias[]" placeholder="alias (optional)"
@@ -355,6 +356,9 @@ foreach ( array_keys( $module->getInstrumentList() ) as $instrument )
 	                                                           array_values( $formFieldNames ),
 	                                                           $listCommonFormVars2 ) ) );
 }
+$listFormVars['redcap_alerts'] = [ 'alert_num', 'alert_title', 'alert_type', 'record_id',
+                                   'event_name', 'repeat_instance', 'instrument', 'first_sent',
+                                   'last_sent', 'sent_count' ];
 $listFormVars['redcap_users'] = [ 'username', 'firstname', 'lastname', 'email', 'role_name', 'dag',
                                   'added', 'expiration', 'first_activity', 'last_activity' ];
 
@@ -520,16 +524,16 @@ echo $reportData['nomissingdatacodes'] ? ' checked' : '';
    <td>Date display format</td>
    <td>
     <select name="query_dateformat">
-     <option value=""<?php echo $reportData['dateformat'] ?? '' == '' ? ' selected' : ''?>>
+     <option value=""<?php echo ($reportData['dateformat'] ?? '') == '' ? ' selected' : ''?>>
       Date fields (labels) in user's preferred format
      </option>
-     <option value="upf"<?php echo $reportData['dateformat'] ?? '' == 'upf' ? ' selected' : ''?>>
+     <option value="upf"<?php echo ($reportData['dateformat'] ?? '') == 'upf' ? ' selected' : ''?>>
       All date values in user's preferred format
      </option>
-     <option value="dmy"<?php echo $reportData['dateformat'] ?? '' == 'dmy' ? ' selected' : ''?>>
+     <option value="dmy"<?php echo ($reportData['dateformat'] ?? '') == 'dmy' ? ' selected' : ''?>>
       All date values in D-M-Y format
      </option>
-     <option value="mdy"<?php echo $reportData['dateformat'] ?? '' == 'mdy' ? ' selected' : ''?>>
+     <option value="mdy"<?php echo ($reportData['dateformat'] ?? '') == 'mdy' ? ' selected' : ''?>>
       All date values in M-D-Y format
      </option>
     </select>
