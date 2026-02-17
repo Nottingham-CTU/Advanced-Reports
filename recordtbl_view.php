@@ -283,7 +283,8 @@ if ( isset( $_GET['as_image']) && $reportConfig['as_image'] )
 {
 	header( 'Content-Type: image/png' );
 	$img = $module->reportImageCreate();
-	foreach ( [ 'reportImageRowPrepare', 'reportImageRowWrite' ] as $imageRowFunc )
+	foreach ( ( empty( $resultTable ) ? [] : [ 'reportImageRowPrepare', 'reportImageRowWrite' ] )
+	          as $imageRowFunc )
 	{
 		// Prepare/draw the header row.
 		$module->$imageRowFunc( $img, $listColumns );

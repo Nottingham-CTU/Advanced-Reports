@@ -705,7 +705,8 @@ if ( isset( $_GET['as_image'] ) && $reportConfig['as_image'] )
 			$columns[] = $fieldName;
 		}
 	}
-	foreach ( [ 'reportImageRowPrepare', 'reportImageRowWrite' ] as $imageRowFunc )
+	foreach ( ( empty( $resultTable ) ? [] : [ 'reportImageRowPrepare', 'reportImageRowWrite' ] )
+	          as $imageRowFunc )
 	{
 		// Prepare/draw the header row.
 		$module->$imageRowFunc( $img, $columns );
