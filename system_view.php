@@ -218,15 +218,32 @@ foreach ( $reportData['forms'] as $queryForm )
 		$formLabels = [];
 		if ( preg_match( '/[^a-z0-9_]/', $form ) === 0 )
 		{
-			if ( $form == '_log_event' )
+			if ( $form == '_external_module_settings' )
 			{
-				$form = preg_replace( '/^redcap/', '', \REDCap::getLogEventTable( $projectID ) );
+				$queryDBTable = $module->query( "SELECT em.directory_prefix, ems.* " .
+				                                "FROM redcap_external_module_settings ems " .
+				                                "JOIN redcap_external_modules em ON " .
+				                                "ems.external_module_id = em.external_module_id " .
+				                                "WHERE project_id = ? ORDER BY em.directory_prefix",
+				                                [ $projectID ] );
 			}
-			$queryDBTable = $module->query( "SELECT * FROM redcap" . $form .
-			                                " WHERE project_id = ?", [ $projectID ] );
+			else
+			{
+				if ( $form == '_log_event' )
+				{
+					$form = preg_replace( '/^redcap/', '',
+					                      \REDCap::getLogEventTable( $projectID ) );
+				}
+				$queryDBTable = $module->query( "SELECT * FROM redcap" . $form .
+				                                " WHERE project_id = ?", [ $projectID ] );
+			}
 			while ( $infoDBTable = $queryDBTable->fetch_assoc() )
 			{
 				unset( $infoDBTable['project_id'] );
+				if ( $form == '_external_module_settings' )
+				{
+					unset( $infoDBTable['external_module_id'] );
+				}
 				if ( ! empty( $listReferencedFields ) )
 				{
 					foreach ( array_keys( $infoDBTable ) as $fieldName )
