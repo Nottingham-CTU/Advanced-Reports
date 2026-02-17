@@ -378,7 +378,8 @@ $(function()
     var vForm = $('<form action="' + app_path_webroot + 'ControlCenter/database_query_tool.php" ' +
                   'method="post"></form>')
     vForm.append('<input type="hidden" name="query" ' +
-                 'value="<?php echo $module->escape( $sqlQuery ); ?>">')
+                 'value="<?php echo str_replace( [ "\r", "\n" ], [ '', '&#10;' ],
+                                                 $module->escape( $sqlQuery ) ); ?>">')
     vForm.append('<input type="hidden" name="redcap_csrf_token" value="' + redcap_csrf_token + '">')
     $('body').append(vForm)
     vForm.trigger('submit')
