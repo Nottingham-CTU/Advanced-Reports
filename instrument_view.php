@@ -539,7 +539,7 @@ foreach ( $reportData['forms'] as $queryForm )
 	// If this isn't a CSV download, identify the date fields. The 'label' of any date fields will
 	// be set to the date transformed into the user's preferred format.
 	$dateFields = [];
-	if ( ! $isCsvDownload && $reportData['dateformat'] ?? '' == '' )
+	if ( ! $isCsvDownload && ( $reportData['dateformat'] ?? '' ) == '' )
 	{
 		foreach ( $fieldMetadata as $fieldName => $fieldParams )
 		{
