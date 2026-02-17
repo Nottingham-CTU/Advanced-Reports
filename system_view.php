@@ -157,12 +157,6 @@ if ( ! empty( $reportData['select'] ) )
 	// Use this to build a list of the referenced fields grouped by instrument alias.
 	foreach ( $refParams as $refParam )
 	{
-		if ( in_array( $refParam[1], $redcapFields2 ) )
-		{
-			// Virtual fields added by instrument queries are listed under the instrument name
-			// rather than the alias.
-			$refParam[0] = $listAliasForms[ $refParam[0] ];
-		}
 		$listReferencedFields[ $refParam[0] ][ $refParam[1] ] = true;
 	}
 }
@@ -268,7 +262,8 @@ foreach ( $reportData['forms'] as $queryForm )
 		// Get a list of the fields for this instrument.
 		$recordIDField = $module->getRecordIdField( $projectID );
 		$fields = array_unique( array_merge( [ $recordIDField ],
-		                                     $module->getFieldNames( $form, $projectID ) ) );
+		                                     $module->getFieldNames( $form, $projectID ),
+		                                     [ $form . '_complete' ] ) );
 		$fieldMetadata = \REDCap::getDataDictionary( $projectID, 'array', false, $fields );
 		foreach ( $fieldMetadata as $fieldName => $fieldParams )
 		{

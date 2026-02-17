@@ -292,6 +292,11 @@ function writeTableRow1( $setWidths, $projVal, $tableVal, $aliasVal, $joinVal = 
 		     $module->escape( $tableName ), '">', $module->escape( substr( $tableName, 1 ) ),
 		     "</option>\n";
 	}
+	if ( $tableVal != '' && ! in_array( $tableVal, array_keys( $listTables ) ) )
+	{
+		echo '        <option selected value="', $module->escape( $tableVal ), '">data:',
+		     $module->escape( $tableVal ), "</option>\n";
+	}
 ?>
        </select>
       </td>
