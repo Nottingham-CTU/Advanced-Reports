@@ -246,11 +246,15 @@ foreach ( $reportData['forms'] as $queryForm )
 				{
 					unset( $infoDBTable['external_module_id'] );
 				}
-				elseif ( $form == '_events_metadata' )
+				elseif ( array_key_exists( 'event_id', $infoDBTable ) )
 				{
 					$obProject = new \Project( $projectID );
 					$infoDBTable['redcap_event_name'] =
 						$obProject->getUniqueEventNames( $infoDBTable['event_id'] );
+					if ( ! is_string( $infoDBTable['redcap_event_name'] ) )
+					{
+						$infoDBTable['redcap_event_name'] = '';
+					}
 				}
 				if ( ! empty( $listReferencedFields ) )
 				{

@@ -395,7 +395,7 @@ while ( $infoTable = $queryTables->fetch_assoc() )
 	{
 		$infoTable['fields'] = '';
 	}
-	elseif ( $infoTable['TABLE_NAME'] == 'redcap_events_metadata' )
+	elseif ( preg_match( '/(?:^|,)event_id(?:,|$)/', $infoTable['fields'] ) )
 	{
 		$infoTable['fields'] .= ',redcap_event_name';
 	}
