@@ -382,17 +382,22 @@ function writeSelectRow( $setWidths, $fieldVal, $aliasVal, $groupVal )
 $listTables = [];
 $queryTables = $module->query( "SELECT TABLE_NAME, GROUP_CONCAT(COLUMN_NAME SEPARATOR ',') fields" .
                                " FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND " .
-                               "TABLE_NAME IN( SELECT TABLE_NAME FROM INFORMATION_SCHEMA.COLUMNS " .
-                               "WHERE TABLE_SCHEMA = ? AND COLUMN_NAME = 'project_id' AND " .
+                               "(TABLE_NAME IN( SELECT TABLE_NAME FROM INFORMATION_SCHEMA.COLUMNS" .
+                               " WHERE TABLE_SCHEMA = ? AND COLUMN_NAME = 'project_id' AND " .
                                "DATA_TYPE = 'int' AND TABLE_NAME LIKE 'redcap\_%' AND TABLE_NAME " .
-                               "NOT REGEXP '^redcap_(data|log_event)[0-9]+$' ) AND COLUMN_NAME " .
-                               "<> 'project_id' GROUP BY TABLE_NAME",
+                               "NOT REGEXP '^redcap_(data|log_event)[0-9]+$' ) OR TABLE_NAME = " .
+                               "'redcap_events_metadata') AND COLUMN_NAME <> 'project_id' " .
+                               "GROUP BY TABLE_NAME",
                                [ $GLOBALS['db'], $GLOBALS['db'], ] );
 while ( $infoTable = $queryTables->fetch_assoc() )
 {
 	if ( $infoTable['TABLE_NAME'] == 'redcap_data' )
 	{
 		$infoTable['fields'] = '';
+	}
+	elseif ( $infoTable['TABLE_NAME'] == 'redcap_events_metadata' )
+	{
+		$infoTable['fields'] .= ',redcap_event_name';
 	}
 	$listTables[ substr( $infoTable['TABLE_NAME'], 6 ) ] = explode( ',', $infoTable['fields'] );
 }

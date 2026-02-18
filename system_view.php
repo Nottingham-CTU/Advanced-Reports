@@ -221,6 +221,14 @@ foreach ( $reportData['forms'] as $queryForm )
 				                                "WHERE project_id = ? ORDER BY em.directory_prefix",
 				                                [ $projectID ] );
 			}
+			elseif ( $form == '_events_metadata' )
+			{
+				$queryDBTable = $module->query( "SELECT em.*, ea.project_id " .
+				                                "FROM redcap_events_metadata em " .
+				                                "JOIN redcap_events_arms ea " .
+				                                "ON em.arm_id = ea.arm_id WHERE project_id = ?",
+				                                [ $projectID ] );
+			}
 			else
 			{
 				if ( $form == '_log_event' )
@@ -237,6 +245,12 @@ foreach ( $reportData['forms'] as $queryForm )
 				if ( $form == '_external_module_settings' )
 				{
 					unset( $infoDBTable['external_module_id'] );
+				}
+				elseif ( $form == '_events_metadata' )
+				{
+					$obProject = new \Project( $projectID );
+					$infoDBTable['redcap_event_name'] =
+						$obProject->getUniqueEventNames( $infoDBTable['event_id'] );
 				}
 				if ( ! empty( $listReferencedFields ) )
 				{
