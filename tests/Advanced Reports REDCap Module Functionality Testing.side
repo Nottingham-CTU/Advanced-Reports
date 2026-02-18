@@ -9146,7 +9146,7 @@
           "id": "8ba590b2-3f0c-4e21-9de1-5a43b70f026b",
           "comment": "",
           "command": "executeScript",
-          "target": "return $('span[data-csv-ok]').length",
+          "target": "return ''+$('span[data-csv-ok]').length",
           "targets": [],
           "value": "csvDownloadOK"
         },
