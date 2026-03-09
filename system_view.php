@@ -157,12 +157,6 @@ if ( ! empty( $reportData['select'] ) )
 	// Use this to build a list of the referenced fields grouped by instrument alias.
 	foreach ( $refParams as $refParam )
 	{
-		if ( in_array( $refParam[1], $redcapFields2 ) )
-		{
-			// Virtual fields added by instrument queries are listed under the instrument name
-			// rather than the alias.
-			$refParam[0] = $listAliasForms[ $refParam[0] ];
-		}
 		$listReferencedFields[ $refParam[0] ][ $refParam[1] ] = true;
 	}
 }
@@ -218,15 +212,50 @@ foreach ( $reportData['forms'] as $queryForm )
 		$formLabels = [];
 		if ( preg_match( '/[^a-z0-9_]/', $form ) === 0 )
 		{
-			if ( $form == '_log_event' )
+			if ( $form == '_external_module_settings' )
 			{
-				$form = preg_replace( '/^redcap/', '', \REDCap::getLogEventTable( $projectID ) );
+				$queryDBTable = $module->query( "SELECT em.directory_prefix, ems.* " .
+				                                "FROM redcap_external_module_settings ems " .
+				                                "JOIN redcap_external_modules em ON " .
+				                                "ems.external_module_id = em.external_module_id " .
+				                                "WHERE project_id = ? ORDER BY em.directory_prefix",
+				                                [ $projectID ] );
 			}
-			$queryDBTable = $module->query( "SELECT * FROM redcap" . $form .
-			                                " WHERE project_id = ?", [ $projectID ] );
+			elseif ( $form == '_events_metadata' )
+			{
+				$queryDBTable = $module->query( "SELECT em.*, ea.project_id " .
+				                                "FROM redcap_events_metadata em " .
+				                                "JOIN redcap_events_arms ea " .
+				                                "ON em.arm_id = ea.arm_id WHERE project_id = ?",
+				                                [ $projectID ] );
+			}
+			else
+			{
+				if ( $form == '_log_event' )
+				{
+					$form = preg_replace( '/^redcap/', '',
+					                      \REDCap::getLogEventTable( $projectID ) );
+				}
+				$queryDBTable = $module->query( "SELECT * FROM redcap" . $form .
+				                                " WHERE project_id = ?", [ $projectID ] );
+			}
 			while ( $infoDBTable = $queryDBTable->fetch_assoc() )
 			{
 				unset( $infoDBTable['project_id'] );
+				if ( $form == '_external_module_settings' )
+				{
+					unset( $infoDBTable['external_module_id'] );
+				}
+				elseif ( array_key_exists( 'event_id', $infoDBTable ) )
+				{
+					$obProject = new \Project( $projectID );
+					$infoDBTable['redcap_event_name'] =
+						$obProject->getUniqueEventNames( $infoDBTable['event_id'] );
+					if ( ! is_string( $infoDBTable['redcap_event_name'] ) )
+					{
+						$infoDBTable['redcap_event_name'] = '';
+					}
+				}
 				if ( ! empty( $listReferencedFields ) )
 				{
 					foreach ( array_keys( $infoDBTable ) as $fieldName )
@@ -251,7 +280,8 @@ foreach ( $reportData['forms'] as $queryForm )
 		// Get a list of the fields for this instrument.
 		$recordIDField = $module->getRecordIdField( $projectID );
 		$fields = array_unique( array_merge( [ $recordIDField ],
-		                                     $module->getFieldNames( $form, $projectID ) ) );
+		                                     $module->getFieldNames( $form, $projectID ),
+		                                     [ $form . '_complete' ] ) );
 		$fieldMetadata = \REDCap::getDataDictionary( $projectID, 'array', false, $fields );
 		foreach ( $fieldMetadata as $fieldName => $fieldParams )
 		{
@@ -277,7 +307,7 @@ foreach ( $reportData['forms'] as $queryForm )
 	// If this isn't a CSV download, identify the date fields. The 'label' of any date fields will
 	// be set to the date transformed into the user's preferred format.
 	$dateFields = [];
-	if ( ! $isCsvDownload && $reportData['dateformat'] ?? '' == '' )
+	if ( ! $isCsvDownload && ( $reportData['dateformat'] ?? '' ) == '' )
 	{
 		foreach ( $fieldMetadata as $fieldName => $fieldParams )
 		{
@@ -688,7 +718,8 @@ if ( isset( $_GET['as_image'] ) && $reportConfig['as_image'] )
 			$columns[] = $fieldName;
 		}
 	}
-	foreach ( [ 'reportImageRowPrepare', 'reportImageRowWrite' ] as $imageRowFunc )
+	foreach ( ( empty( $resultTable ) ? [] : [ 'reportImageRowPrepare', 'reportImageRowWrite' ] )
+	          as $imageRowFunc )
 	{
 		// Prepare/draw the header row.
 		$module->$imageRowFunc( $img, $columns );

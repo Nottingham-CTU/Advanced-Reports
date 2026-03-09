@@ -2391,7 +2391,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		if ( $imgData['outputRows'] > -1 ||
 		     ( count( $imgData['columns'] ) > 0 && count( $imgData['columns'] ) != count( $row ) ) )
 		{
-			throw new Exception('Invalid call to reportImageRowPrepare.');
+			throw new \Exception('Invalid call to reportImageRowPrepare.');
 		}
 		// If this is the first call to this function for the image, establish the number of columns
 		// and set initial widths based on the header row.
@@ -2431,7 +2431,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		if ( count( $imgData['columns'] ) == 0 || count( $imgData['columns'] ) != count( $row ) ||
 		     $imgData['outputRows'] >= $imgData['dataRows'] )
 		{
-			throw new Exception('Invalid call to reportImageRowWrite.');
+			throw new \Exception('Invalid call to reportImageRowWrite.');
 		}
 		// If nothing written yet, start creating the image data and write the headers.
 		if ( $imgData['outputRows'] == -1 )
@@ -2482,10 +2482,28 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 
 	function reportImageOutput( $imgData )
 	{
+		// If nothing written yet, prepare to output an empty image.
+		if ( $imgData['outputRows'] == -1 )
+		{
+			$msg = 'No rows returned';
+			$imgData['img'] = imagecreate( ( strlen( $msg ) * $imgData['dataCharW'] ) +
+			                               ( $imgData['padding'] * 2 ),
+			                               $imgData['dataCharH'] + ( $imgData['padding'] * 2 ) );
+			$imgData['bg'] = imagecolorallocate( $imgData['img'],
+			                                     hexdec( substr( $imgData['bg'], 0, 2 ) ),
+			                                     hexdec( substr( $imgData['bg'], 2, 2 ) ),
+			                                     hexdec( substr( $imgData['bg'], 4, 2 ) ) );
+			$imgData['fg'] = imagecolorallocate( $imgData['img'],
+			                                     hexdec( substr( $imgData['fg'], 0, 2 ) ),
+			                                     hexdec( substr( $imgData['fg'], 2, 2 ) ),
+			                                     hexdec( substr( $imgData['fg'], 4, 2 ) ) );
+			imagestring( $imgData['img'], $imgData['dataFont'], 2, 2, $msg, $imgData['fg'] );
+			$imgData['outputRows'] = 0;
+		}
 		// Exit with an exception if the image is incomplete.
 		if ( $imgData['img'] === null || $imgData['outputRows'] != $imgData['dataRows'] )
 		{
-			throw new Exception('Invalid call to reportImageOutput.');
+			throw new \Exception('Invalid call to reportImageOutput.');
 		}
 		// Output the image.
 		imagepng( $imgData['img'] );

@@ -197,7 +197,8 @@ if ( isset( $_GET['as_image']) && $reportConfig['as_image'] )
 		}
 	}
 	$img = $module->reportImageCreate();
-	foreach ( [ 'reportImageRowPrepare', 'reportImageRowWrite' ] as $imageRowFunc )
+	foreach ( ( empty( $resultData ) ? [] : [ 'reportImageRowPrepare', 'reportImageRowWrite' ] )
+	          as $imageRowFunc )
 	{
 		// Prepare/draw the header row.
 		$module->$imageRowFunc( $img, $columns );
@@ -378,7 +379,8 @@ $(function()
     var vForm = $('<form action="' + app_path_webroot + 'ControlCenter/database_query_tool.php" ' +
                   'method="post"></form>')
     vForm.append('<input type="hidden" name="query" ' +
-                 'value="<?php echo $module->escape( $sqlQuery ); ?>">')
+                 'value="<?php echo str_replace( [ "\r", "\n" ], [ '', '&#10;' ],
+                                                 $module->escape( $sqlQuery ) ); ?>">')
     vForm.append('<input type="hidden" name="redcap_csrf_token" value="' + redcap_csrf_token + '">')
     $('body').append(vForm)
     vForm.trigger('submit')

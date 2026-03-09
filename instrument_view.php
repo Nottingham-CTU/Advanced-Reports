@@ -539,7 +539,7 @@ foreach ( $reportData['forms'] as $queryForm )
 	// If this isn't a CSV download, identify the date fields. The 'label' of any date fields will
 	// be set to the date transformed into the user's preferred format.
 	$dateFields = [];
-	if ( ! $isCsvDownload && $reportData['dateformat'] ?? '' == '' )
+	if ( ! $isCsvDownload && ( $reportData['dateformat'] ?? '' ) == '' )
 	{
 		foreach ( $fieldMetadata as $fieldName => $fieldParams )
 		{
@@ -1119,7 +1119,8 @@ if ( isset( $_GET['as_image'] ) && $reportConfig['as_image'] )
 			$columns[] = $fieldName;
 		}
 	}
-	foreach ( [ 'reportImageRowPrepare', 'reportImageRowWrite' ] as $imageRowFunc )
+	foreach ( ( empty( $resultTable ) ? [] : [ 'reportImageRowPrepare', 'reportImageRowWrite' ] )
+	          as $imageRowFunc )
 	{
 		// Prepare/draw the header row.
 		$module->$imageRowFunc( $img, $columns );
