@@ -47,7 +47,8 @@ $dataTable = method_exists( '\REDCap', 'getDataTable' )
                 ? \REDCap::getDataTable( $module->getProjectId() ) : ( 'redcap' . '_data' );
 $listRecords = [];
 $queryRecords = $module->query( 'SELECT DISTINCT record FROM ' . $dataTable .
-                                ' WHERE project_id = ?', [ $module->getProjectId() ] );
+                                ' WHERE project_id = ? AND event_id IN (SELECT event_id FROM ' .
+                                'redcap_events_metadata)', [ $module->getProjectId() ] );
 while ( $infoRecord = $queryRecords->fetch_assoc() )
 {
 	$listRecords[] = $infoRecord['record'];
