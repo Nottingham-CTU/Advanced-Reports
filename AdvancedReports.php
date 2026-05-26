@@ -2940,6 +2940,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 				'3hhN6RA1T2FLr0TydO24ovlHS69ukGpeCQ0TXUGolmio524frHO7RorUm7+Y84x7Ou0kT1qM/MBxp+NH' .
 				'D3zq8uF+nUffOD5uIMrQNgF0PAAAAAElFTkSuQmCC);
 			}
+			.advrep-combobox-toggle { padding: 2px 4px }
+			.advrep-combobox-toggle::before { content: "🠟" }
 			';
 		echo '<script type="text/javascript">',
 			 '(function (){var el = document.createElement(\'style\');',
