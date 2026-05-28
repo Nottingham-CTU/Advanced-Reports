@@ -14,10 +14,10 @@ class TestInit():
   def setup_method(self, method):
     self.driver = webdriver.Firefox()
     self.vars = {}
-  
+
   def teardown_method(self, method):
     self.driver.quit()
-  
+
   def test_init(self):
     self.driver.get("http://127.0.0.1/")
     self.driver.find_element(By.LINK_TEXT, "My Projects").click()
@@ -27,6 +27,8 @@ class TestInit():
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"ExternalModules/manager/control_center.php\"]").click()
     WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "tr[data-module=\"advanced_reports\"] .external-modules-configure-button")))
     self.driver.find_element(By.CSS_SELECTOR, "tr[data-module=\"advanced_reports\"] .external-modules-configure-button").click()
+    WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.NAME, "config-require-user-permission")))
+    self.driver.execute_script("$('[name=\"config-require-user-permission\"]').removeClass('select2-hidden-accessible').off()")
     dropdown = self.driver.find_element(By.NAME, "config-require-user-permission")
     dropdown.find_element(By.CSS_SELECTOR, "*[value='true']").click()
     self.driver.find_element(By.CSS_SELECTOR, "#external-modules-configure-modal button.save").click()
@@ -80,4 +82,4 @@ class TestInit():
         self.driver.execute_script("window.location.href = sessionStorage.getItem(\'thisurl\')")
         WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.ID, "south")))
       self.driver.execute_script("sessionStorage.removeItem(\'thisurl\')")
-  
+

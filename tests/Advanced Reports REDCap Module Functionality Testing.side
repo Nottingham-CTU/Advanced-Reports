@@ -78,6 +78,18 @@
           "value": ""
         },
         {
+          "command": "waitForElementPresent",
+          "target": "name=config-require-user-permission",
+          "value": "30000",
+          "id": "505e3e81-24c6-481e-be38-2970b9858bd7"
+        },
+        {
+          "command": "runScript",
+          "target": "$('[name=\"config-require-user-permission\"]').removeClass('select2-hidden-accessible').off()",
+          "value": "",
+          "id": "65ade420-71fa-4b6d-9285-1c5f5d7c8dcb"
+        },
+        {
           "id": "2ef08899-0eaa-4b6a-bab4-70a20e14ff7c",
           "comment": "",
           "command": "select",
