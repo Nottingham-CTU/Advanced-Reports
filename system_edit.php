@@ -353,7 +353,7 @@ function writeSelectRow( $setWidths, $fieldVal, $aliasVal, $groupVal )
       <td style="text-align:left;width:<?php echo $setWidths ? '75%' : 'unset'; ?>">
        <textarea name="query_select_field[]" placeholder="field name/logic" rows="1"
                  data-list="field-var-list"
-                 style="width:100%;max-width:unset;height:unset;font-family:monospace"
+                 style="width:100%;max-width:unset;height:unset;white-space:pre;font-family:monospace"
         ><?php echo $module->escape( $fieldVal ?? '' ); ?></textarea>
       </td>
       <td style="text-align:left;vertical-align:top;width:<?php echo $setWidths ? '25%' : 'unset'; ?>">
