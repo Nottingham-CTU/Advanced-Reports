@@ -47,6 +47,11 @@ if ( ! empty( $_POST ) )
 	{
 		foreach ( $_POST['query_form'] as $i => $formName )
 		{
+			if ( $i > 0 )
+			{
+				$_POST['query_form_on'][ $i - 1 ] =
+					str_replace( "\r\n", "\n", $_POST['query_form_on'][ $i - 1 ] );
+			}
 			if ( $formName == '' &&
 			     ( $i == 0 || $_POST['query_form_alias'][$i] != '' ||
 			       $_POST['query_form_on'][ $i - 1 ] != '' ) )
@@ -61,6 +66,8 @@ if ( ! empty( $_POST ) )
 	{
 		foreach ( $_POST['query_select_field'] as $i => $fieldName )
 		{
+			$_POST['query_select_field'][$i] =
+				str_replace( "\r\n", "\n", $_POST['query_select_field'][$i] );
 			if ( $fieldName == '' && $_POST['query_select_alias'][$i] != '' )
 			{
 				$validationMsg = 'Field cannot be empty if alias specified.';
@@ -86,6 +93,7 @@ if ( ! empty( $_POST ) )
 	// - Check the validity of condition logic.
 	if ( $validationMsg == '' && $_POST['query_where'] != '' )
 	{
+		$_POST['query_where'] = str_replace( "\r\n", "\n", $_POST['query_where'] );
 		try
 		{
 			$module->parseLogic( $_POST['query_where'], false, false, false );
@@ -242,7 +250,7 @@ $module->outputInstrumentDropdown( 'query_form[]', $formVal ?? '',
       <td style="text-align:left;width:unset">
        <input type="text" name="query_form_alias[]" placeholder="alias (optional)"
               value="<?php echo $module->escapeHTML( $aliasVal ?? '' ); ?>"
-              style="width:100%<?php echo $setWidths ? ';min-width:80px' : ''; ?>">
+              style="width:100%<?php echo $setWidths ? ';min-width:80px' : ''; ?>;max-width:165px">
       </td>
 <?php
 }
@@ -257,14 +265,14 @@ function writeInstrumentRow2( $onCondVal, $formVal, $firstFormVal, $aliasVal, $f
 
 ?>
       <td style="width:unset"></td>
-      <td style="text-align:left;width:unset">On Condition</td>
+      <td style="text-align:left;width:unset;vertical-align:top">On Condition</td>
       <td colspan="2" style="text-align:left;width:unset">
-       <input type="text" name="query_form_on[]" placeholder="condition logic"
-              style="width:100%;max-width:unset"
+       <textarea name="query_form_on[]" placeholder="condition logic" rows="2"
+              style="width:100%;max-width:unset;height:unset;white-space:pre;font-family:monospace"
               data-default="<?php echo $formVal == '' || $firstFormVal == '' ? ''
                                        : ( '[' . $formVal . '][' . $recordIDField . '] = [' .
                                            $firstFormVal . '][' . $recordIDField . ']' ); ?>"
-              value="<?php echo $module->escapeHTML( $onCondVal ?? '' ); ?>">
+        ><?php echo $module->escapeHTML( $onCondVal ?? '' ); ?></textarea>
       </td>
 <?php
 }
@@ -281,17 +289,18 @@ function writeSelectRow( $setWidths, $fieldVal, $aliasVal, $groupVal )
         <i class="fas fa-arrows-up-down fs11"></i>
        </div>
       </td>
-      <td style="text-align:left;width:<?php echo $setWidths ? '50%;max-width:425px' : 'unset'; ?>">
-       <input type="text" name="query_select_field[]" placeholder="field name/logic"
-              value="<?php echo $module->escapeHTML( $fieldVal ?? '' ); ?>"
-              data-list="field-var-list" style="width:100%">
+      <td style="text-align:left;width:<?php echo $setWidths ? '75%' : 'unset'; ?>">
+       <textarea name="query_select_field[]" placeholder="field name/logic" rows="1"
+                 data-list="field-var-list"
+                 style="width:100%;max-width:unset;height:unset;white-space:pre;font-family:monospace"
+        ><?php echo $module->escape( $fieldVal ?? '' ); ?></textarea>
       </td>
-      <td style="text-align:left;width:unset">
+      <td style="text-align:left;vertical-align:top;width:<?php echo $setWidths ? '25%' : 'unset'; ?>">
        <input type="text" name="query_select_alias[]" placeholder="alias (optional)"
-              value="<?php echo $module->escapeHTML( $aliasVal ?? '' ); ?>"
+              value="<?php echo $module->escape( $aliasVal ?? '' ); ?>"
               style="width:100%<?php echo $setWidths ? ';min-width:60px' : ''; ?>">
       </td>
-      <td style="text-align:left;width:unset">
+      <td style="text-align:left;vertical-align:top;width:1px">
        <select name="query_grouping[]"<?php echo $groupVal == ''
                                                  ? ' style="font-style:italic"' : '', "\n"; ?>
                onchange="$(this).val()==''?$(this).css('font-style','italic')
@@ -372,7 +381,7 @@ $module->writeStyle();
 ?>
 <div class="projhdr">
  Advanced Reports &#8212; Edit Instrument Query Report: <?php
-echo $module->escapeHTML( $reportID ), "\n"; ?>
+echo $module->escape( $reportID ), "\n"; ?>
 </div>
 <p style="font-size:11px">
  <a href="<?php echo $module->getUrl( 'reports_edit.php' );
@@ -410,7 +419,7 @@ echo $reportData['desc'] ?? ''; ?></textarea>
   <tr>
    <td>Instruments</td>
    <td>
-    <table id="inst-entries-tbl" style="width:95%;max-width:750px">
+    <table id="inst-entries-tbl" style="width:95%">
      <tbody>
       <tr><?php
 writeInstrumentRow1( true, $reportData['forms'][0]['form'], $reportData['forms'][0]['alias'] );
@@ -462,23 +471,23 @@ writeInstrumentRow2( '', '', $reportData['forms'][0]['form'],
   <tr>
    <td>Condition</td>
    <td>
-    <input type="text" name="query_where" style="width:95%;max-width:750px"
-           placeholder="condition logic"
-           value="<?php echo $module->escapeHTML( $reportData['where'] ?? '' ); ?>">
+    <textarea name="query_where" placeholder="condition logic" rows="2"
+              style="max-width:unset;height:unset;white-space:pre;font-family:monospace"
+     ><?php echo $module->escape( $reportData['where'] ?? '' ); ?></textarea>
    </td>
   </tr>
   <tr>
    <td>Sorting</td>
    <td>
-    <input type="text" name="query_orderby" style="width:95%;max-width:750px"
+    <input type="text" name="query_orderby" style="max-width:unset;font-family:monospace"
            placeholder="sorting logic" list="field-var-list-sort"
-           value="<?php echo $module->escapeHTML( $reportData['orderby'] ?? '' ); ?>">
+           value="<?php echo $module->escape( $reportData['orderby'] ?? '' ); ?>">
    </td>
   </tr>
   <tr>
    <td>Fields to display</td>
    <td style="padding:0px">
-    <table id="field-entries-tbl" style="width:95%;max-width:750px">
+    <table id="field-entries-tbl" style="width:95%">
      <tr class="instq-row-select"><?php
 writeSelectRow( true, $reportData['select'][0]['field'], $reportData['select'][0]['alias'],
                 $reportData['select'][0]['grouping'] );
@@ -507,7 +516,9 @@ writeSelectRow( false, '', '', '' );
      &nbsp;
      <a onclick="$('#field-entries-tbl tr').last().clone().css('display',''
                     ).insertBefore($('#field-entries-tbl tr').last());$('#field-entries-tbl tr')
-                    .eq(-2).find('[name=&quot;query_select_field[]&quot;]').combobox();return false"
+                    .eq(-2).find('[name=&quot;query_select_field[]&quot;]')
+                    .keyup(function(){$(this).attr('rows',$(this).val().split('\n').length)})
+                    .combobox();return false"
         href="#" class=""><i class="mod-advrep-icon-plus"></i> Add field</a>
     </span>
    </td>
@@ -613,6 +624,7 @@ echo $reportData['nomissingdatacodes'] ? ' checked' : '';
            vOnCondElem.val(vNewOnCond)
          }
          vOnCondElem.data('default',vNewOnCond)
+         vOnCondElem.attr('rows',vOnCondElem.val().split('\n').length+1)
        }
        if ( vFormName == '' )
        {
@@ -636,11 +648,22 @@ echo $reportData['nomissingdatacodes'] ? ' checked' : '';
    vFuncUpdateVars()
    $('[name="query_form[]"]:visible').change( vFuncUpdateVars )
    $('[name="query_form_alias[]"]:visible').keyup( vFuncUpdateVars )
+   $('[name="query_form_on[]"]:visible').keyup( vFuncUpdateVars )
    setTimeout( function()
    {
      $('[name="query_select_field[]"]:visible').combobox()
    }, 2000 )
    $('[name="query_form[]"]').css( 'max-width', '450px' )
+   $('[name="query_where"]').keyup( function()
+   {
+     $('[name="query_where"]').attr('rows',$('[name="query_where"]').val().split('\n').length+1)
+   } )
+   $('[name="query_select_field[]"]').keyup( function()
+   {
+     $(this).attr('rows',$(this).val().split('\n').length)
+   } )
+   $('[name="query_where"]').trigger('keyup')
+   $('[name="query_select_field[]"]').trigger('keyup')
 
    var vFuncMakeDraggable = function( vClass, vFirst = false )
    {
@@ -648,6 +671,7 @@ echo $reportData['nomissingdatacodes'] ? ' checked' : '';
      {
        $('[name="query_form[]"]:visible').last().change( vFuncUpdateVars )
        $('[name="query_form_alias[]"]:visible').last().keyup( vFuncUpdateVars )
+       $('[name="query_form_on[]"]:visible').keyup( vFuncUpdateVars )
      }
      $(vClass).draggable( {
        axis: 'y',

@@ -218,8 +218,10 @@ foreach ( $reportData['forms'] as $queryForm )
 				                                "FROM redcap_external_module_settings ems " .
 				                                "JOIN redcap_external_modules em ON " .
 				                                "ems.external_module_id = em.external_module_id " .
-				                                "WHERE project_id = ? ORDER BY em.directory_prefix",
-				                                [ $projectID ] );
+				                                "WHERE project_id = ? OR (project_id IS NULL " .
+				                                "AND `key` LIKE concat('p', ?, '-%')) " .
+				                                "ORDER BY em.directory_prefix",
+				                                [ $projectID, $projectID ] );
 			}
 			elseif ( $form == '_events_metadata' )
 			{

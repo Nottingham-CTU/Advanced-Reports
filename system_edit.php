@@ -33,6 +33,11 @@ if ( ! empty( $_POST ) )
 	{
 		foreach ( $_POST['query_form'] as $i => $formName )
 		{
+			if ( $i > 0 )
+			{
+				$_POST['query_form_on'][ $i - 1 ] =
+					str_replace( "\r\n", "\n", $_POST['query_form_on'][ $i - 1 ] );
+			}
 			if ( ( $formName . $_POST['query_form_proj'][$i] . $_POST['query_form_alias'][$i] .
 			       ( $i == 0 ? '' : $_POST['query_form_on'][ $i - 1 ] ) != '' ) &&
 			     ( $formName == '' || $_POST['query_form_proj'][$i] == '' ||
@@ -48,6 +53,8 @@ if ( ! empty( $_POST ) )
 	{
 		foreach ( $_POST['query_select_field'] as $i => $fieldName )
 		{
+			$_POST['query_select_field'][$i] =
+				str_replace( "\r\n", "\n", $_POST['query_select_field'][$i] );
 			if ( $fieldName == '' && $_POST['query_select_alias'][$i] != '' )
 			{
 				$validationMsg = 'Field cannot be empty if alias specified.';
@@ -73,6 +80,7 @@ if ( ! empty( $_POST ) )
 	// - Check the validity of condition logic.
 	if ( $validationMsg == '' && $_POST['query_where'] != '' )
 	{
+		$_POST['query_where'] = str_replace( "\r\n", "\n", $_POST['query_where'] );
 		try
 		{
 			$module->parseLogic( $_POST['query_where'], false, false, false );
@@ -211,7 +219,9 @@ function writeProjectRow( $projType, $projVal, $aliasVal )
       <td style="width:60px">
        <select name="query_proj_lu[]"
                onchange="$(this).closest('tr').find('[name=&quot;query_proj_luv[]&quot;]')
-                         .css('display',$(this).val()=='this'?'none':'')">
+                         .css('display',$(this).val()=='this'?'none':'');
+                         $(this).closest('tr').find('hr')
+                         .css('display',$(this).val()=='this'?'':'none')">
         <option value="this">This Project</option>
         <option value="title-append"<?php echo $projType == 'title-append'
                                          ? ' selected' : ''; ?>>Title (append to this)</option>
@@ -229,8 +239,9 @@ function writeProjectRow( $projType, $projVal, $aliasVal )
        <input type="text" name="query_proj_luv[]"
               value="<?php echo $module->escape( $projVal ?? '' ); ?>"
               style="width:100%<?php echo $setWidths ? ';min-width:80px' : ''; ?>">
+       <hr style="margin:0">
       </td>
-      <td style="width:unset;max-width:20%">
+      <td style="width:20%">
        <input type="text" name="query_proj_alias[]" placeholder="alias"
               value="<?php echo $module->escape( $aliasVal ?? '' ); ?>"
               style="width:100%<?php echo $setWidths ? ';min-width:80px' : ''; ?>">
@@ -303,7 +314,7 @@ function writeTableRow1( $setWidths, $projVal, $tableVal, $aliasVal, $joinVal = 
       <td style="text-align:left;width:unset">
        <input type="text" name="query_form_alias[]" placeholder="alias"
               value="<?php echo $module->escape( $aliasVal ?? '' ); ?>"
-              style="width:100%<?php echo $setWidths ? ';min-width:80px' : ''; ?>">
+              style="width:100%<?php echo $setWidths ? ';min-width:80px' : ''; ?>;max-width:165px">
       </td>
 <?php
 }
@@ -318,11 +329,11 @@ function writeTableRow2( $onCondVal, $formVal, $firstFormVal, $aliasVal, $firstA
 
 ?>
       <td style="width:unset"></td>
-      <td style="text-align:left;width:unset">On Condition</td>
+      <td style="text-align:left;width:unset;vertical-align:top">On Condition</td>
       <td colspan="3" style="text-align:left;width:unset">
-       <input type="text" name="query_form_on[]" placeholder="condition logic"
-              style="width:100%;max-width:unset"
-              value="<?php echo $module->escape( $onCondVal ?? '' ); ?>">
+       <textarea name="query_form_on[]" placeholder="condition logic" rows="2"
+              style="width:100%;max-width:unset;height:unset;white-space:pre;font-family:monospace"
+        ><?php echo $module->escape( $onCondVal ?? '' ); ?></textarea>
       </td>
 <?php
 }
@@ -339,17 +350,18 @@ function writeSelectRow( $setWidths, $fieldVal, $aliasVal, $groupVal )
         <i class="fas fa-arrows-up-down fs11"></i>
        </div>
       </td>
-      <td style="text-align:left;width:<?php echo $setWidths ? '50%;max-width:425px' : 'unset'; ?>">
-       <input type="text" name="query_select_field[]" placeholder="field name/logic"
-              value="<?php echo $module->escape( $fieldVal ?? '' ); ?>"
-              data-list="field-var-list" style="width:100%">
+      <td style="text-align:left;width:<?php echo $setWidths ? '75%' : 'unset'; ?>">
+       <textarea name="query_select_field[]" placeholder="field name/logic" rows="1"
+                 data-list="field-var-list"
+                 style="width:100%;max-width:unset;height:unset;white-space:pre;font-family:monospace"
+        ><?php echo $module->escape( $fieldVal ?? '' ); ?></textarea>
       </td>
-      <td style="text-align:left;width:unset">
+      <td style="text-align:left;vertical-align:top;width:<?php echo $setWidths ? '25%' : 'unset'; ?>">
        <input type="text" name="query_select_alias[]" placeholder="alias (optional)"
               value="<?php echo $module->escape( $aliasVal ?? '' ); ?>"
               style="width:100%<?php echo $setWidths ? ';min-width:60px' : ''; ?>">
       </td>
-      <td style="text-align:left;width:unset">
+      <td style="text-align:left;vertical-align:top;width:1px">
        <select name="query_grouping[]"<?php echo $groupVal == ''
                                                  ? ' style="font-style:italic"' : '', "\n"; ?>
                onchange="$(this).val()==''?$(this).css('font-style','italic')
@@ -459,7 +471,7 @@ echo $reportData['desc'] ?? ''; ?></textarea>
   <tr>
    <td>Projects</td>
    <td>
-    <table id="proj-entries-tbl" style="width:95%;max-width:750px">
+    <table id="proj-entries-tbl" style="width:95%">
      <tbody>
       <tr><?php
 writeProjectRow( $reportData['projs'][0]['lu'], $reportData['projs'][0]['luv'],
@@ -494,7 +506,7 @@ foreach ( $reportData['projs'] as $projData )
   <tr>
    <td>Tables or<br>Instruments</td>
    <td>
-    <table id="inst-entries-tbl" style="width:95%;max-width:750px">
+    <table id="inst-entries-tbl" style="width:95%">
      <tbody>
       <tr><?php
 writeTableRow1( true, $reportData['forms'][0]['proj'], $reportData['forms'][0]['form'],
@@ -549,15 +561,15 @@ writeTableRow2( '', '', $reportData['forms'][0]['form'],
   <tr>
    <td>Condition</td>
    <td>
-    <input type="text" name="query_where" style="width:95%;max-width:750px"
-           placeholder="condition logic"
-           value="<?php echo $module->escape( $reportData['where'] ?? '' ); ?>">
+    <textarea name="query_where" placeholder="condition logic" rows="2"
+              style="max-width:unset;height:unset;white-space:pre;font-family:monospace"
+     ><?php echo $module->escape( $reportData['where'] ?? '' ); ?></textarea>
    </td>
   </tr>
   <tr>
    <td>Sorting</td>
    <td>
-    <input type="text" name="query_orderby" style="width:95%;max-width:750px"
+    <input type="text" name="query_orderby" style="max-width:unset;font-family:monospace"
            placeholder="sorting logic" list="field-var-list-sort"
            value="<?php echo $module->escape( $reportData['orderby'] ?? '' ); ?>">
    </td>
@@ -565,7 +577,7 @@ writeTableRow2( '', '', $reportData['forms'][0]['form'],
   <tr>
    <td>Fields to display</td>
    <td style="padding:0px">
-    <table id="field-entries-tbl" style="width:95%;max-width:750px">
+    <table id="field-entries-tbl" style="width:95%">
      <tr class="instq-row-select"><?php
 writeSelectRow( true, $reportData['select'][0]['field'], $reportData['select'][0]['alias'],
                 $reportData['select'][0]['grouping'] );
@@ -594,7 +606,9 @@ writeSelectRow( false, '', '', '' );
      &nbsp;
      <a onclick="$('#field-entries-tbl tr').last().clone().css('display',''
                     ).insertBefore($('#field-entries-tbl tr').last());$('#field-entries-tbl tr')
-                    .eq(-2).find('[name=&quot;query_select_field[]&quot;]').combobox();return false"
+                    .eq(-2).find('[name=&quot;query_select_field[]&quot;]')
+                    .keyup(function(){$(this).attr('rows',$(this).val().split('\n').length)})
+                    .combobox();return false"
         href="#" class=""><i class="mod-advrep-icon-plus"></i> Add field</a>
     </span>
    </td>
@@ -727,6 +741,11 @@ echo $reportData['nomissingdatacodes'] ? ' checked' : '';
          $(vFormElems[ vIndex ]).val(vFormName)
        }
        var vAlias = vAliasElems[ vIndex ].value
+       if ( vIndex > 0 )
+       {
+         var vOnCondElem = vOnCondElems.eq( vIndex - 1 )
+         vOnCondElem.attr('rows',vOnCondElem.val().split('\n').length+1)
+       }
        if ( vAlias == '' || vFormName == '' || vFormName[0] != '_' )
        {
          continue
@@ -749,11 +768,22 @@ echo $reportData['nomissingdatacodes'] ? ' checked' : '';
    vFuncUpdateVars()
    $('[name="query_form[]"]:visible').change( vFuncUpdateVars )
    $('[name="query_form_alias[]"]:visible').keyup( vFuncUpdateVars )
+   $('[name="query_form_on[]"]:visible').keyup( vFuncUpdateVars )
    setTimeout( function()
    {
      $('[name="query_select_field[]"]:visible').combobox()
    }, 2000 )
    $('[name="query_form[]"]').css( 'max-width', '450px' )
+   $('[name="query_where"]').keyup( function()
+   {
+     $('[name="query_where"]').attr('rows',$('[name="query_where"]').val().split('\n').length+1)
+   } )
+   $('[name="query_select_field[]"]').keyup( function()
+   {
+     $(this).attr('rows',$(this).val().split('\n').length)
+   } )
+   $('[name="query_where"]').trigger('keyup')
+   $('[name="query_select_field[]"]').trigger('keyup')
 
    var vFuncMakeDraggable = function( vClass, vFirst = false )
    {
@@ -761,6 +791,7 @@ echo $reportData['nomissingdatacodes'] ? ' checked' : '';
      {
        $('[name="query_form[]"]:visible').last().change( vFuncUpdateVars )
        $('[name="query_form_alias[]"]:visible').last().keyup( vFuncUpdateVars )
+       $('[name="query_form_on[]"]:visible').keyup( vFuncUpdateVars )
      }
      $(vClass).draggable( {
        axis: 'y',
