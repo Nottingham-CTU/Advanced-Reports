@@ -25,5 +25,5 @@ class Test_16_PDF_report_view_download:
     self.driver.find_element(By.LINK_TEXT, "Advanced Reports").click()
     self.driver.execute_script("$.get( $('a:contains(\"PDF Report\")').attr('href'), function(data,status,xhr){if(data.indexOf('%PDF')==0&&xhr.getResponseHeader('Content-Type')=='application/pdf'){document.body.setAttribute('data-pdf-ok','1')};document.body.setAttribute('data-pdf','1')} )")
     WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "body[data-pdf]")))
-    self.vars["pdfDownloadOK"] = self.driver.execute_script("return $('body[data-pdf-ok]').length")
+    self.vars["pdfDownloadOK"] = self.driver.execute_script("return ''+$('body[data-pdf-ok]').length")
     assert(self.vars["pdfDownloadOK"] == "1")
