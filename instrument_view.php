@@ -87,12 +87,14 @@ class FieldReference
 		if ( $fieldType == 'text' )
 		{
 			$output .= '<input onchange="$(this.form).find(\'button\').css(\'display\',\'\')" ' .
+			           'onkeyup="$(this.form).find(\'button\').css(\'display\',\'\')" ' .
 			           'type="text" name="value" value="' .
 			           $module->escapeHTML( $this->value ) . '">';
 		}
 		elseif ( $fieldType == 'notes' )
 		{
 			$output .= '<textarea onchange="$(this.form).find(\'button\').css(\'display\',\'\')" ' .
+			           'onkeyup="$(this.form).find(\'button\').css(\'display\',\'\')" ' .
 			           'name="value" rows="2">' .
 			           $module->escapeHTML( $this->value ) . '</textarea>';
 		}
@@ -128,7 +130,10 @@ class FieldReference
 		           self::makeKey( $_SESSION['redcap_csrf_token']
 		                                   [array_key_last($_SESSION['redcap_csrf_token'])],
 		                          $this->record, $this->fieldName, $this->event,
-		                          $this->instance ) . '"></form>';
+		                          $this->instance ) .
+		           '"><input type="hidden" name="csrf_token" value="' .
+		           $_SESSION['redcap_csrf_token'][array_key_last($_SESSION['redcap_csrf_token'])] .
+		           '"></form>';
 		return $output;
 	}
 
@@ -153,38 +158,41 @@ FieldReference::$disableAccessControl = $disableAccessControl;
 
 
 // If a value to be changed has been submitted, check the submission is valid and update the value.
-if ( ! $disableAccessControl && isset( $_POST['key'] ) &&
-     $_POST['key'] == FieldReference::makeKey( $_POST['csrf_token'], $_POST['record'],
-                                               $_POST['field'], $_POST['event'],
-                                               $_POST['instance'] ) )
+if ( ! $disableAccessControl && isset( $_POST['key'] ) )
 {
-	$data = [ 'record' => $_POST['record'], 'field_name' => $_POST['field'],
-	          'value' => $_POST['value'] ];
-	if ( isset( $_POST['event'] ) )
+	if ( in_array( $_POST['csrf_token'], $_SESSION['redcap_csrf_token'] ) &&
+	     $_POST['key'] == FieldReference::makeKey( $_POST['csrf_token'], $_POST['record'],
+	                                               $_POST['field'], $_POST['event'],
+	                                               $_POST['instance'] ) )
 	{
-		$data[ 'redcap_event_name' ] = $_POST['event'];
-		$eventID = \REDCap::getEventIdFromUniqueEvent( $_POST['event'] );
-	}
-	if ( isset( $_POST['instance'] ) )
-	{
-		$instrument = $module->getFormForField( $_POST['field'] );
-		$data[ 'redcap_repeat_instance' ] = $_POST['instance'];
-		if ( ! isset( $data[ 'redcap_event_name' ] ) ||
-		     in_array( $instrument, $module->getRepeatingForms( $eventID ) ) )
+		$data = [ 'record' => $_POST['record'], 'field_name' => $_POST['field'],
+		          'value' => $_POST['value'] ];
+		if ( isset( $_POST['event'] ) )
 		{
-			$data[ 'redcap_repeat_instrument' ] = $instrument;
+			$data[ 'redcap_event_name' ] = $_POST['event'];
+			$eventID = \REDCap::getEventIdFromUniqueEvent( $_POST['event'] );
 		}
+		if ( isset( $_POST['instance'] ) )
+		{
+			$instrument = $module->getFormForField( $_POST['field'] );
+			$data[ 'redcap_repeat_instance' ] = $_POST['instance'];
+			if ( ! isset( $data[ 'redcap_event_name' ] ) ||
+			     in_array( $instrument, $module->getRepeatingForms( $eventID ) ) )
+			{
+				$data[ 'redcap_repeat_instrument' ] = $instrument;
+			}
+		}
+		$result = \REDCap::saveData( [ 'dataFormat' => 'json-array',
+		                               'type' => 'eav', 'data' => [ $data ] ] );
+		header( 'Content-Type: application/json' );
+		if ( ! empty( $result['errors'] ) )
+		{
+			http_response_code(400);
+			echo json_encode( $result['errors'] );
+			exit;
+		}
+		echo 'true';
 	}
-	$result = \REDCap::saveData( [ 'dataFormat' => 'json-array',
-	                               'type' => 'eav', 'data' => [ $data ] ] );
-	header( 'Content-Type: application/json' );
-	if ( ! empty( $result['errors'] ) )
-	{
-		http_response_code(400);
-		echo json_encode( $result['errors'] );
-		exit;
-	}
-	echo 'true';
 	exit;
 }
 
@@ -689,7 +697,7 @@ foreach ( $reportData['forms'] as $queryForm )
 				}
 				// Insert redcap_updated_by virtual field.
 				if ( empty( $listReferencedFields ) ||
-				     isset( $listReferencedFields[ $form ]['redcap_updated by'] ) )
+				     isset( $listReferencedFields[ $form ]['redcap_updated_by'] ) )
 				{
 					$formValuesRow['redcap_updated_by'] =
 						$listFormCreateUpdate[ $form ]
@@ -844,7 +852,7 @@ foreach ( $reportData['forms'] as $queryForm )
 			$newResultTable[] = $newResultRow;
 		}
 	}
-	$resultTable = &$newResultTable;
+	$resultTable = $newResultTable;
 	unset( $newResultTable );
 }
 
@@ -869,7 +877,7 @@ if ( $reportData['where'] != '' )
 			$newResultTable[] = $resultRow;
 		}
 	}
-	$resultTable = &$newResultTable;
+	$resultTable = $newResultTable;
 	unset( $newResultTable );
 }
 
@@ -972,7 +980,7 @@ if ( ! empty( $reportData['select'] ) )
 		$newResultTable[] = $newResultRow;
 	}
 	// Update the result table.
-	$resultTable = &$newResultTable;
+	$resultTable = $newResultTable;
 	unset( $newResultTable );
 }
 
@@ -1032,7 +1040,7 @@ if ( $hasGrouping )
 	}
 	// Update the result table.
 	$newResultTable = array_values( $newResultTable );
-	$resultTable = &$newResultTable;
+	$resultTable = $newResultTable;
 	unset( $newResultTable );
 }
 
@@ -1254,7 +1262,8 @@ $('#mod-advrep-table .valedit').submit( function(e)
   var vSubmitBtn = $(this).find('button[type="submit"]')
   vSubmitBtn.prop('disabled',true).css('display','')
   $(this).find('[name="redcap_csrf_token"]').attr('name','csrf_token')
-  $.post( '', $(this).serialize() ).always( function( data )
+  $.post( window.location.href.replace('page=view','page=instrument_view'),
+          $(this).serialize() ).always( function( data )
   {
     if ( data !== true )
     {

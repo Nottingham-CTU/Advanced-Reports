@@ -1696,7 +1696,7 @@
           "id": "c6742915-476a-4efc-b787-1ecc801e552f",
           "comment": "",
           "command": "executeScript",
-          "target": "return $('span[data-csv-ok]').length",
+          "target": "return ''+$('span[data-csv-ok]').length",
           "targets": [],
           "value": "csvDownloadOK"
         },
@@ -1848,7 +1848,7 @@
           "id": "c3a0d13c-4cde-4d71-b39e-a40611044d04",
           "comment": "",
           "command": "executeScript",
-          "target": "return $('body[data-img-ok]').length",
+          "target": "return ''+$('body[data-img-ok]').length",
           "targets": [],
           "value": "imgDownloadOK"
         },
@@ -3166,7 +3166,7 @@
           "id": "26beace6-fcd7-48e7-9f71-842da3c258f1",
           "comment": "",
           "command": "executeScript",
-          "target": "return $('span[data-csv-ok]').length",
+          "target": "return ''+$('span[data-csv-ok]').length",
           "targets": [],
           "value": "csvDownloadOK"
         },
@@ -3318,7 +3318,7 @@
           "id": "5d461966-35b9-4f31-851b-38fe9376f658",
           "comment": "",
           "command": "executeScript",
-          "target": "return $('body[data-img-ok]').length",
+          "target": "return ''+$('body[data-img-ok]').length",
           "targets": [],
           "value": "imgDownloadOK"
         },
@@ -4017,7 +4017,7 @@
           "id": "83288b62-9655-40ff-8948-ec1c3dd3ad7c",
           "comment": "",
           "command": "executeScript",
-          "target": "return $('span[data-csv-ok]').length",
+          "target": "return ''+$('span[data-csv-ok]').length",
           "targets": [],
           "value": "csvDownloadOK"
         },
@@ -4169,7 +4169,7 @@
           "id": "b539f033-0979-45cf-81e1-bbe921e0465f",
           "comment": "",
           "command": "executeScript",
-          "target": "return $('body[data-img-ok]').length",
+          "target": "return ''+$('body[data-img-ok]').length",
           "targets": [],
           "value": "imgDownloadOK"
         },
@@ -4687,7 +4687,7 @@
           "id": "15247c79-5265-42c1-b386-fecd8bd3dca0",
           "comment": "",
           "command": "executeScript",
-          "target": "return $('body[data-pdf-ok]').length",
+          "target": "return ''+$('body[data-pdf-ok]').length",
           "targets": [],
           "value": "pdfDownloadOK"
         },
@@ -5416,7 +5416,7 @@
           "id": "b0a614a7-44d9-4cfb-974b-ad6f059ca1bc",
           "comment": "",
           "command": "executeScript",
-          "target": "return $('span[data-csv-ok]').length",
+          "target": "return ''+$('span[data-csv-ok]').length",
           "targets": [],
           "value": "csvDownloadOK"
         },
@@ -5531,7 +5531,7 @@
           "id": "7e806e53-7ac3-4010-a28c-301e244de52f",
           "comment": "",
           "command": "executeScript",
-          "target": "return $('body[data-img-ok]').length",
+          "target": "return ''+$('body[data-img-ok]').length",
           "targets": [],
           "value": "imgDownloadOK"
         },
@@ -9310,7 +9310,7 @@
           "id": "5cbdb713-acef-477f-8298-9accd39c0033",
           "comment": "",
           "command": "executeScript",
-          "target": "return $('body[data-img-ok]').length",
+          "target": "return ''+$('body[data-img-ok]').length",
           "targets": [],
           "value": "imgDownloadOK"
         },

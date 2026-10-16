@@ -355,8 +355,23 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 			}
 			// Taking into account @IF action tags, look for the @ADVANCED-REPORT-SAVE action tag
 			// and extract the report name and any parameters.
+			// - If hidden_edit is not 1, replaceIfActionTag will not work correctly.
+			if ( array_key_exists( 'hidden_edit', $GLOBALS ) )
+			{
+				$hiddenEditVar = $GLOBALS['hidden_edit'];
+			}
+			$GLOBALS['hidden_edit'] = 1;
 			$annotation = \Form::replaceIfActionTag( $infoField['field_annotation'], $projectID,
 			                                         $record, $eventID, $instrument, $instance );
+			if ( isset( $hiddenEditVar ) )
+			{
+				$GLOBALS['hidden_edit'] = $hiddenEditVar;
+				unset( $hiddenEditVar );
+			}
+			else
+			{
+				unset( $GLOBALS['hidden_edit'] );
+			}
 			$reportSaveParams =
 					\Form::getValueInParenthesesActionTag( $annotation, '@ADVANCED-REPORT-SAVE' );
 			if ( trim( $reportSaveParams ) == '' ||

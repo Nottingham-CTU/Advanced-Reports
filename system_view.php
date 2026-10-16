@@ -445,7 +445,7 @@ foreach ( $reportData['forms'] as $queryForm )
 			$newResultTable[] = $newResultRow;
 		}
 	}
-	$resultTable = &$newResultTable;
+	$resultTable = $newResultTable;
 	unset( $newResultTable );
 }
 
@@ -470,7 +470,7 @@ if ( $reportData['where'] != '' )
 			$newResultTable[] = $resultRow;
 		}
 	}
-	$resultTable = &$newResultTable;
+	$resultTable = $newResultTable;
 	unset( $newResultTable );
 }
 
@@ -573,7 +573,7 @@ if ( ! empty( $reportData['select'] ) )
 		$newResultTable[] = $newResultRow;
 	}
 	// Update the result table.
-	$resultTable = &$newResultTable;
+	$resultTable = $newResultTable;
 	unset( $newResultTable );
 }
 
@@ -633,7 +633,7 @@ if ( $hasGrouping )
 	}
 	// Update the result table.
 	$newResultTable = array_values( $newResultTable );
-	$resultTable = &$newResultTable;
+	$resultTable = $newResultTable;
 	unset( $newResultTable );
 }
 
