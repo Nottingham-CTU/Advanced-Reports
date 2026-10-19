@@ -231,6 +231,7 @@ $hasRCAlertsTable = false;
 $rcAlertsTable = [];
 $listAliasForms = [];
 $listReferencedFields = [];
+$listEditableFields = [];
 foreach ( $reportData['forms'] as $queryForm )
 {
 	// If the form is a virtual table, flag that we need it.
@@ -289,8 +290,12 @@ if ( ! empty( $reportData['select'] ) )
 	// necessarily a single field, it can contain logic.
 	foreach ( $reportData['select'] as $selectField )
 	{
-		$refParams = array_merge( $refParams, $module->parseLogic( $selectField['field'],
-		                                                           $requestType, true )[1] );
+		$refParam = $module->parseLogic( $selectField['field'], $requestType, true )[1];
+		if ( count( $refParam ) == 1 && $refParam[0][2] == 'edit' )
+		{
+			$listEditableFields[ $refParam[0][0] ][ $refParam[0][1] ] = true;
+		}
+		$refParams = array_merge( $refParams, $refParam );
 	}
 	// Each returned $refParam has the instrument alias at index 0 and the field name at index 1.
 	// Use this to build a list of the referenced fields grouped by instrument alias.
@@ -786,10 +791,11 @@ foreach ( $reportData['forms'] as $queryForm )
 				{
 					$newResultRow[ '[' . $alias . '][' . $field . ']' ] =
 						[ 'value' => $formValuesRow[$field], 'label' => $formLabelsRow[$field],
-						  'ref' => new FieldReference( $formValuesRow[$recordIDField],
-						                               $field, $formEvent, $formInstance,
-						                               $formValuesRow[$field],
-						                               $formLabelsRow[$field] ) ];
+						  'ref' => ( ! isset( $listEditableFields[ $alias ][ $field ] ) ? null :
+						             new FieldReference( $formValuesRow[$recordIDField],
+						                                 $field, $formEvent, $formInstance,
+						                                 $formValuesRow[$field],
+						                                 $formLabelsRow[$field] ) ) ];
 					if ( ! $insertedRedcapFields )
 					{
 						foreach ( $redcapFields as $field )
