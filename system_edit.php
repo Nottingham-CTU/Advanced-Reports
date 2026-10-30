@@ -236,13 +236,13 @@ function writeProjectRow( $projType, $projVal, $aliasVal )
        </select>
       </td>
       <td style="width:unset;min-width:100px">
-       <input type="text" name="query_proj_luv[]"
+       <input type="text" name="query_proj_luv[]" spellcheck="false"
               value="<?php echo $module->escape( $projVal ?? '' ); ?>"
               style="width:100%<?php echo $setWidths ? ';min-width:80px' : ''; ?>">
        <hr style="margin:0">
       </td>
       <td style="width:20%">
-       <input type="text" name="query_proj_alias[]" placeholder="alias"
+       <input type="text" name="query_proj_alias[]" placeholder="alias" spellcheck="false"
               value="<?php echo $module->escape( $aliasVal ?? '' ); ?>"
               style="width:100%<?php echo $setWidths ? ';min-width:80px' : ''; ?>">
       </td>
@@ -313,7 +313,7 @@ function writeTableRow1( $setWidths, $projVal, $tableVal, $aliasVal, $joinVal = 
       </td>
       <td style="text-align:left;width:unset">
        <input type="text" name="query_form_alias[]" placeholder="alias"
-              value="<?php echo $module->escape( $aliasVal ?? '' ); ?>"
+              value="<?php echo $module->escape( $aliasVal ?? '' ); ?>" spellcheck="false"
               style="width:100%<?php echo $setWidths ? ';min-width:80px' : ''; ?>;max-width:165px">
       </td>
 <?php
@@ -331,7 +331,7 @@ function writeTableRow2( $onCondVal, $formVal, $firstFormVal, $aliasVal, $firstA
       <td style="width:unset"></td>
       <td style="text-align:left;width:unset;vertical-align:top">On Condition</td>
       <td colspan="3" style="text-align:left;width:unset">
-       <textarea name="query_form_on[]" placeholder="condition logic" rows="2"
+       <textarea name="query_form_on[]" placeholder="condition logic" rows="2" spellcheck="false"
               style="width:100%;max-width:unset;height:unset;white-space:pre;font-family:monospace"
         ><?php echo $module->escape( $onCondVal ?? '' ); ?></textarea>
       </td>
@@ -352,13 +352,13 @@ function writeSelectRow( $setWidths, $fieldVal, $aliasVal, $groupVal )
       </td>
       <td style="text-align:left;width:<?php echo $setWidths ? '75%' : 'unset'; ?>">
        <textarea name="query_select_field[]" placeholder="field name/logic" rows="1"
-                 data-list="field-var-list"
-                 style="width:100%;max-width:unset;height:unset;white-space:pre;font-family:monospace"
+                 data-list="field-var-list" spellcheck="false"
+                 style="width:100%;max-width:unset;height:unset;white-space:pre;font-family:monospace;padding-bottom:10px"
         ><?php echo $module->escape( $fieldVal ?? '' ); ?></textarea>
       </td>
       <td style="text-align:left;vertical-align:top;width:<?php echo $setWidths ? '25%' : 'unset'; ?>">
        <input type="text" name="query_select_alias[]" placeholder="alias (optional)"
-              value="<?php echo $module->escape( $aliasVal ?? '' ); ?>"
+              value="<?php echo $module->escape( $aliasVal ?? '' ); ?>" spellcheck="false"
               style="width:100%<?php echo $setWidths ? ';min-width:60px' : ''; ?>">
       </td>
       <td style="text-align:left;vertical-align:top;width:1px">
@@ -561,7 +561,7 @@ writeTableRow2( '', '', $reportData['forms'][0]['form'],
   <tr>
    <td>Condition</td>
    <td>
-    <textarea name="query_where" placeholder="condition logic" rows="2"
+    <textarea name="query_where" placeholder="condition logic" rows="2" spellcheck="false"
               style="max-width:unset;height:unset;white-space:pre;font-family:monospace"
      ><?php echo $module->escape( $reportData['where'] ?? '' ); ?></textarea>
    </td>
@@ -570,7 +570,7 @@ writeTableRow2( '', '', $reportData['forms'][0]['form'],
    <td>Sorting</td>
    <td>
     <input type="text" name="query_orderby" style="max-width:unset;font-family:monospace"
-           placeholder="sorting logic" list="field-var-list-sort"
+           placeholder="sorting logic" list="field-var-list-sort" spellcheck="false"
            value="<?php echo $module->escape( $reportData['orderby'] ?? '' ); ?>">
    </td>
   </tr>

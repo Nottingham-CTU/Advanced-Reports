@@ -249,7 +249,7 @@ $module->outputInstrumentDropdown( 'query_form[]', $formVal ?? '',
 ?></td>
       <td style="text-align:left;width:unset">
        <input type="text" name="query_form_alias[]" placeholder="alias (optional)"
-              value="<?php echo $module->escapeHTML( $aliasVal ?? '' ); ?>"
+              value="<?php echo $module->escapeHTML( $aliasVal ?? '' ); ?>" spellcheck="false"
               style="width:100%<?php echo $setWidths ? ';min-width:80px' : ''; ?>;max-width:165px">
       </td>
 <?php
@@ -267,7 +267,7 @@ function writeInstrumentRow2( $onCondVal, $formVal, $firstFormVal, $aliasVal, $f
       <td style="width:unset"></td>
       <td style="text-align:left;width:unset;vertical-align:top">On Condition</td>
       <td colspan="2" style="text-align:left;width:unset">
-       <textarea name="query_form_on[]" placeholder="condition logic" rows="2"
+       <textarea name="query_form_on[]" placeholder="condition logic" rows="2" spellcheck="false"
               style="width:100%;max-width:unset;height:unset;white-space:pre;font-family:monospace"
               data-default="<?php echo $formVal == '' || $firstFormVal == '' ? ''
                                        : ( '[' . $formVal . '][' . $recordIDField . '] = [' .
@@ -291,13 +291,13 @@ function writeSelectRow( $setWidths, $fieldVal, $aliasVal, $groupVal )
       </td>
       <td style="text-align:left;width:<?php echo $setWidths ? '75%' : 'unset'; ?>">
        <textarea name="query_select_field[]" placeholder="field name/logic" rows="1"
-                 data-list="field-var-list"
-                 style="width:100%;max-width:unset;height:unset;white-space:pre;font-family:monospace"
+                 data-list="field-var-list" spellcheck="false"
+                 style="width:100%;max-width:unset;height:unset;white-space:pre;font-family:monospace;padding-bottom:10px"
         ><?php echo $module->escape( $fieldVal ?? '' ); ?></textarea>
       </td>
       <td style="text-align:left;vertical-align:top;width:<?php echo $setWidths ? '25%' : 'unset'; ?>">
        <input type="text" name="query_select_alias[]" placeholder="alias (optional)"
-              value="<?php echo $module->escape( $aliasVal ?? '' ); ?>"
+              value="<?php echo $module->escape( $aliasVal ?? '' ); ?>" spellcheck="false"
               style="width:100%<?php echo $setWidths ? ';min-width:60px' : ''; ?>">
       </td>
       <td style="text-align:left;vertical-align:top;width:1px">
@@ -471,7 +471,7 @@ writeInstrumentRow2( '', '', $reportData['forms'][0]['form'],
   <tr>
    <td>Condition</td>
    <td>
-    <textarea name="query_where" placeholder="condition logic" rows="2"
+    <textarea name="query_where" placeholder="condition logic" rows="2" spellcheck="false"
               style="max-width:unset;height:unset;white-space:pre;font-family:monospace"
      ><?php echo $module->escape( $reportData['where'] ?? '' ); ?></textarea>
    </td>
@@ -480,7 +480,7 @@ writeInstrumentRow2( '', '', $reportData['forms'][0]['form'],
    <td>Sorting</td>
    <td>
     <input type="text" name="query_orderby" style="max-width:unset;font-family:monospace"
-           placeholder="sorting logic" list="field-var-list-sort"
+           placeholder="sorting logic" list="field-var-list-sort" spellcheck="false"
            value="<?php echo $module->escape( $reportData['orderby'] ?? '' ); ?>">
    </td>
   </tr>
