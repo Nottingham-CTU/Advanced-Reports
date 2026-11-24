@@ -608,7 +608,10 @@ writeSelectRow( false, '', '', '' );
                     ).insertBefore($('#field-entries-tbl tr').last());$('#field-entries-tbl tr')
                     .eq(-2).find('[name=&quot;query_select_field[]&quot;]')
                     .keyup(function(){$(this).attr('rows',$(this).val().split('\n').length)})
-                    .combobox();return false"
+                    .combobox().on('autocompleteselect',function(ev,ui){if(! /^(\[[a-z0-9_]+\]){2}$/
+                    .test($(this).val())){ev.preventDefault();$(this).val($(this).val()
+                    .slice(0,$(this).prop('selectionEnd'))+ui.item.value+$(this).val()
+                    .slice($(this).prop('selectionEnd')))}});return false"
         href="#" class=""><i class="mod-advrep-icon-plus"></i> Add field</a>
     </span>
    </td>
@@ -772,6 +775,10 @@ echo $reportData['nomissingdatacodes'] ? ' checked' : '';
    setTimeout( function()
    {
      $('[name="query_select_field[]"]:visible').combobox()
+      .on('autocompleteselect',function(ev,ui){if(! /^(\[[a-z0-9_]+\]){2}$/
+         .test($(this).val())){ev.preventDefault();$(this).val($(this).val()
+         .slice(0,$(this).prop('selectionEnd'))+ui.item.value+$(this).val()
+         .slice($(this).prop('selectionEnd')))}})
    }, 2000 )
    $('[name="query_form[]"]').css( 'max-width', '450px' )
    $('[name="query_where"]').keyup( function()
