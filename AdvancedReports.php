@@ -1883,6 +1883,10 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
       {
         elemTh.setAttribute('data-type', 'string')
       }
+      if ( elemTh.getAttribute('data-items') == null )
+      {
+        elemTh.setAttribute('data-items', 'false')
+      }
     });
 
 
@@ -2955,8 +2959,10 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 				'3hhN6RA1T2FLr0TydO24ovlHS69ukGpeCQ0TXUGolmio524frHO7RorUm7+Y84x7Ou0kT1qM/MBxp+NH' .
 				'D3zq8uF+nUffOD5uIMrQNgF0PAAAAAElFTkSuQmCC);
 			}
-			.advrep-combobox-toggle { padding: 2px 4px }
-			.advrep-combobox-toggle::before { content: "🠟" }
+			.advrep-combobox-toggle { padding: 2px 5px }
+			.advrep-combobox-toggle::before { content: "▼"; font-size: 0.7em }
+			table.dataTable th.sorting::before { bottom: 80% !important; right: 7px !important }
+			table.dataTable th.sorting::after { top: 20% !important; right: 7px !important }
 			';
 		echo '<script type="text/javascript">',
 			 '(function (){var el = document.createElement(\'style\');',
