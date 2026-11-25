@@ -7050,7 +7050,7 @@
           "id": "0b290a6f-4712-4b61-a129-5706bccae454",
           "comment": "",
           "command": "assertElementPresent",
-          "target": "css=a[onclick*=\"deleteDocumentConfirm\"][onclick*=\"patient_document\"]",
+          "target": "css=#patient_document-tr a.deletedoc-lnk",
           "targets": [],
           "value": ""
         },
@@ -7130,7 +7130,7 @@
           "id": "ddbffa1c-7c2f-41a4-8b80-6b79d442b6f0",
           "comment": "",
           "command": "click",
-          "target": "css=a[onclick*=\"deleteDocumentConfirm\"][onclick*=\"patient_document\"]",
+          "target": "css=#patient_document-tr a.deletedoc-lnk",
           "targets": [],
           "value": ""
         },
@@ -7210,7 +7210,7 @@
           "id": "9989c95c-64e2-480f-b702-6703c6e07c1c",
           "comment": "",
           "command": "assertElementNotPresent",
-          "target": "css=a[onclick*=\"deleteDocumentConfirm\"][onclick*=\"patient_document\"]",
+          "target": "css=#patient_document-tr a.deletedoc-lnk",
           "targets": [],
           "value": ""
         },
@@ -7493,7 +7493,7 @@
           "id": "e4a53331-c1d9-4b1c-a774-b9da05bf1b6f",
           "comment": "",
           "command": "assertElementPresent",
-          "target": "css=a[onclick*=\"deleteDocumentConfirm\"][onclick*=\"patient_document\"]",
+          "target": "css=#patient_document-tr a.deletedoc-lnk",
           "targets": [],
           "value": ""
         },
@@ -7573,7 +7573,7 @@
           "id": "ba39180d-bec0-4aca-9a90-8a3c6b94eb2e",
           "comment": "",
           "command": "click",
-          "target": "css=a[onclick*=\"deleteDocumentConfirm\"][onclick*=\"patient_document\"]",
+          "target": "css=#patient_document-tr a.deletedoc-lnk",
           "targets": [],
           "value": ""
         },
@@ -7653,7 +7653,7 @@
           "id": "073f82fa-edb6-4cb8-98d2-3fe43e83fadc",
           "comment": "",
           "command": "assertElementNotPresent",
-          "target": "css=a[onclick*=\"deleteDocumentConfirm\"][onclick*=\"patient_document\"]",
+          "target": "css=#patient_document-tr a.deletedoc-lnk",
           "targets": [],
           "value": ""
         },
@@ -7936,7 +7936,7 @@
           "id": "362a2d4c-f8c8-49e3-8d0b-10ad899cdb17",
           "comment": "",
           "command": "assertElementPresent",
-          "target": "css=a[onclick*=\"deleteDocumentConfirm\"][onclick*=\"patient_document\"]",
+          "target": "css=#patient_document-tr a.deletedoc-lnk",
           "targets": [],
           "value": ""
         },
@@ -8016,7 +8016,7 @@
           "id": "9bd2fe02-f0a5-4c49-b746-df5305f423b4",
           "comment": "",
           "command": "click",
-          "target": "css=a[onclick*=\"deleteDocumentConfirm\"][onclick*=\"patient_document\"]",
+          "target": "css=#patient_document-tr a.deletedoc-lnk",
           "targets": [],
           "value": ""
         },
@@ -8096,7 +8096,7 @@
           "id": "75f4c280-6128-43dc-adc4-b056346ee1ab",
           "comment": "",
           "command": "assertElementNotPresent",
-          "target": "css=a[onclick*=\"deleteDocumentConfirm\"][onclick*=\"patient_document\"]",
+          "target": "css=#patient_document-tr a.deletedoc-lnk",
           "targets": [],
           "value": ""
         },
@@ -8379,7 +8379,7 @@
           "id": "200a2cf5-be96-4f58-af21-3e6e633d7683",
           "comment": "",
           "command": "assertElementPresent",
-          "target": "css=a[onclick*=\"deleteDocumentConfirm\"][onclick*=\"patient_document\"]",
+          "target": "css=#patient_document-tr a.deletedoc-lnk",
           "targets": [],
           "value": ""
         },
@@ -8459,7 +8459,7 @@
           "id": "54f63f0b-17a9-44e6-bc0a-e211780191be",
           "comment": "",
           "command": "click",
-          "target": "css=a[onclick*=\"deleteDocumentConfirm\"][onclick*=\"patient_document\"]",
+          "target": "css=#patient_document-tr a.deletedoc-lnk",
           "targets": [],
           "value": ""
         },
@@ -8539,7 +8539,7 @@
           "id": "52490f2c-3164-48ea-a385-d40f6c8124e0",
           "comment": "",
           "command": "assertElementNotPresent",
-          "target": "css=a[onclick*=\"deleteDocumentConfirm\"][onclick*=\"patient_document\"]",
+          "target": "css=#patient_document-tr a.deletedoc-lnk",
           "targets": [],
           "value": ""
         },
@@ -9900,7 +9900,7 @@
           "id": "2f07792c-247d-4556-92c3-357dd0471c72",
           "comment": "",
           "command": "assertElementPresent",
-          "target": "css=a[onclick*=\"deleteDocumentConfirm\"][onclick*=\"patient_document\"]",
+          "target": "css=#patient_document-tr a.deletedoc-lnk",
           "targets": [],
           "value": ""
         },
@@ -9980,7 +9980,7 @@
           "id": "139a7796-e021-4169-863d-a3705ce19288",
           "comment": "",
           "command": "click",
-          "target": "css=a[onclick*=\"deleteDocumentConfirm\"][onclick*=\"patient_document\"]",
+          "target": "css=#patient_document-tr a.deletedoc-lnk",
           "targets": [],
           "value": ""
         },
@@ -10060,7 +10060,7 @@
           "id": "e0e53e04-6020-4cc0-9b50-ecec2132a952",
           "comment": "",
           "command": "assertElementNotPresent",
-          "target": "css=a[onclick*=\"deleteDocumentConfirm\"][onclick*=\"patient_document\"]",
+          "target": "css=#patient_document-tr a.deletedoc-lnk",
           "targets": [],
           "value": ""
         },

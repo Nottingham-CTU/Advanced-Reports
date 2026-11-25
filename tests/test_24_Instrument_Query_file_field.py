@@ -41,7 +41,7 @@ class Test_24_Instrument_Query_file_field:
     self.driver.execute_script("$('#south').remove()")
     self.driver.execute_script("dataEntrySubmit('submit-btn-savecontinue')")
     WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.ID, "south")))
-    assert len(self.driver.find_elements(By.CSS_SELECTOR, "a[onclick*=\"deleteDocumentConfirm\"][onclick*=\"patient_document\"]")) > 0
+    assert len(self.driver.find_elements(By.CSS_SELECTOR, "#patient_document-tr a.deletedoc-lnk")) > 0
     self.driver.find_element(By.LINK_TEXT, "Advanced Reports").click()
     self.driver.find_element(By.LINK_TEXT, "Edit reports").click()
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"page=instrument_edit\"][href*=\"report_id=instrument_query\"]").click()
@@ -51,7 +51,7 @@ class Test_24_Instrument_Query_file_field:
     WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.ID, "south")))
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"record_status_dashboard.php\"]").click()
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"&id=1\"][href*=\"&page=demographics\"]").click()
-    self.driver.find_element(By.CSS_SELECTOR, "a[onclick*=\"deleteDocumentConfirm\"][onclick*=\"patient_document\"]").click()
+    self.driver.find_element(By.CSS_SELECTOR, "#patient_document-tr a.deletedoc-lnk").click()
     self.driver.find_element(By.XPATH, "//*[@aria-describedby=\"remove-file\"]//button[contains(.,'Yes')]").click()
     None if len(elements := self.driver.find_elements(By.CSS_SELECTOR, "[aria-describedby=\"remove-file\"]")) == 0 else WebDriverWait(self.driver, 30).until(expected_conditions.staleness_of(elements[0]))
     None if len(elements := self.driver.find_elements(By.CSS_SELECTOR, "[aria-describedby=\"file_delete_dialog\"]")) == 0 else WebDriverWait(self.driver, 30).until(expected_conditions.staleness_of(elements[0]))
@@ -61,7 +61,7 @@ class Test_24_Instrument_Query_file_field:
     self.driver.execute_script("$('#south').remove()")
     self.driver.execute_script("dataEntrySubmit('submit-btn-savecontinue')")
     WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.ID, "south")))
-    assert len(self.driver.find_elements(By.CSS_SELECTOR, "a[onclick*=\"deleteDocumentConfirm\"][onclick*=\"patient_document\"]")) == 0
+    assert len(self.driver.find_elements(By.CSS_SELECTOR, "#patient_document-tr a.deletedoc-lnk")) == 0
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"online_designer.php\"]").click()
     self.driver.find_element(By.LINK_TEXT, "Demographics").click()
     self.driver.find_element(By.CSS_SELECTOR, "a[onclick*=\"openAddQuesForm('patient_document\"]").click()
