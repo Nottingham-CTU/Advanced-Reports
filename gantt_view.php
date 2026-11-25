@@ -25,7 +25,7 @@ $zoomLevels = [ 1 => 'ultra', 2 => 'more', 3 => 'compact', 4 => 'standard', 5 =>
 
 // Verify the report exists and is a Gantt report.
 // Redirect to main reports page if not.
-$reportID = $_GET['report_id'];
+$reportID = $_GET['report_id'] ?? null;
 $listReports = $module->getReportList();
 if ( ! isset( $listReports[$reportID] ) || $listReports[$reportID]['type'] != 'gantt' )
 {
@@ -34,6 +34,8 @@ if ( ! isset( $listReports[$reportID] ) || $listReports[$reportID]['type'] != 'g
 }
 $reportConfig = $listReports[$reportID];
 $reportData = $module->getReportData( $reportID );
+
+$isLongitudinal = \REDCap::isLongitudinal();
 
 
 
@@ -133,6 +135,21 @@ if ( isset( $_GET['gantt_end'] ) &&
 
 
 
+// Get the fields to retrieve.
+$listFields = [ \REDCap::getRecordIdField() ];
+foreach ( $reportData['labels'] as $infoLabel )
+{
+	$listFields[] = $infoLabel['field'];
+}
+foreach ( $reportData['chart_categories'] as $infoCategory )
+{
+	$listFields[] = $infoCategory['start_field'];
+	$listFields[] = $infoCategory['end_field'];
+}
+$listFields = array_values( array_unique( $listFields ) );
+
+
+
 // Get the project data.
 // The REDCap::getData() function is used here with the JSON return format (which is decoded into
 // a PHP array), instead of the PHP array return format. This is because the JSON return format
@@ -146,6 +163,7 @@ foreach ( [ 'values' => false, 'labels' => true ] as $dataMode => $dataIsLabels 
 	$listProjectData[ $dataMode ] =
 		json_decode( \REDCap::getData( [ 'return_format' => 'json',
 		                                 'combine_checkbox_values' => true,
+		                                 'fields' => $listFields,
 		                                 'exportAsLabels' => $dataIsLabels,
 		                                 'filterLogic' => $condition,
 		                                 'filterType' => 'RECORD' ] ), true );
@@ -168,8 +186,7 @@ foreach ( $listProjectData['values'] as $rowNum => $infoDataValues )
 	// Get the values for the chart labels (displayed on the left of the chart).
 	foreach ( $reportData['labels'] as $infoLabel )
 	{
-		if ( \REDCap::isLongitudinal() &&
-		     $infoDataValues['redcap_event_name'] != $infoLabel['event'] )
+		if ( $isLongitudinal && $infoDataValues['redcap_event_name'] != $infoLabel['event'] )
 		{
 			continue;
 		}
@@ -182,11 +199,12 @@ foreach ( $listProjectData['values'] as $rowNum => $infoDataValues )
 
 		}
 	}
+
 	// Get the names and date ranges of the chart items. The dates are captured separately (in case
 	// they are on different events) and merged later.
 	foreach ( $reportData['chart_categories'] as $infoCategory )
 	{
-		if ( \REDCap::isLongitudinal() &&
+		if ( $isLongitudinal &&
 		     $infoDataValues['redcap_event_name'] != $infoCategory['start_event'] &&
 		     $infoDataValues['redcap_event_name'] != $infoCategory['end_event'] )
 		{
@@ -197,7 +215,7 @@ foreach ( $listProjectData['values'] as $rowNum => $infoDataValues )
 		$repeatInstance = ( isset( $infoDataValues['redcap_repeat_instance'] ) &&
 		                    $infoDataValues['redcap_repeat_instance'] != '' )
 		                  ? $infoDataValues['redcap_repeat_instance'] : 1;
-		if ( ! \REDCap::isLongitudinal() ||
+		if ( ! $isLongitudinal ||
 		     $infoDataValues['redcap_event_name'] == $infoCategory['start_event'] )
 		{
 			$date = $infoDataValues[ $infoCategory['start_field'] ];
@@ -214,7 +232,7 @@ foreach ( $listProjectData['values'] as $rowNum => $infoDataValues )
 				}
 			}
 		}
-		if ( ! \REDCap::isLongitudinal() ||
+		if ( ! $isLongitudinal ||
 		     $infoDataValues['redcap_event_name'] == $infoCategory['end_event'] )
 		{
 			$date = $infoDataValues[ $infoCategory['end_field'] ];
@@ -236,6 +254,9 @@ foreach ( $listProjectData['values'] as $rowNum => $infoDataValues )
 			}
 		}
 	} // end foreach $reportData['chart_categories']
+
+	unset( $listProjectData['values'][ $rowNum ] );
+	unset( $listProjectData['labels'][ $rowNum ] );
 } // end foreach $listProjectData
 
 
@@ -404,10 +425,11 @@ foreach ( $listChartEntries as $infoChartEntry )
 <?php
 		$firstLabel = false;
 	}
+	$listCategoryIndexes = array_flip( array_unique( $listCategories ) );
 	foreach ( $infoChartEntry['categories'] as $infoChartCategory )
 	{
 		// Determine the category index (for applying styles).
-		$categoryIndex = array_search( $infoChartCategory['name'], $listCategories );
+		$categoryIndex = $listCategoryIndexes[ $infoChartCategory['name'] ];
 		// Determine the start/end timestamps from the category definition and record data.
 		$itemStartTime = $infoChartCategory['start'];
 		$itemEndTime = $infoChartCategory['end'];
