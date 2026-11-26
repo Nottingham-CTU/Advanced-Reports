@@ -6,8 +6,8 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 {
 
 	const API_TYPES = [ 'accumulation', 'instrument', 'sql', 'system' ];
-	const PUBLIC_TYPES = [ 'accumulation', 'instrument', 'pdf', 'sql', 'system' ];
-	const SAVEABLE_TYPES = [ 'accumulation', 'instrument', 'pdf', 'sql', 'system' ];
+	const PUBLIC_TYPES = [ 'accumulation', 'instrument', 'pdf', 'docx', 'sql', 'system' ];
+	const SAVEABLE_TYPES = [ 'accumulation', 'instrument', 'pdf', 'docx', 'sql', 'system' ];
 
 	// Show the advanced reports link based on whether the user is able to view or edit any
 	// reports. If the user has no access, hide the link.
@@ -267,6 +267,15 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 						$definition .= $UITweaker->customReportsEscapeHTML(
 						                str_replace( [ "\r\n", "\r" ], "\n", $reportData['pdf'] ) );
 					}
+// For Word Document reports...
+		elseif ( $reportConfig['type'] == 'docx' )
+		{
+			$definition = '<b>Source Report:</b> ';
+			$definition .= $UITweaker->customReportsEscapeHTML( $reportData['source'] );
+			$definition .= "\n<b>Template:</b>\n";
+			$definition .= $UITweaker->customReportsEscapeHTML(
+				str_replace( [ "\r\n", "\r" ], "\n", $reportData['docx'] ) );
+		}
 					// For accumulation reports...
 					elseif ( $reportConfig['type'] == 'accumulation' )
 					{
@@ -434,6 +443,10 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 				{
 					$fileName .= '.pdf';
 				}
+		elseif ( $listReports[ $reportID ]['type'] == 'docx' )
+		{
+			$fileName .= '.docx';
+		}
 				else
 				{
 					$fileName .= isset( $_GET['download'] ) ? '.csv' : '.png';
@@ -860,6 +873,7 @@ class AdvancedReports extends \ExternalModules\AbstractExternalModule
 		         'instrument' => 'Instrument Query',
 		         'pdf' => 'PDF',
 		         'recordtbl' => 'Record Table',
+        'docx' => 'Word Document',
 		         'sql' => 'SQL',
 		         'system' => 'System Query' ];
 	}

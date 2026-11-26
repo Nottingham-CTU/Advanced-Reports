@@ -202,5 +202,29 @@
 		"name" : "System Query file field",
 		"expected" : "Report can be saved to a file field when enabled",
 		"scenario" : "Check that the report is only saved to a file field when the feature is enabled."
+	},
+	{
+		"file" : "test_t35CreateeditWordDocumentreport.py",
+		"name" : "Create/edit Word Document report",
+		"expected" : "Word Document report can be created",
+		"scenario" : "Check that Word Document report create/edit options are shown only to users with report edit rights. Ensure that new/edited reports are saved correctly with public, API, and saveable options."
+	},
+	{
+		"file" : "test_t36WordDocumentreportviewdownload.py",
+		"name" : "Word Document report view/download",
+		"expected" : "Report is rendered correctly",
+		"scenario" : "Check that the Word Document report is presented as a .docx file and the contents are rendered correctly. Ensure HTML in the data fields is allowed/escaped as expected. Check download functionality."
+	},
+	{
+		"file" : "test_t37WordDocumentreportpublic.py",
+		"name" : "Word Document report public/api",
+		"expected" : "Report can be accessed via public/api endpoints when enabled",
+		"scenario" : "Check that the report is only accessible via the public/api endpoints when the features are enabled, and that the correct API key is required to access the API endpoint."
+	},
+	{
+		"file" : "test_t38WordDocumentreportfilefield.py",
+		"name" : "Word Document report file field",
+		"expected" : "Report can be saved to a file field when enabled",
+		"scenario" : "Check that the report is only saved to a file field when the feature is enabled."
 	}
 ]
