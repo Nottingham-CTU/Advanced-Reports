@@ -1,5 +1,8 @@
 {
-	"require" : { "dompdf/dompdf" : "3.1.*" },
+	"require" : { 
+		"dompdf/dompdf" : "3.1.*",
+		"phpoffice/phpword" : "1.4.*"
+	},
 	"config": {
 		"platform": {
 			"php": "8.0"
